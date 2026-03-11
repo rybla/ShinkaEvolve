@@ -7,10 +7,8 @@ import argparse
 import numpy as np
 from typing import Tuple, Optional, List, Dict, Any
 
+from lc import RunOutput
 from shinka.core import run_shinka_eval
-
-
-type RunOutput = Any
 
 
 def validate_fuzzing(
@@ -27,9 +25,11 @@ def validate_fuzzing(
         (is_valid: bool, error_message: Optional[str])
     """
 
-    msg = "TODO: feedback that helps model generate value results"
+    # produce feedback that helps model generate valid results
 
-    return True, msg
+    return True, (
+        "The samples were processed successfully. A coverage report was generated."
+    )
 
 
 def get_fuzzing_kwargs(run_index: int) -> Dict[str, Any]:
@@ -49,17 +49,32 @@ def aggregate_fuzzing_metrics(
     if not results:
         return {"combined_score": 0.0, "error": "No results to aggregate"}
 
-    # centers, radii, reported_sum = results[0]
+    coverageReport = results[0]
+    average_num_functions = coverageReport.average_num_functions()
+    average_num_labels = coverageReport.average_num_labels()
+    union_functions = coverageReport.union_functions()
+    union_labels = coverageReport.union_labels()
+
+    union_num_functions = len(union_functions)
+    union_num_labels = len(union_labels)
 
     public_metrics = {
-        # "centers_str": format_centers_string(centers),
-        # "num_circles": centers.shape[0],
+        "average_num_labels": average_num_labels,
+        "union_num_labels": union_num_labels,
     }
     private_metrics = {
-        # "reported_sum_of_radii": float(reported_sum),
+        "average_num_functions": average_num_functions,
+        "union_num_functions": union_num_functions,
     }
     metrics = {
-        # "combined_score": float(reported_sum),
+        "combined_score": float(
+            np.average(
+                [
+                    average_num_labels,
+                    union_num_labels,
+                ]
+            )
+        ),
         "public": public_metrics,
         "private": private_metrics,
     }
@@ -68,9 +83,8 @@ def aggregate_fuzzing_metrics(
     try:
         np.savez(
             extra_file,
-            # centers=centers,
-            # radii=radii,
-            # reported_sum=reported_sum,
+            union_functions=list(union_functions),
+            union_labels=list(union_labels),
         )
         print(f"Detailed fuzzing data saved to {extra_file}")
     except Exception as e:

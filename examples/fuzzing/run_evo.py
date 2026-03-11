@@ -11,7 +11,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-search_task_sys_msg = """TODO"""
+search_task_sys_msg = """
+You are an expert programmer specializing in lambda calculus. Your current task is to write a generator function that produces types and terms based on a random seed. This generator should be useful for generating inputs to test a type checker implementation.
+
+Key directions to explore:
+- The generator must always produce well-formed types and terms.
+- The generator should have a non-negligible chance of generating all different kinds of types and terms that could be useful for testing many different control-flow paths in a type checker. 
+- The generator should generate both a type and a term, but the term does not necessarily have to be well typed and have the generated type. Generate whatever types and terms are useful for fuzzing the type checker. 
+""".strip()
 
 
 def main(config_path: str):

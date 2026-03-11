@@ -12,6 +12,7 @@ from typing import (
 )
 from copy import deepcopy
 import numpy as np
+import tqdm
 
 
 # ==============================================================================
@@ -20,25 +21,25 @@ import numpy as np
 class CoverageManager:
     def __init__(self):
         self.trace: List[str] = []
-        self.function_names: Set[str] = set()
+        self.functions: Set[str] = set()
         self.labels: Set[str] = set()
 
     def record(self, value: Any = None, weight=1):
         stack_trace = inspect.stack(0)
         frame_info = stack_trace[1]
-        function_name = frame_info.function
+        function = frame_info.function
         line_number = frame_info.lineno
-        label = f"lc.py:{line_number} {function_name} {value}"
+        label = f"lc.py:{line_number} {function} {value}"
 
         self.trace.append(label)
-        self.function_names.add(function_name)
+        self.functions.add(function)
         self.labels.add(label)
 
         del stack_trace
 
     def reset(self):
         self.trace = []
-        self.function_names = set()
+        self.functions = set()
         self.labels = set()
 
 
@@ -52,20 +53,24 @@ def reset_coverageManager():
 class CoverageReport:
 
     def __init__(self):
-        self.function_names_batches: List[Set[str]] = []
+        self.functions_batches: List[Set[str]] = []
         self.labels_batches: List[Set[str]] = []
 
     def add(self, cm: CoverageManager):
-        self.function_names_batches.append(cm.function_names)
+        self.functions_batches.append(cm.functions)
         self.labels_batches.append(cm.labels)
 
-    def average_number_of_function_names(self):
-        return np.average(
-            [len(function_names) for function_names in self.function_names_batches]
-        )
+    def average_num_functions(self):
+        return np.average([len(functions) for functions in self.functions_batches])
 
-    def average_number_of_labels(self):
+    def average_num_labels(self):
         return np.average([len(labels) for labels in self.labels_batches])
+
+    def union_functions(self) -> Set[str]:
+        return self.functions_batches[0].union(*self.functions_batches[1:])
+
+    def union_labels(self):
+        return self.labels_batches[0].union(*self.labels_batches)
 
 
 # ==============================================================================
@@ -193,7 +198,7 @@ class SingleForm(Form):
                 if not isinstance(arg, param.ty):
                     coverageManager.record(value=self.constructor)
                     yield CheckingException(
-                        f"The construct {a} is not well-formed since the '{self.constructor}' form's {i}th argument must be a '{param}', whereas {arg} was used. {correctUsage}"
+                        f"The construct {a} is not well-formed since the '{self.constructor}' form's argument {i} must be a '{param}', whereas {arg} was used. {correctUsage}"
                     )
                 else:
                     coverageManager.record(value=self.constructor)
@@ -202,14 +207,14 @@ class SingleForm(Form):
                 if not isinstance(arg, str):
                     coverageManager.record(value=self.constructor)
                     yield CheckingException(
-                        f"The construct {a} is not well-formed since the '{self.constructor}' form's {i}th argument must a str from the options {param.variants}, whereas the non-str {arg} was used. {correctUsage}"
+                        f"The construct {a} is not well-formed since the '{self.constructor}' form's argument {i} must a str from the options {param.variants}, whereas the non-str {arg} was used. {correctUsage}"
                     )
                 else:
                     coverageManager.record(value=self.constructor)
                 if not arg in param.variants:
                     coverageManager.record(value=self.constructor)
                     yield CheckingException(
-                        f"The construct {a} is not well-formed since the '{self.constructor}' form's {i}th argument must one of the options {", ".join([ f"'{param}'" for param in param.variants ])}, whereas {arg} was used. {correctUsage}"
+                        f"The construct {a} is not well-formed since the '{self.constructor}' form's argument {i} must one of the options {", ".join([ f"'{param}'" for param in param.variants ])}, whereas {arg} was used. {correctUsage}"
                     )
                 else:
                     coverageManager.record(value=self.constructor)
@@ -473,56 +478,75 @@ def checkType_aux(
             coverageManager.record()
 
     elif tm[0] == "String":
+        coverageManager.record()
         if not eqTy(ty_expected, StringTy_):
+            coverageManager.record()
             yield CheckingException(
                 f"The term {tm} is expected to have type {ty_expected}, but it actually has type {StringTy_}"
             )
 
     elif tm[0] == "Var":
+        coverageManager.record()
         _, x = tm
         ty_actual = yield from lookup(ctx, x)
         if ty_actual is None:
+            coverageManager.record()
             return None
         elif not eqTy(ty_actual, ty_expected):
+            coverageManager.record()
             yield CheckingException(
                 f"The variable '{x}' is expected to have type {ty_expected} but it actually has type {ty_actual}."
             )
+        else:
+            coverageManager.record()
 
     elif tm[0] == "Lam":
+        coverageManager.record()
         _, x, alpha_actual, b = tm
         if ty_expected[0] == "Fun":
+            coverageManager.record()
             _, alpha_expected, beta = ty_expected
             if not eqTy(alpha_actual, alpha_expected):
+                coverageManager.record()
                 yield CheckingException(
                     f"The term {tm} is a function that is expected to have domain {alpha_expected}, but it actually has domain {alpha_actual}."
                 )
+            else:
+                coverageManager.record()
             alpha = alpha_actual
             ctx = extend(x, alpha, ctx)
             yield from checkType_aux(ctx, beta, b)
         else:
+            coverageManager.record()
             yield CheckingException(
                 f"The term {tm} is expected to have the non-function type {ty_expected}, but it is a lambda and so actually has a function type."
             )
 
     elif tm[0] == "App":
+        coverageManager.record()
         _, f, a = tm
         phi = yield from inferType(ctx, f)
         if phi is None:
+            coverageManager.record()
             return None
         elif phi[0] == "Fun":
+            coverageManager.record()
             _, alpha, beta = phi
             yield from checkType_aux(ctx, alpha, a)
         else:
+            coverageManager.record()
             yield CheckingException(
                 f"The term {f} was applied to the argument {a}, so it is expected to have a function type, but it actually has type {phi}"
             )
             return None
 
     else:
+        coverageManager.record()
         raise BugException(f"Unhandled term constructor '{tm[0]}' in term: {tm}")
 
 
 def checkType(ty: Ty, tm: Tm) -> Generator[CheckingException, Any, None]:
+    coverageManager.record()
     yield from checkType_aux([], ty, tm)
 
 
@@ -530,29 +554,29 @@ def checkType(ty: Ty, tm: Tm) -> Generator[CheckingException, Any, None]:
 
 
 def check_aux(ty: Any, tm: Any) -> Generator[CheckingException, Any, None]:
+    coverageManager.record()
     validateTy_errs = list(validateTy(ty))
     validateTm_errs = list(validateTm(tm))
     validate_errs = validateTy_errs + validateTm_errs
     if len(validate_errs) != 0:
+        coverageManager.record()
         for e in validate_errs:
             yield e
     else:
+        coverageManager.record()
         yield from checkType(ty, tm)
 
 
 def check(ty: Any, tm: Any) -> List[CheckingException]:
-    coverageManager.reset()
+    coverageManager.record()
     return list(check_aux(ty, tm))
 
 
 def check_coverage(samples: List[Tuple[Ty, Tm]]):
     coverageReport = CoverageReport()
 
-    for sample in samples:
-        print()
+    for sample in tqdm.tqdm(samples, desc="Checking coverage of samples"):
         ty, tm = sample
-        print(f"ty = {ty}")
-        print(f"tm = {tm}")
         errs = check(ty, tm)
         for err in errs:
             print(f"  - {err}")
@@ -560,9 +584,10 @@ def check_coverage(samples: List[Tuple[Ty, Tm]]):
         coverageReport.add(coverageManager)
         coverageManager.reset()
 
-    print(
-        f"average_number_of_function_names = {coverageReport.average_number_of_function_names()}"
-    )
-    print(f"average_number_of_labels = {coverageReport.average_number_of_labels()}")
+    print(f"average_functions = {coverageReport.average_num_functions()}")
+    print(f"average_labels = {coverageReport.average_num_labels()}")
 
     return coverageReport
+
+
+type RunOutput = CoverageReport
