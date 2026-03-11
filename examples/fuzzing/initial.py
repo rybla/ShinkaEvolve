@@ -41,7 +41,7 @@ def generate_term_and_type(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
 # EVOLVE-BLOCK-END
 
 
-from lc import check
+from lc import check_coverage
 
 
 # This part remains fixed (not evolved)
@@ -51,16 +51,7 @@ def run_fuzzing():
     size = 100
     rng = random.Random()
     samples = [generate_term_and_type(rng) for _ in range(size)]
-    for sample in samples:
-        print()
-        ty, tm = sample
-        print(f"ty = {ty}")
-        print(f"tm = {tm}")
-        errs = check(ty, tm)
-        for err in errs:
-            print(f"  - {err}")
-
-    # TODO: return coverage results???
+    return check_coverage(samples)
 
 
 if __name__ == "__main__":
