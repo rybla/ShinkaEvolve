@@ -74,13 +74,9 @@ from lc import RunOutput, check_coverage
 def run_fuzzing() -> RunOutput:
     """Run the fuzzer"""
 
-    size = 10000
+    size = 1000
     rng = random.Random()
     samples = [
         generate_sample(rng) for _ in tqdm.tqdm(range(size), desc="Generating samples")
     ]
     return check_coverage(samples)
-
-
-if __name__ == "__main__":
-    run_fuzzing()

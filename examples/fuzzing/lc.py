@@ -578,14 +578,14 @@ def check_coverage(samples: List[Tuple[Ty, Tm]]):
     for sample in tqdm.tqdm(samples, desc="Checking coverage of samples"):
         ty, tm = sample
         errs = check(ty, tm)
-        for err in errs:
-            print(f"  - {err}")
+        # for err in errs:
+        #     print(f"  - {err}")
 
         coverageReport.add(coverageManager)
         coverageManager.reset()
 
-    print(f"average_functions = {coverageReport.average_num_functions()}")
-    print(f"average_labels = {coverageReport.average_num_labels()}")
+    # print(f"average_functions = {coverageReport.average_num_functions()}")
+    # print(f"average_labels = {coverageReport.average_num_labels()}")
 
     return coverageReport
 
