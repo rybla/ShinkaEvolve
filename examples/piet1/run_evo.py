@@ -12,7 +12,15 @@ from dotenv import load_dotenv
 load_dotenv()
 
 search_task_sys_msg = """
-TODO
+Your task is to develop a better implementation of `generate_path`, which is a function that generates a path on a grid from a random seed.
+
+The path must satisfy these requirements:
+- Each point of the path must lie within the grid specified by the grid_size
+- Each point of the path must be unique
+- Each line segment of the path is perfectly horizontal or perfectly vertical
+- Each line segment of the path must be orthogonal ot the segment immediately before it and the segment immediately after it
+- The path length must exactly match the specified path_length, where a path's length is measured as the number of joint points of the path
+- Each endpoint of each line segment of the path must NOT intersect with any other line segments, however line segments are allowed to intersect
 """.strip()
 
 

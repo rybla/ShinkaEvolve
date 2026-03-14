@@ -11,7 +11,7 @@ A point in a 2D grid as an ordered pair (x, y)
 
 type Segment = Tuple[Point, Point]
 """
-A line segment between two points. This segment must be either perfectly horizontal or perfectly vertical.
+A line segment between two points. 
 """
 
 
@@ -19,9 +19,6 @@ A line segment between two points. This segment must be either perfectly horizon
 class Path:
     """
     A path in a grid.
-    The path must satisfy these requirements:
-    - Each segment of the path must be orthogonal to the segment immediately before it.
-    - A point cannot appear in the path more than once.
     """
 
     start: Point
@@ -57,8 +54,10 @@ def generate_path(
         - (grid_size, 0)
         - (grid_size, grid_size)
 
-    So, every point (x, y) in the path must satisfy 0 <= x < grid_size and 0 <=
-    y < grid_size.
+    So, every point (x, y) in the path must satisfy these constraints:
+
+        0 <= x < grid_size
+        0 <= y < grid_size.
     """
 
     def randomCoord():
@@ -118,7 +117,8 @@ def run_piet1() -> RunOutput:
     rng = random.Random(3478237)
     samples_count = 1000
     grid_size = 8
-    path_lengths = [rng.randrange(4, 6) for _ in range(samples_count)]
+    # path_lengths = [rng.randrange(4, 6) for _ in range(samples_count)]
+    path_lengths = [rng.randrange(2, 3) for _ in range(samples_count)]
     paths = [
         generate_path(
             rng=rng,
@@ -132,7 +132,7 @@ def run_piet1() -> RunOutput:
 
 
 if __name__ == "__main__":
-    paths, problems = run_piet1()
+    paths, bads = run_piet1()
     print("=" * 16)
     print("Good paths:")
     for path in paths:
@@ -140,7 +140,9 @@ if __name__ == "__main__":
 
     print("=" * 16)
     print("Problematic paths:")
-    for problem in problems:
-        path, msg = problem
+    for path, problem in bads:
         print(path)
-        print(f"  [!] {msg}")
+        print(f"  [!] {problem}")
+
+    print(f"goods = {len(paths)}")
+    print(f"bads = {len(bads)}")
