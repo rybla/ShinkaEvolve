@@ -1,7 +1,7 @@
 # Number of evaluation jobs to run in parallel.
-max_evaluation_jobs: 4
+max_evaluation_jobs: 2
 # Number of proposal-generation jobs to run in parallel.
-max_proposal_jobs: 2
+max_proposal_jobs: 4
 # Number of database worker jobs handling archive/selection updates.
 max_db_workers: 2
 
@@ -62,9 +62,9 @@ evo_config:
     - 0.3
     - 0.1
   # Total number of generations to run.
-  num_generations: 100
+  num_generations: 50
   # Max API spend budget for this run (USD).
-  max_api_costs: 0.5
+  max_api_costs: 5.0
   # Retries for resampling patch format/content before giving up.
   max_patch_resamples: 3
   # Retries for patch application/generation attempts.
@@ -80,8 +80,8 @@ evo_config:
     # - "gemini-3-flash-preview"
     # - "gpt-5-mini"
     # - "gpt-5-nano"
-    - "openrouter/google/gemini-3-flash-preview"
-    # - "openrouter/minimax/minimax-m2.5"
+    # - "openrouter/google/gemini-3-flash-preview"
+    - "openrouter/minimax/minimax-m2.5"
   # Shared generation kwargs for main proposal LLM calls.
   llm_kwargs:
     # Candidate temperatures to sample for generation diversity.
