@@ -676,6 +676,8 @@ def run(
                 goods.append(GoodResult(ty, tm))
             else:
                 bads.append(BadResult((ty, tm), exns))
+        except BugException as exn:
+            raise exn
         except Exception as exn:
             errors.append(ErrorResult(exn))
 
