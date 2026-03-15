@@ -1,0 +1,14 @@
+{
+  "generation": 23,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "TypeInhabited_Redex_Saturation",
+  "patch_description": "The previous \"Dynamic Redex-Chain\" approach suffered from a low `applied_lambdas_proportions_average` (0.56) because the budget was often exhausted before reaching the base cases, or the chain structure was too rare. \n\nMy new strategy, **Type-Inhabited Redex Saturation**, improves performance by:\n1. **Aggressive Context Re-use**: Increasing the `used_vars_proportions_average` by raising the probability of selecting `arg_ty` from the existing context to 85% and variable selection to 50%.\n2. **Inverted Redex Logic**: Instead of a complex multi-chain, it uses a highly probable (45%) \"Immediate Redex\" generator that forces an `App(Lam(...), Var(...))` structure. By forcing the argument to be a `Var` from the context, we save budget and guarantee both a redex and a used variable.\n3. **Budget Re-balancing**: Adjusting the `App` budget split to 75/15, ensuring the function side has enough resources to become a `Lam` (creating a redex) while the argument side is kept minimal (likely a `Var`).\n4. **Type Complexity**: Increasing the base `gen_type` node count to 8-12 to ensure deeper functional structures.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T02:57:40.560980",
+  "llm_cost": 0.0121975,
+  "llm_model": null
+}

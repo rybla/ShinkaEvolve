@@ -1,0 +1,14 @@
+{
+  "generation": 28,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 2,
+  "patch_name": "optimized_redex_chain_and_budget_allocation",
+  "patch_description": "The current `Dynamic Redex-Chain` implementation has a structural flaw: it builds the nested lambdas and then applies them in a way that doesn't correctly represent a standard curried application chain (it creates `App(App(Lam, arg1), arg2)` which is good, but the budget distribution and the way it picks `arg_types` can be improved). \n\nI will:\n1. Refine the `Dynamic Redex-Chain` to ensure it correctly builds a left-associated application of a nested lambda, which is the most effective way to boost `applied_lambdas_proportions_average`.\n2. Increase the `used_vars_proportions_average` by ensuring that arguments to these redexes are pulled from the context with higher probability.\n3. Adjust the initial budget and type generation to target slightly larger terms (aiming for the 20-30 range) to improve the `tm_sizes_average` without hitting the 100-node limit.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T02:58:21.034370",
+  "llm_cost": 0.011177,
+  "llm_model": null
+}

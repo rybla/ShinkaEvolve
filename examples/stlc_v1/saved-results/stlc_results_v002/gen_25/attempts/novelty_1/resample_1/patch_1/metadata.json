@@ -1,0 +1,14 @@
+{
+  "generation": 25,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": false,
+  "num_applied": 0,
+  "patch_name": "higher_order_redex_synthesis",
+  "patch_description": "The new algorithm focuses on increasing 'applied_lambdas' and 'used_vars' by introducing \"Higher-Order Redexes\". Instead of passing simple variables or literals into redexes, it biases the argument generation to produce function-typed arguments 50% of the time. It also introduces a \"Deep Currying\" mechanism that searches the context for variables capable of reaching the target type through multiple applications, and a \"Redex-Chain\" that generates nested abstractions applied to arguments. The budget allocation is tuned to favor the operator side (70%) of applications to allow for deeper nested structures while remaining under the 100-node limit.",
+  "error_msg": "Could not extract code from patch string",
+  "timestamp": "2026-03-15T02:57:52.835967",
+  "llm_cost": 0.0127245,
+  "llm_model": null
+}

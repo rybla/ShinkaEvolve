@@ -1,0 +1,82 @@
+To maximize the `combined_score`, we need to increase `tm_sizes_average` and `applied_lambdas_proportions_average` while maintaining high `used_vars_proportions`.
+
+The current implementation has a relatively low average term size (13.12). By increasing the initial budget and implementing a "Redex-Chain" (nested applications of lambdas), we can significantly boost the density of applied lambdas. Additionally, by forcing the argument of these redexes to be variables from the context, we ensure the `used_vars` metric remains strong.
+
+<NAME>
+dynamic_redex_chains_and_budget_scaling
+</NAME>
+
+<DESCRIPTION>
+1.  **Increased Initial Budget**: Raised from 95 to 110 to increase `tm_sizes_average`.
+2.  **Redex-Chain Injection**: Replaced the simple redex injection with a multi-variable redex chain `((\v1.\v2.body) arg1) arg2`. This creates multiple applied lambdas in a single structural branch.
+3.  **Context-Aware Arguments**: In the redex chain, arguments are prioritized to be `Var` nodes by picking `arg_ty` from the context, which improves `used_vars_proportions`.
+4.  **Greedy Budget Allocation**: In `App` nodes, the operator side now receives 85% of the budget (up from 75%) when the budget is high, forcing the operand to be a simple variable or literal, thus saving budget for deeper lambda nesting in the operator.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+        # 2. Immediate Redex Injection (Maximize applied_lambdas)
+        # Force a redex where the argument is a variable from the context
+        if budget > 15 and rng.random() < 0.45:
+            # Pick a type already in context if possible to ensure the 'arg' is a Var
+            if ctx and rng.random() < 0.85:
+                arg_ty = rng.choice(ctx)[1]
+            else:
+                arg_ty = gen_type(1)
+
+            vname = f"v{len(ctx)}"
+            # The function part of the App is a Lambda
+            lam_body = gen_term(ctx + [(vname, arg_ty)], target_ty, int(budget * 0.6))
+            lam = ("Lam", vname, arg_ty, lam_body)
+            # The argument part is a small term, ideally a Var
+            arg = gen_term(ctx, arg_ty, 2)
+            return ("App", lam, arg)
+=======
+        # 2. Redex-Chain Injection (Maximize applied_lambdas and term size)
+        # Creates ((\v1. \v2. body) arg1) arg2
+        if budget > 30 and rng.random() < 0.4:
+            a1_ty = rng.choice(ctx)[1] if (ctx and rng.random() < 0.8) else gen_type(1)
+            a2_ty = rng.choice(ctx)[1] if (ctx and rng.random() < 0.8) else gen_type(1)
+            v1, v2 = f"v{len(ctx)}", f"v{len(ctx)+1}"
+
+            # Body gets the bulk of the budget to grow deep
+            body = gen_term(ctx + [(v1, a1_ty), (v2, a2_ty)], target_ty, int(budget * 0.6))
+            inner_lam = ("Lam", v2, a2_ty, body)
+            outer_lam = ("Lam", v1, a1_ty, inner_lam)
+
+            # Arguments are kept small to favor Var usage
+            arg1 = gen_term(ctx, a1_ty, 2)
+            arg2 = gen_term(ctx, a2_ty, 2)
+            return ("App", ("App", outer_lam, arg1), arg2)
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+        # 5. General Application (Fallback with redex-favoring budget)
+        if budget > 2:
+            # Favor context types to keep the tree branching towards existing variables
+            arg_ty = rng.choice(ctx)[1] if ctx and rng.random() < 0.8 else gen_type(1)
+            fun_ty = ("Fun", arg_ty, target_ty)
+            # Skew budget heavily to the left to encourage the function to be a Lam
+            return ("App", gen_term(ctx, fun_ty, int(budget * 0.75)), gen_term(ctx, arg_ty, int(budget * 0.15)))
+=======
+        # 5. General Application (Fallback with redex-favoring budget)
+        if budget > 2:
+            # Favor context types to keep the tree branching towards existing variables
+            arg_ty = rng.choice(ctx)[1] if ctx and rng.random() < 0.85 else gen_type(1)
+            fun_ty = ("Fun", arg_ty, target_ty)
+            # Skew budget heavily to the left (85%) to encourage the function to be a Lam
+            return ("App", gen_term(ctx, fun_ty, int(budget * 0.85)), gen_term(ctx, arg_ty, int(budget * 0.1)))
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+    # Start with a robust type and budget
+    target_type = gen_type(rng.randint(8, 12))
+    generated_term = gen_term([], target_type, 95)
+    return target_type, generated_term
+=======
+    # Start with a robust type and higher budget for complexity
+    target_type = gen_type(rng.randint(9, 12))
+    generated_term = gen_term([], target_type, 110)
+    return target_type, generated_term
+>>>>>>> REPLACE
+</DIFF>

@@ -1,0 +1,101 @@
+<NAME>
+stlc_generator_v1
+</NAME>
+
+<DESCRIPTION>
+I will implement a robust generator for the simply-typed lambda calculus (STLC) that respects the size constraints (types up to 10 nodes, terms up to 100 nodes).
+
+Key improvements:
+1. **Context Management**: Passing down a typing context (mapping variable names to types) ensuring that variables can be used in the generated terms.
+2. **Goal-Directed Generation**: The generator now attempts to generate a term of a specific target type, which allows for function application and variable usage.
+3. **Type Growth**: A dedicated `gen_type` function produces types up to size 10, favoring functions to increase complexity.
+4. **Variable Usage**: When generating a term, the generator will favor picking a variable from the context if it matches the required type, directly improving the `used_vars_proportions` metric.
+5. **Beta-Reduction Opportunities**: High probability of generating `AppTm` where the operator is a `LamTm` or can be reduced to one.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+=======
+def generate_sample(rng: random.Random) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    def gen_type(max_nodes: int) -> Ty:
+        if max_nodes <= 1:
+            return rng.choice([("Bool",), ("Int",), ("String",)])
+        if rng.random() < 0.7:  # Favor functions
+            left_size = rng.randint(1, max_nodes - 1)
+            right_size = max_nodes - 1 - left_size
+            return ("Fun", gen_type(left_size), gen_type(right_size))
+        return rng.choice([("Bool",), ("Int",), ("String",)])
+
+    def gen_term(ctx: list[Tuple[str, Ty]], target_ty: Ty, budget: int) -> Tm:
+        # Try to use a variable from context
+        candidates = [name for name, ty in ctx if ty == target_ty]
+        if candidates and (budget <= 1 or rng.random() < 0.4):
+            return ("Var", rng.choice(candidates))
+
+        if budget <= 1:
+            if target_ty == ("Bool",):
+                return ("Bool", rng.choice([True, False]))
+            if target_ty == ("Int",):
+                return ("Int", rng.randint(0, 100))
+            if target_ty == ("String",):
+                return ("String", "s")
+            # If target is Fun and we have no budget, we must return a lambda or we'd fail types
+            # but we can usually avoid this by better budget management.
+            pass
+
+        # Generate Lambda
+        if target_ty[0] == "Fun":
+            _, arg_ty, ret_ty = target_ty
+            var_name = f"v{len(ctx)}"
+            new_ctx = ctx + [(var_name, arg_ty)]
+            return ("Lam", var_name, arg_ty, gen_term(new_ctx, ret_ty, budget - 1))
+
+        # Generate Application (increase depth and usage)
+        if budget > 3 and rng.random() < 0.6:
+            arg_ty = gen_type(3)
+            fun_ty = ("Fun", arg_ty, target_ty)
+            op = gen_term(ctx, fun_ty, budget // 2)
+            arg = gen_term(ctx, arg_ty, budget // 2)
+            return ("App", op, arg)
+
+        # Fallback to literals
+        if target_ty == ("Bool",):
+            return ("Bool", True)
+        if target_ty == ("Int",):
+            return ("Int", 42)
+        if target_ty == ("String",):
+            return ("String", "xyz")
+
+        # Type safety fallback for unexpected Fun types
+        return ("Lam", "unused", ("Int",), ("Int", 0))
+
+    target_type = gen_type(8)
+    # Budget of 60 to stay well within 100 node limit
+    generated_term = gen_term([], target_type, 60)
+    return target_type, generated_term
+>>>>>>> REPLACE
+
+</DIFF>

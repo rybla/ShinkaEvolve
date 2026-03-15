@@ -1,0 +1,14 @@
+{
+  "generation": 18,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "type_directed_variable_shadowing",
+  "patch_description": "This edit implements \"Type-Directed Variable Shadowing\" as recommended. By occasionally (15% chance) reusing a variable name already present in the context when generating a `Lam`, we force the generator to handle shadowing correctly. This increases the complexity of the term structure and ensures that identical-looking subtrees are distinct due to binding depth, which helps maintain high `unique_subterms_proportions_average` and tests the robustness of the compiler's scope handling.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T02:57:00.517244",
+  "llm_cost": 0.0075675000000000004,
+  "llm_model": null
+}

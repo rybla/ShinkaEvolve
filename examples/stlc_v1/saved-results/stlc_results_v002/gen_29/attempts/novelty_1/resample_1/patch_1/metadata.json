@@ -1,0 +1,14 @@
+{
+  "generation": 29,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "tiered_redex_synthesis",
+  "patch_description": "This implementation optimizes the synthesis by combining a tiered priority system with \"Redex-Chain Injection\" and \"Deep Currying Application\". It maximizes the `applied_lambdas` and `used_vars` metrics by biasing argument types toward those already present in the typing context. It uses a high initial budget (110) and a greedy budget allocation (60-70% for function bodies) to ensure terms reach a significant depth while remaining within the 100-node limit. The crossover incorporates the `Deep Currying` logic from the highest-performing variants to ensure that complex function types in the context are utilized effectively.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T02:58:33.309010",
+  "llm_cost": 0.0134485,
+  "llm_model": null
+}

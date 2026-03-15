@@ -1,0 +1,14 @@
+{
+  "generation": 37,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 3,
+  "patch_name": "type_inhabited_redex_synthesis",
+  "patch_description": "1.  **Context-Aware Redex Types**: In both the Redex-Chain and Explicit Redex logic, prioritize selecting `arg_ty` from types already present in `ctx`. This ensures the argument part of the `App` can be a `Var` rather than a literal, boosting `used_vars_proportions`.\n2.  **Budget Re-balancing**: Adjust the budget distribution in `App` nodes to be more \"left-heavy\" (0.75 vs 0.2), encouraging the function part to be a complex term (like a `Lam` or another `App`) while keeping the argument part small.\n3.  **Increased Initial Budget**: Raised from 95 to 118 to target a higher `tm_sizes_average` without exceeding the 100-node hard limit.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T02:59:51.317092",
+  "llm_cost": 0.014322000000000001,
+  "llm_model": null
+}

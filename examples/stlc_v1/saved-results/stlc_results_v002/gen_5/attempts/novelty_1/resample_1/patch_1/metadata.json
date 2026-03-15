@@ -1,0 +1,14 @@
+{
+  "generation": 5,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "weighted_contextual_lambda_generator",
+  "patch_description": "The new algorithm improves upon the previous version by implementing a more aggressive \"variable-first\" strategy and a structured budget management system to maximize term size and variable usage. \n\nKey improvements:\n1.  **Type Size Optimization**: The `gen_type` function now uses a higher probability (0.8) for function types and a balanced split for sub-types to consistently reach the 10-node limit.\n2.  **Context-Aware Application**: Instead of random applications, the generator prioritizes applying existing variables in the context that are functions. This significantly boosts `used_vars_proportions_average`.\n3.  **Forced Lambda Expansion**: If the target type is a function, it *always* generates a lambda until a depth threshold is reached, ensuring `applied_lambdas_proportions_average` remains high.\n4.  **Dynamic Budgeting**: The budget is distributed more effectively between the operator and operand in applications (70/30 split) to encourage deep, complex function chains.\n5.  **Variable Usage Tracking**: A \"usage\" heuristic is added to prefer using variables that haven't been used yet in the current branch, increasing the unique sub-terms and variable usage metrics.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T02:55:33.798571",
+  "llm_cost": 0.007045000000000001,
+  "llm_model": null
+}

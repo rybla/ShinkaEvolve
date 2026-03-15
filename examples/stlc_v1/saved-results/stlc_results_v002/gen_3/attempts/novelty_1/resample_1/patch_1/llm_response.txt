@@ -1,0 +1,146 @@
+<NAME>
+contextual_backtracking_generator
+</NAME>
+
+<DESCRIPTION>
+The structural redesign moves away from a simple recursive descent to a budget-aware, context-driven architecture. 
+1. **Budget Management**: We track a global node budget to maximize term size (targeting ~100 nodes) while strictly respecting the 10-node type limit.
+2. **Context-Heavy Generation**: To improve `used_vars_proportions`, the generator prioritizes picking variables from the environment that can satisfy application arguments or return types.
+3. **Application Maximization**: To improve `applied_lambdas` and `unique_subterms`, the generator specifically attempts to construct 'App' nodes where the function side is a freshly generated 'Lam', ensuring higher proportions of applied lambdas.
+4. **Weighted Choice Architecture**: Instead of hardcoded probabilities, it uses a weighted selection mechanism that shifts based on the remaining budget, favoring complex structures (Lam/App) early and literals later.
+</DESCRIPTION>
+
+<CODE>
+```python
+from typing import Literal, Tuple, List, Optional
+import random
+
+type Ty = BoolTy | IntTy | StringTy | FunTy
+type BoolTy = Tuple[Literal["Bool"]]
+type IntTy = Tuple[Literal["Int"]]
+type StringTy = Tuple[Literal["String"]]
+type FunTy = Tuple[Literal["Fun"], Ty, Ty]
+
+type Tm = LitTm | VarTm | LamTm | AppTm
+type LitTm = (
+    Tuple[Literal["Bool"], bool]
+    | Tuple[Literal["Int"], int]
+    | Tuple[Literal["String"], str]
+)
+type VarTm = Tuple[Literal["Var"], str]
+type LamTm = Tuple[Literal["Lam"], str, Ty, Tm]
+type AppTm = Tuple[Literal["App"], Tm, Tm]
+
+# EVOLVE-BLOCK-START
+
+def generate_sample(rng: random.Random) -> Tuple[Ty, Tm]:
+    """
+    Generates well-typed LC terms with a focus on maximizing size, variable usage,
+    and lambda applications.
+    """
+
+    def get_ty_size(ty: Ty) -> int:
+        if ty[0] in ("Bool", "Int", "String"):
+            return 1
+        return 1 + get_ty_size(ty[1]) + get_ty_size(ty[2])
+
+    def gen_type(budget: int) -> Ty:
+        if budget <= 1:
+            return rng.choice([("Bool",), ("Int",), ("String",)])
+        
+        # 70% chance to create a function type if budget allows
+        if rng.random() < 0.7:
+            # Split budget for children; each child needs at least 1
+            b_left = rng.randint(1, budget - 2)
+            b_right = budget - 1 - b_left
+            return ("Fun", gen_type(b_left), gen_type(b_right))
+        
+        return rng.choice([("Bool",), ("Int",), ("String",)])
+
+    def gen_term(ctx: List[Tuple[str, Ty]], target_ty: Ty, budget: int) -> Tm:
+        # 1. Identify variables in context that match target_ty
+        candidates = [name for name, ty in ctx if ty == target_ty]
+        
+        # Weights for different term types
+        weights = []
+        options = []
+
+        # Always an option: Variables from context
+        if candidates:
+            options.append("var")
+            weights.append(10 if budget < 5 else 2)
+
+        # Always an option: Literals (if base type)
+        if target_ty[0] != "Fun":
+            options.append("lit")
+            weights.append(1 if budget > 10 else 5)
+
+        # Option: Lambda (if target is Fun)
+        if target_ty[0] == "Fun":
+            options.append("lam")
+            weights.append(15 if budget > 2 else 100) # Force lam if budget low and target is Fun
+
+        # Option: Application
+        if budget > 10:
+            options.append("app")
+            weights.append(12)
+
+        choice = rng.choices(options, weights=weights, k=1)[0]
+
+        if choice == "var":
+            return ("Var", rng.choice(candidates))
+        
+        if choice == "lit":
+            if target_ty == ("Bool",): return ("Bool", rng.choice([True, False]))
+            if target_ty == ("Int",): return ("Int", rng.randint(0, 1000))
+            return ("String", rng.choice(["hello", "λ", "lc"]))
+
+        if choice == "lam":
+            # Target ty is ("Fun", arg, ret)
+            arg_ty, ret_ty = target_ty[1], target_ty[2]
+            var_name = f"x{len(ctx)}_{rng.getrandbits(16)}"
+            return ("Lam", var_name, arg_ty, gen_term(ctx + [(var_name, arg_ty)], ret_ty, budget - 1))
+
+        if choice == "app":
+            # To generate an App, we need a function A -> Target and an argument A
+            arg_ty = gen_type(max(1, rng.randint(1, 3)))
+            fun_ty = ("Fun", arg_ty, target_ty)
+            
+            # Split budget. We try to use a lambda for the function part to increase applied_lambdas
+            b_fun = budget // 2
+            b_arg = budget - b_fun - 1
+            
+            # 50% chance to force the function side to be a lambda for higher scores
+            if rng.random() < 0.5:
+                var_name = f"f{len(ctx)}_{rng.getrandbits(16)}"
+                term_fun = ("Lam", var_name, arg_ty, gen_term(ctx + [(var_name, arg_ty)], target_ty, b_fun - 1))
+            else:
+                term_fun = gen_term(ctx, fun_ty, b_fun)
+                
+            term_arg = gen_term(ctx, arg_ty, b_arg)
+            return ("App", term_fun, term_arg)
+
+        # Fallback
+        return ("Int", 0) if target_ty == ("Int",) else (target_ty[0], True if target_ty == ("Bool",) else "err")
+
+    # Generate a random type within the limit (10 nodes)
+    final_ty = gen_type(rng.randint(3, 10))
+    # Generate a term within the limit (100 nodes), targeting ~80 for safety
+    final_tm = gen_term([], final_ty, 80)
+    
+    return final_ty, final_tm
+
+# EVOLVE-BLOCK-END
+
+import lc
+
+def run() -> lc.RunOutput:
+    """Run the analysis"""
+    size = 1000
+    rng = random.Random()
+    return lc.run(
+        size=size,
+        rng=rng,
+        generate_sample=generate_sample,
+    )
+```</CODE>

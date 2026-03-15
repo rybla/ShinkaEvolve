@@ -1,0 +1,14 @@
+{
+  "generation": 4,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 2,
+  "patch_name": "improve_term_usage_and_size",
+  "patch_description": "To improve the `combined_score`, I am refining the `gen_term` logic to maximize variable usage, application depth, and overall term size. \n1. **Context Priority**: The generator now actively searches for variables in the context that can be used to reach the target type through application (e.g., if we need `B` and we have `A -> B` and `A` in scope).\n2. **Dynamic Budgeting**: Adjusted the budget logic to allow terms to grow closer to the 100-node limit while ensuring a higher distribution of lambdas and applications.\n3. **Application Chance**: Increased the probability of applications and ensured that generated arguments are more likely to be variables or other applications to increase the `used_vars` and `applied_lambdas` metrics.\n4. **Type Growth**: Slightly increased the target type size to utilize more of the 10-node allowance.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T02:55:22.246114",
+  "llm_cost": 0.0053785,
+  "llm_model": null
+}

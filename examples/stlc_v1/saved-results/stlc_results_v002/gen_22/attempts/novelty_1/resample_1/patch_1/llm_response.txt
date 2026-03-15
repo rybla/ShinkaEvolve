@@ -1,0 +1,84 @@
+<NAME>
+deep_currying_and_variable_reclamation
+</NAME>
+
+<DESCRIPTION>
+This edit implements "Deep Currying" for context lookups and improves variable usage. 
+1. **Deep Currying**: Instead of only looking for `A -> B`, the generator now searches the context for variables that can produce the `target_ty` after multiple applications (e.g., `A -> B -> C` to get a `C`). This creates nested `App(App(Var, arg1), arg2)` structures which significantly boosts `tm_sizes_average` and `used_vars_proportions_average`.
+2. **Variable Selection for Reds**: When generating redexes or general applications, we now prefer types that are more abundant in the context, ensuring that arguments are more likely to be satisfied by `Var` nodes rather than new subtrees.
+3. **Budget Rebalancing**: Slightly adjusted the budget distribution in redex chains to ensure the generated arguments have enough depth to be interesting without hitting the recursion limit.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+        # Medium priority: Application to reach target_ty
+        # Look for variables that return the target type
+        if budget > 5:
+            callables = [(n, t[1]) for n, t in ctx if t[0] == "Fun" and t[2] == target_ty]
+            if callables and rng.random() < 0.6:
+                vname, arg_ty = rng.choice(callables)
+                return ("App", ("Var", vname), gen_term(ctx, arg_ty, budget - 2))
+=======
+        # Medium priority: Deep Currying Application
+        # Search for variables that can eventually produce target_ty
+        if budget > 5 and ctx:
+            potential_paths = []
+            for name, ty in ctx:
+                path = []
+                curr = ty
+                while curr[0] == "Fun":
+                    path.append(curr[1])
+                    curr = curr[2]
+                    if curr == target_ty:
+                        potential_paths.append((name, path))
+                        break
+            
+            if potential_paths and rng.random() < 0.6:
+                vname, args_needed = rng.choice(potential_paths)
+                acc = ("Var", vname)
+                # Apply the function to required arguments
+                for arg_ty in args_needed:
+                    acc = ("App", acc, gen_term(ctx, arg_ty, budget // (len(args_needed) + 1)))
+                return acc
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+        # Redex-Chain: ((\x. \y. body) arg1) arg2
+        if budget > 25 and rng.random() < 0.3:
+            a1_ty = rng.choice(ctx)[1] if ctx and rng.random() < 0.6 else gen_type(1)
+            a2_ty = rng.choice(ctx)[1] if ctx and rng.random() < 0.6 else gen_type(1)
+=======
+        # Redex-Chain: ((\x. \y. body) arg1) arg2
+        if budget > 25 and rng.random() < 0.3:
+            # Pick a1_ty and a2_ty biased towards existing context types
+            a1_ty = rng.choice(ctx)[1] if (ctx and rng.random() < 0.7) else gen_type(1)
+            a2_ty = rng.choice(ctx)[1] if (ctx and rng.random() < 0.7) else gen_type(1)
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+        # Generate Application
+        if budget > 2:
+            # Higher probability to pick an arg_ty from context to boost used_vars
+            if ctx and rng.random() < 0.75:
+                arg_ty = rng.choice(ctx)[1]
+            else:
+                arg_ty = gen_type(rng.randint(1, 2))
+
+            fun_ty = ("Fun", arg_ty, target_ty)
+            # Allocation: prioritize operator to allow it to be a Lam or App
+            return ("App", gen_term(ctx, fun_ty, int(budget * 0.7)), gen_term(ctx, arg_ty, int(budget * 0.2)))
+=======
+        # Generate Application
+        if budget > 2:
+            # Prefer types already present in context to increase Var usage
+            if ctx and rng.random() < 0.8:
+                arg_ty = rng.choice(ctx)[1]
+            else:
+                arg_ty = gen_type(rng.randint(1, 2))
+
+            fun_ty = ("Fun", arg_ty, target_ty)
+            # Allocation: prioritize operator to allow it to be a Lam or App
+            return ("App", 
+                    gen_term(ctx, fun_ty, int(budget * 0.65)), 
+                    gen_term(ctx, arg_ty, int(budget * 0.3)))
+>>>>>>> REPLACE

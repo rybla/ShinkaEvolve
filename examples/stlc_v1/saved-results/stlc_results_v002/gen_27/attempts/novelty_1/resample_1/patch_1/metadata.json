@@ -1,0 +1,14 @@
+{
+  "generation": 27,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "dynamic_nested_redex_chains",
+  "patch_description": "This implementation maximizes the `applied_lambdas_proportions_average` and `used_vars_proportions_average` by shifting from fixed-length redexes to a dynamic, budget-sensitive \"Redex-Chain\" generator. \n\nKey improvements:\n1. **Dynamic Chain Length**: Instead of a fixed 2-binder redex, it generates chains of 2 to 5 nested `App(Lam(...))` nodes based on the remaining budget. This creates dense clusters of applied lambdas.\n2. **Context-Aware Argument Synthesis**: When building a redex chain, it samples types from the current context with high probability (85%) to ensure that the arguments passed to the redex are `Var` nodes, boosting variable usage.\n3. **Aggressive Function Bias**: The type generator is tuned to 80% function probability, and the term generator is forced to use `Lam` for any `Fun` target type to ensure depth.\n4. **Weighted Budget Allocation**: Uses a non-linear budget split in `App` nodes (80/15) to favor the operator side, which is more likely to contain complex structures like nested lambdas or further applications.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T02:58:23.180393",
+  "llm_cost": 0.012265999999999999,
+  "llm_model": null
+}

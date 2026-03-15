@@ -1,0 +1,14 @@
+{
+  "generation": 10,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 2,
+  "patch_name": "depth_aware_type_and_term_synthesis",
+  "patch_description": "To maximize the combined score, we need to increase both the complexity of the terms (`tm_sizes_average`) and the variety of constructs used (`used_vars` and `applied_lambdas`). \n\n1.  **Iterative Lambda Enclosure**: When the target is a base type, we can wrapping it in an \"identity-like\" application: `((\\x. x) actual_term)`. This directly boosts `applied_lambdas` and `tm_sizes_average`.\n2.  **Context Deepening**: Increase the probability of generating `Lam` even for base type targets by generating a `Fun` and immediately applying it.\n3.  **Strict Budget Scaling**: Instead of simple division, use a more aggressive budget for the function side of an `App` when we want to find or create complex functions, but ensure the argument also has enough budget to be a non-trivial term.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T02:56:04.494494",
+  "llm_cost": 0.008905,
+  "llm_model": null
+}

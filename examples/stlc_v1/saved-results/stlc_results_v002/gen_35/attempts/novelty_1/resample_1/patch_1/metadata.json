@@ -1,0 +1,14 @@
+{
+  "generation": 35,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 3,
+  "patch_name": "dynamic_redex_chains_and_budget_scaling",
+  "patch_description": "1.  **Increased Initial Budget**: Raised from 95 to 110 to increase `tm_sizes_average`.\n2.  **Redex-Chain Injection**: Replaced the simple redex injection with a multi-variable redex chain `((\\v1.\\v2.body) arg1) arg2`. This creates multiple applied lambdas in a single structural branch.\n3.  **Context-Aware Arguments**: In the redex chain, arguments are prioritized to be `Var` nodes by picking `arg_ty` from the context, which improves `used_vars_proportions`.\n4.  **Greedy Budget Allocation**: In `App` nodes, the operator side now receives 85% of the budget (up from 75%) when the budget is high, forcing the operand to be a simple variable or literal, thus saving budget for deeper lambda nesting in the operator.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T02:59:16.498597",
+  "llm_cost": 0.0112745,
+  "llm_model": null
+}

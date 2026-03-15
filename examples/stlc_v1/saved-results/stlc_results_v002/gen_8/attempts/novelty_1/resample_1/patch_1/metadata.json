@@ -1,0 +1,14 @@
+{
+  "generation": 8,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "type_inhabitant_memoization_and_redex_boost",
+  "patch_description": "To improve `tm_sizes_average` and `used_vars_proportions_average`, I am introducing a local memoization cache within `generate_sample`. This cache stores previously generated terms for specific types, allowing the generator to reuse complex structures as arguments in `App` nodes. Additionally, I've added a \"Redex Boost\" which explicitly generates `(Lam x. body) arg` patterns more frequently to increase the `applied_lambdas_proportions_average`. The budget management is also refined to ensure we stay closer to the 100-node limit without exceeding it, maximizing structural complexity.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T02:55:53.242708",
+  "llm_cost": 0.007517,
+  "llm_model": null
+}

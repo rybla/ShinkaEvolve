@@ -1,0 +1,14 @@
+{
+  "generation": 30,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "higher_order_redex_synthesis",
+  "patch_description": "This implementation optimizes the STLC generator by focusing on three key metrics: `applied_lambdas`, `used_vars`, and `tm_sizes`. \n\n1. **Biased Higher-Order Redexes**: The redex-chain generator is modified to force argument types to be function types (`Fun`) 50% of the time. This ensures that the arguments of applications are often lambdas or other applications, significantly boosting the `applied_lambdas` metric and structural complexity.\n2. **Context-Driven Synthesis**: To maximize `used_vars`, the generator aggressively searches the context for variables that can reach the `target_ty` through curried applications.\n3. **Budget Allocation**: Initial budget is increased to ~100 to target the 20-40 node range, while using a 70/20 split in applications to favor the operator side, which is more likely to contain complex lambda abstractions.\n4. **Unique Variable Naming**: Variables are named based on context length to prevent shadowing, ensuring all bound variables remain accessible for selection.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T02:58:35.851951",
+  "llm_cost": 0.012612,
+  "llm_model": null
+}

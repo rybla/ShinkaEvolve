@@ -1,0 +1,76 @@
+<NAME>
+enhance_variable_usage_and_redex_generation
+</NAME>
+
+<DESCRIPTION>
+To improve `used_vars_proportions_average` and `applied_lambdas_proportions_average`, I will:
+1.  **Prioritize Variable Application**: When generating an `App`, specifically look for variables in the context that can be applied to reach the `target_ty`.
+2.  **Explicit Redex Generation**: Introduce a chance to generate an "Immediate Application" (a Lambda applied to an argument) even when not strictly required by the type. This directly boosts the `applied_lambdas` metric.
+3.  **Context-Aware Argument Selection**: When generating a function for an `App`, try to pick an `arg_ty` that matches types already present in the context, increasing the likelihood of using existing variables as arguments.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    def gen_term(ctx: list[Tuple[str, Ty]], target_ty: Ty, budget: int) -> Tm:
+        # High priority: Use a variable that matches the type
+        matching_vars = [name for name, ty in ctx if ty == target_ty]
+        if matching_vars and (budget <= 1 or rng.random() < 0.3):
+            return ("Var", rng.choice(matching_vars))
+
+        # Medium priority: Application to reach target_ty
+        # Look for variables that return the target type
+        if budget > 5:
+            callables = [name for name, ty in ctx if ty[0] == "Fun" and ty[2] == target_ty]
+            if callables and rng.random() < 0.5:
+                vname = rng.choice(callables)
+                # Find type of the variable to get its argument type
+                vty = [ty for n, ty in ctx if n == vname][0]
+                return ("App", ("Var", vname), gen_term(ctx, vty[1], budget - 2))
+
+        if budget <= 1:
+=======
+    def gen_term(ctx: list[Tuple[str, Ty]], target_ty: Ty, budget: int) -> Tm:
+        # High priority: Use a variable that matches the type
+        matching_vars = [name for name, ty in ctx if ty == target_ty]
+        if matching_vars and (budget <= 2 or rng.random() < 0.4):
+            return ("Var", rng.choice(matching_vars))
+
+        # Medium priority: Application to reach target_ty
+        # Look for variables that return the target type
+        if budget > 5:
+            callables = [(n, t[1]) for n, t in ctx if t[0] == "Fun" and t[2] == target_ty]
+            if callables and rng.random() < 0.6:
+                vname, arg_ty = rng.choice(callables)
+                return ("App", ("Var", vname), gen_term(ctx, arg_ty, budget - 2))
+
+        # Explicit Redex: (Lam x. body) arg
+        if budget > 15 and rng.random() < 0.3:
+            arg_ty = gen_type(2)
+            vname = f"v{len(ctx)}"
+            lam = ("Lam", vname, arg_ty, gen_term(ctx + [(vname, arg_ty)], target_ty, budget // 2))
+            arg = gen_term(ctx, arg_ty, budget // 2)
+            return ("App", lam, arg)
+
+        if budget <= 1:
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+        # Generate Application
+        if budget > 2:
+            arg_ty = gen_type(rng.randint(1, 3))
+            fun_ty = ("Fun", arg_ty, target_ty)
+            # Allocation: 60% to function, 40% to argument
+            return ("App", gen_term(ctx, fun_ty, int(budget * 0.6)), gen_term(ctx, arg_ty, int(budget * 0.4)))
+=======
+        # Generate Application
+        if budget > 2:
+            # Try to pick an arg_ty that exists in context to boost used_vars
+            if ctx and rng.random() < 0.5:
+                arg_ty = rng.choice(ctx)[1]
+            else:
+                arg_ty = gen_type(rng.randint(1, 2))
+
+            fun_ty = ("Fun", arg_ty, target_ty)
+            # Allocation: 60% to function, 40% to argument
+            return ("App", gen_term(ctx, fun_ty, int(budget * 0.5)), gen_term(ctx, arg_ty, int(budget * 0.4)))
+>>>>>>> REPLACE
+</DIFF>

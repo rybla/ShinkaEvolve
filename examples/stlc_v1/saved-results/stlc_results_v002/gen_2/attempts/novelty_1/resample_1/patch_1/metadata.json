@@ -1,0 +1,14 @@
+{
+  "generation": 2,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "stlc_generator_v1",
+  "patch_description": "I will implement a robust generator for the simply-typed lambda calculus (STLC) that respects the size constraints (types up to 10 nodes, terms up to 100 nodes). \n\nKey improvements:\n1. **Context Management**: Passing down a typing context (mapping variable names to types) ensuring that variables can be used in the generated terms.\n2. **Goal-Directed Generation**: The generator now attempts to generate a term of a specific target type, which allows for function application and variable usage.\n3. **Type Growth**: A dedicated `gen_type` function produces types up to size 10, favoring functions to increase complexity.\n4. **Variable Usage**: When generating a term, the generator will favor picking a variable from the context if it matches the required type, directly improving the `used_vars_proportions` metric.\n5. **Beta-Reduction Opportunities**: High probability of generating `AppTm` where the operator is a `LamTm` or can be reduced to one.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T02:55:11.410187",
+  "llm_cost": 0.004347,
+  "llm_model": null
+}

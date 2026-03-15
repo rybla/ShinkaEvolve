@@ -1,0 +1,14 @@
+{
+  "generation": 19,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 2,
+  "patch_name": "deepen_redex_chains_and_branching",
+  "patch_description": "To increase `tm_sizes_average` and `applied_lambdas_proportions_average`, I am increasing the budget for redex chains and adjusting the branching factor. By slightly increasing the initial budget and the recursive resource allocation, the generator will produce larger, more interconnected terms without exceeding the 100-node limit. I also increased the probability of choosing `Fun` types in the base case of `gen_type` to allow for more complex structural targets.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T02:57:07.534730",
+  "llm_cost": 0.009209499999999999,
+  "llm_model": null
+}

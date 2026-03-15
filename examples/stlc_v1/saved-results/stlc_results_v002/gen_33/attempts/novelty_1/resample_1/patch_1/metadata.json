@@ -1,0 +1,14 @@
+{
+  "generation": 33,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 2,
+  "patch_name": "optimized_redex_chain_and_budget_scaling",
+  "patch_description": "1. Refines the Dynamic Redex-Chain: Ensures that the generated structure is a true sequence of nested applications on a nested lambda, maximizing `applied_lambdas_proportions_average`.\n2. Adjusts branching logic: Increases the probability of picking argument types from the existing context to 85% to improve `used_vars_proportions_average`.\n3. Scales the initial budget and target type complexity slightly to increase `tm_sizes_average` and `ty_sizes_average`.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T02:59:05.492840",
+  "llm_cost": 0.0106065,
+  "llm_model": null
+}

@@ -1,0 +1,14 @@
+{
+  "generation": 17,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "dynamic_redex_chain_synthesizer",
+  "patch_description": "The core innovation is the \"Dynamic Redex-Chain\" strategy. Unlike previous versions that used fixed-length chains, this algorithm scales the number of nested binders (2 to 4) based on the remaining budget. This significantly boosts `applied_lambdas_proportions_average` and `used_vars_proportions_average` by creating dense clusters of redexes. Additionally, it implements \"Context-Type Injection\" where the generator actively scans the environment to find types that can be used as arguments, ensuring that applications are more likely to be satisfied by `Var` nodes rather than literals, thus increasing the unique sub-term and variable usage metrics.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T02:57:07.001134",
+  "llm_cost": 0.011053,
+  "llm_model": null
+}

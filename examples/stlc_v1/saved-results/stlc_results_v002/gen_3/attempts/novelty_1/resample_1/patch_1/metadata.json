@@ -1,0 +1,14 @@
+{
+  "generation": 3,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "contextual_backtracking_generator",
+  "patch_description": "The structural redesign moves away from a simple recursive descent to a budget-aware, context-driven architecture. \n1. **Budget Management**: We track a global node budget to maximize term size (targeting ~100 nodes) while strictly respecting the 10-node type limit.\n2. **Context-Heavy Generation**: To improve `used_vars_proportions`, the generator prioritizes picking variables from the environment that can satisfy application arguments or return types.\n3. **Application Maximization**: To improve `applied_lambdas` and `unique_subterms`, the generator specifically attempts to construct 'App' nodes where the function side is a freshly generated 'Lam', ensuring higher proportions of applied lambdas.\n4. **Weighted Choice Architecture**: Instead of hardcoded probabilities, it uses a weighted selection mechanism that shifts based on the remaining budget, favoring complex structures (Lam/App) early and literals later.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T02:55:23.318492",
+  "llm_cost": 0.0063774999999999995,
+  "llm_model": null
+}

@@ -1,0 +1,14 @@
+{
+  "generation": 16,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "recursive_redex_synthesizer",
+  "patch_description": "This implementation uses a \"Redex-First\" synthesis strategy designed to maximize the `applied_lambdas_proportions_average` and `used_vars_proportions_average` metrics. \n\nKey improvements:\n1. **Deep Redex Chains**: Instead of single applications, it frequently generates nested redexes `((\u03bbx. \u03bby. body) arg1) arg2`, which significantly boosts the applied lambda count and creates more binders for variable usage.\n2. **Context-Inhabited Type Selection**: When generating an `App` node, the algorithm prefers to pick an `ArgTy` that already exists in the typing context. This creates a \"closed-loop\" where arguments are highly likely to be `Var` nodes, increasing the `used_vars` score.\n3. **Budget-Optimized Branching**: The budget is distributed to favor the \"function\" side of applications (65%), allowing for deeper nested structures and more complex lambda abstractions before hitting the base cases.\n4. **Type-Heavy Foundation**: The type generator is biased (70%) towards `Fun` types with a depth of 5-8, forcing the term generator to produce more `Lam` and `App` nodes to satisfy the complex signatures.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T02:56:47.933420",
+  "llm_cost": 0.011623999999999999,
+  "llm_model": null
+}

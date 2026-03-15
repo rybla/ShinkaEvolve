@@ -1,0 +1,14 @@
+{
+  "generation": 11,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "context_aware_redex_synthesis",
+  "patch_description": "This implementation shifts from a generic recursive descent to a context-aware synthesis strategy that prioritizes \"Applied Lambdas\" and \"Variable Usage\" by explicitly constructing redexes and searching for higher-order function applications. \n\nKey improvements:\n1. **Forced Redex Generation**: Instead of occasionally generating an `App`, it frequently wraps the current target in a `(Lam x. body) arg` structure, which simultaneously increases term size, unique subterms, and the applied lambdas metric.\n2. **Context-Driven Argument Selection**: When generating an `App`, it prefers `arg_ty` values already present in the context. This significantly boosts the probability that the argument part of the application can be satisfied by a `Var`, increasing the `used_vars` metric.\n3. **Dynamic Budgeting**: It uses a more aggressive budget for the \"function\" side of applications to ensure that the generated functions are complex enough to contain their own internal abstractions and applications.\n4. **Type-Matching Heuristics**: It prioritizes using variables that are functions returning the `target_ty`, effectively chaining logic together rather than just generating isolated literals.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T02:56:09.194740",
+  "llm_cost": 0.009065,
+  "llm_model": null
+}

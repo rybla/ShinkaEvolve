@@ -1,0 +1,14 @@
+{
+  "generation": 32,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 3,
+  "patch_name": "dynamic_redex_chains_and_budget_boost",
+  "patch_description": "1.  **Dynamic Redex Chains**: Replaces the simple redex injection with a multi-level chain `((\\v1...\\vn. body) arg1 ... argn)`. This creates a high density of `App(Lam(...))` nodes.\n2.  **Context-Inhabited Arguments**: When generating redex chains or general applications, we prioritize `arg_ty` from the existing context. This ensures that the `arg` subterm can be a `Var`, boosting `used_vars_proportions`.\n3.  **Budget Increase**: Increases the initial budget from 95 to 115 and the target type complexity to push `tm_sizes_average` toward the 20-30 range.\n4.  **Shadowing Prevention**: Uses a more robust naming convention `f\"v{len(ctx)}_{budget}\"` to ensure unique variables and maximize the context size.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T02:59:06.293987",
+  "llm_cost": 0.011412499999999999,
+  "llm_model": null
+}

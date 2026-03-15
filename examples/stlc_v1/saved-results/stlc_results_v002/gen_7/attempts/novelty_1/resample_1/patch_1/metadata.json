@@ -1,0 +1,14 @@
+{
+  "generation": 7,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "dynamic_budget_and_context_exploitation",
+  "patch_description": "This update implements dynamic budget reallocation and smarter context exploitation to maximize term size and variable usage. \n1.  **Context-Aware Application**: Instead of generating random function types for `App`, it first tries to find existing variables in the context that can be applied to reach the target type.\n2.  **Budget Reallocation**: If a branch (like a variable lookup) fails or consumes very little budget, the remaining budget is passed back or used to deepen the alternative branches.\n3.  **Variable Usage**: Increases the probability of selecting variables from the context and ensures that if a function type is required, it prioritizes `Lam` to introduce more variables.\n4.  **Literal Diversity**: Adds more variety to literals to increase the unique sub-terms count.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T02:55:47.657930",
+  "llm_cost": 0.006817,
+  "llm_model": null
+}

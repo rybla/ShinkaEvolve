@@ -1,0 +1,122 @@
+from typing import Literal, Tuple
+import random
+
+type Ty = BoolTy | IntTy | StringTy | FunTy
+type BoolTy = Tuple[Literal["Bool"]]
+type IntTy = Tuple[Literal["Int"]]
+type StringTy = Tuple[Literal["String"]]
+type FunTy = Tuple[Literal["Fun"], Ty, Ty]
+
+type Tm = LitTm | VarTm | LamTm | AppTm
+type LitTm = (
+    Tuple[Literal["Bool"], bool]
+    | Tuple[Literal["Int"], int]
+    | Tuple[Literal["String"], str]
+)
+type VarTm = Tuple[Literal["Var"], str]
+type LamTm = Tuple[Literal["Lam"], str, Ty, Tm]
+type AppTm = Tuple[Literal["App"], Tm, Tm]
+
+# EVOLVE-BLOCK-START
+
+def generate_sample(rng: random.Random) -> Tuple[Ty, Tm]:
+    """
+    Synthesize high-complexity STLC terms using type-informed shadowing and 
+    biased budget distribution to maximize redex density and variable usage.
+    """
+
+    def gen_type(max_nodes: int) -> Ty:
+        if max_nodes <= 1:
+            return rng.choice([("Bool",), ("Int",), ("String",)])
+        # Favor function types to create binding depth
+        if rng.random() < 0.75:
+            left = gen_type(max_nodes // 2)
+            right = gen_type(max_nodes - 1 - (max_nodes // 2))
+            return ("Fun", left, right)
+        return rng.choice([("Bool",), ("Int",), ("String",)])
+
+    def gen_term(ctx: list[Tuple[str, Ty]], target_ty: Ty, budget: int) -> Tm:
+        # 1. Variable Usage (Priority 1)
+        # Scan context for exact type matches
+        matches = [name for name, ty in ctx if ty == target_ty]
+        if matches and (budget < 3 or rng.random() < 0.45):
+            return ("Var", rng.choice(matches))
+
+        # 2. Redex Injection (The "Applied Lambda" Booster)
+        # Force App(Lam(x, ATy, Body), Arg)
+        if budget > 10 and rng.random() < 0.4:
+            # Pick an argument type that is likely to be satisfied by a Var in ctx
+            if ctx and rng.random() < 0.7:
+                arg_ty = rng.choice(ctx)[1]
+            else:
+                arg_ty = gen_type(2)
+            
+            # Shadowing: 15% chance to reuse an existing name to stress-test structure
+            if ctx and rng.random() < 0.15:
+                vname = rng.choice(ctx)[0]
+            else:
+                vname = f"v{len(ctx)}_{budget}"
+            
+            # Sub-term generation with skewed budget
+            # Function part (Lam) gets 65% to encourage internal complexity
+            lam_body = gen_term(ctx + [(vname, arg_ty)], target_ty, int(budget * 0.65))
+            lam = ("Lam", vname, arg_ty, lam_body)
+            # Argument part gets 25%, likely becoming a Var if arg_ty was from ctx
+            arg = gen_term(ctx, arg_ty, int(budget * 0.25))
+            return ("App", lam, arg)
+
+        # 3. Target Unfolding (Mandatory for Fun types)
+        if target_ty[0] == "Fun":
+            _, arg_ty, ret_ty = target_ty
+            vname = f"v{len(ctx)}_{budget}"
+            return ("Lam", vname, arg_ty, gen_term(ctx + [(vname, arg_ty)], ret_ty, budget - 1))
+
+        # 4. Context Functional Lookup
+        # Find a variable x : A -> target_ty and return x (gen_term A)
+        callables = [(n, t[1]) for n, t in ctx if t[0] == "Fun" and t[2] == target_ty]
+        if callables and rng.random() < 0.5:
+            vname, arg_ty = rng.choice(callables)
+            return ("App", ("Var", vname), gen_term(ctx, arg_ty, budget - 2))
+
+        # 5. General Application
+        if budget > 5:
+            # Seek a type already in context for the argument to ensure used_vars remains high
+            if ctx and rng.random() < 0.75:
+                arg_ty = rng.choice(ctx)[1]
+            else:
+                arg_ty = gen_type(1)
+            
+            fun_ty = ("Fun", arg_ty, target_ty)
+            return ("App", 
+                    gen_term(ctx, fun_ty, int(budget * 0.6)), 
+                    gen_term(ctx, arg_ty, int(budget * 0.3)))
+
+        # 6. Safety Fallbacks
+        if target_ty == ("Bool",): return ("Bool", rng.choice([True, False]))
+        if target_ty == ("Int",): return ("Int", rng.randint(0, 99))
+        if target_ty == ("String",): return ("String", "s")
+        
+        # Identity fallback for nested structural integrity
+        inner_v = f"v_fallback_{budget}"
+        return ("Lam", inner_v, ("Int",), ("Int", 0))
+
+    # Generate a complex type seed
+    target_type = gen_type(rng.randint(8, 12))
+    # Start with high budget to maximize tm_sizes_average
+    generated_term = gen_term([], target_type, 115)
+    
+    return target_type, generated_term
+
+# EVOLVE-BLOCK-END
+
+import lc
+
+def run() -> lc.RunOutput:
+    """Run the analysis"""
+    size = 1000
+    rng = random.Random()
+    return lc.run(
+        size=size,
+        rng=rng,
+        generate_sample=generate_sample,
+    )

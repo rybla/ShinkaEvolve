@@ -1,0 +1,14 @@
+{
+  "generation": 21,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "tiered_redex_synthesis",
+  "patch_description": "This implementation maximizes STLC term complexity by prioritizing 'Redex-Chains' and 'Forced Applications' using types already present in the environment context. By selecting argument types from existing context variables (with a 75% probability), we significantly boost the `used_vars_proportions_average`. The budget allocation strategy ensures that the functional side of an application receives enough resource to manifest as a lambda, thereby increasing the `applied_lambdas` metric. The recursion depth is balanced by a tiered fallback system that ensures valid term generation (1.0 good_ratio) while maintaining high structural diversity.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T02:57:23.801668",
+  "llm_cost": 0.0128845,
+  "llm_model": null
+}

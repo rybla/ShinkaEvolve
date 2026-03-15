@@ -1,0 +1,71 @@
+<NAME>
+greedy_budget_and_context_interleaving
+</NAME>
+
+<DESCRIPTION>
+To maximize the `combined_score`, I am implementing a "greedy" budget reallocation strategy. When a high-value node like a redex or a callable lookup is triggered, it now receives a larger, prioritized share of the remaining budget to ensure these complex structures are fully realized rather than truncated. Additionally, I've increased the probability of selecting argument types from the existing context during general application, which directly boosts the `used_vars_proportions_average` and creates more interconnected, unique sub-terms.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+        # Redex-Chain: ((\x. \y. body) arg1) arg2
+        if budget > 30 and rng.random() < 0.2:
+            a1_ty, a2_ty = gen_type(1), gen_type(1)
+            v1, v2 = f"v{len(ctx)}", f"v{len(ctx)+1}"
+            inner_lam = ("Lam", v2, a2_ty, gen_term(ctx + [(v1, a1_ty), (v2, a2_ty)], target_ty, budget // 3))
+            outer_lam = ("Lam", v1, a1_ty, inner_lam)
+            return ("App", ("App", outer_lam, gen_term(ctx, a1_ty, budget // 4)), gen_term(ctx, a2_ty, budget // 4))
+
+        # Explicit Redex: (Lam x. body) arg
+        if budget > 10 and rng.random() < 0.3:
+            arg_ty = gen_type(2)
+            vname = f"v{len(ctx)}"
+            lam = ("Lam", vname, arg_ty, gen_term(ctx + [(vname, arg_ty)], target_ty, budget // 2))
+            arg = gen_term(ctx, arg_ty, budget // 3)
+            return ("App", lam, arg)
+=======
+        # Redex-Chain: ((\x. \y. body) arg1) arg2
+        if budget > 30 and rng.random() < 0.25:
+            a1_ty = rng.choice(ctx)[1] if ctx and rng.random() < 0.5 else gen_type(1)
+            a2_ty = rng.choice(ctx)[1] if ctx and rng.random() < 0.5 else gen_type(1)
+            v1, v2 = f"v{len(ctx)}", f"v{len(ctx)+1}"
+            # Greedy budget: give the body most of the budget to ensure depth
+            inner_lam = ("Lam", v2, a2_ty, gen_term(ctx + [(v1, a1_ty), (v2, a2_ty)], target_ty, int(budget * 0.5)))
+            outer_lam = ("Lam", v1, a1_ty, inner_lam)
+            return ("App", ("App", outer_lam, gen_term(ctx, a1_ty, budget // 5)), gen_term(ctx, a2_ty, budget // 5))
+
+        # Explicit Redex: (Lam x. body) arg
+        if budget > 10 and rng.random() < 0.35:
+            arg_ty = rng.choice(ctx)[1] if ctx and rng.random() < 0.6 else gen_type(2)
+            vname = f"v{len(ctx)}"
+            lam = ("Lam", vname, arg_ty, gen_term(ctx + [(vname, arg_ty)], target_ty, int(budget * 0.6)))
+            arg = gen_term(ctx, arg_ty, int(budget * 0.2))
+            return ("App", lam, arg)
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+        # Generate Application
+        if budget > 2:
+            # Try to pick an arg_ty that exists in context to boost used_vars
+            if ctx and rng.random() < 0.6:
+                arg_ty = rng.choice(ctx)[1]
+            else:
+                arg_ty = gen_type(rng.randint(1, 2))
+
+            fun_ty = ("Fun", arg_ty, target_ty)
+            # Allocation: prioritize operator to allow it to be a Lam or App
+            return ("App", gen_term(ctx, fun_ty, int(budget * 0.6)), gen_term(ctx, arg_ty, int(budget * 0.3)))
+=======
+        # Generate Application
+        if budget > 2:
+            # Higher probability to pick an arg_ty from context to boost used_vars
+            if ctx and rng.random() < 0.75:
+                arg_ty = rng.choice(ctx)[1]
+            else:
+                arg_ty = gen_type(rng.randint(1, 2))
+
+            fun_ty = ("Fun", arg_ty, target_ty)
+            # Allocation: prioritize operator to allow it to be a Lam or App
+            return ("App", gen_term(ctx, fun_ty, int(budget * 0.7)), gen_term(ctx, arg_ty, int(budget * 0.2)))
+>>>>>>> REPLACE
+
+</DIFF>

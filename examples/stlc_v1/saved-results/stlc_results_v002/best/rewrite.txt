@@ -1,0 +1,128 @@
+from typing import Literal, Tuple
+import random
+
+type Ty = BoolTy | IntTy | StringTy | FunTy
+type BoolTy = Tuple[Literal["Bool"]]
+type IntTy = Tuple[Literal["Int"]]
+type StringTy = Tuple[Literal["String"]]
+type FunTy = Tuple[Literal["Fun"], Ty, Ty]
+
+type Tm = LitTm | VarTm | LamTm | AppTm
+type LitTm = (
+    Tuple[Literal["Bool"], bool]
+    | Tuple[Literal["Int"], int]
+    | Tuple[Literal["String"], str]
+)
+type VarTm = Tuple[Literal["Var"], str]
+type LamTm = Tuple[Literal["Lam"], str, Ty, Tm]
+type AppTm = Tuple[Literal["App"], Tm, Tm]
+
+# EVOLVE-BLOCK-START
+
+def generate_sample(rng: random.Random) -> Tuple[Ty, Tm]:
+    """
+    Synthesizes STLC terms using deep currying and block-redex injection
+    to maximize variable usage and applied lambda density.
+    """
+
+    def gen_type(nodes: int) -> Ty:
+        if nodes <= 1:
+            return rng.choice([("Bool",), ("Int",), ("String",)])
+        # Bias towards function types to create more complex signatures
+        if rng.random() < 0.75:
+            return ("Fun", gen_type(1), gen_type(nodes - 1))
+        return rng.choice([("Bool",), ("Int",), ("String",)])
+
+    def gen_term(ctx: list[Tuple[str, Ty]], target_ty: Ty, budget: int) -> Tm:
+        # 1. Terminal cases / Leaf nodes
+        if budget <= 1:
+            # Try to find a matching variable even at low budget
+            matches = [n for n, t in ctx if t == target_ty]
+            if matches: return ("Var", rng.choice(matches))
+            if target_ty == ("Bool",): return ("Bool", rng.choice([True, False]))
+            if target_ty == ("Int",): return ("Int", rng.randint(1, 100))
+            if target_ty == ("String",): return ("String", "val")
+            # If target is Fun but budget is exhausted, return identity-like
+            if target_ty[0] == "Fun":
+                v = f"x{len(ctx)}"
+                return ("Lam", v, target_ty[1], gen_term(ctx + [(v, target_ty[1])], target_ty[2], 0))
+            return ("Int", 0)
+
+        # 2. Variable Match (High priority for used_vars)
+        matching_vars = [n for n, t in ctx if t == target_ty]
+        if matching_vars and rng.random() < 0.45:
+            return ("Var", rng.choice(matching_vars))
+
+        # 3. Deep Currying: Search context for functions returning target_ty
+        if ctx and rng.random() < 0.5:
+            candidates = []
+            for name, ty in ctx:
+                args, curr = [], ty
+                while curr[0] == "Fun":
+                    args.append(curr[1])
+                    curr = curr[2]
+                    if curr == target_ty:
+                        candidates.append((name, args))
+                        break
+            if candidates:
+                vname, needed_args = rng.choice(candidates)
+                res = ("Var", vname)
+                # Apply the variable to synthesized arguments
+                for arg_ty in needed_args:
+                    res = ("App", res, gen_term(ctx, arg_ty, budget // (len(needed_args) + 2)))
+                return res
+
+        # 4. Block Redex Injection: ((\v1 v2. body) a1 a2)
+        if budget > 30 and rng.random() < 0.35:
+            n = 2 if budget < 60 else 3
+            # Pick argument types from context to ensure they can be Vars
+            block_arg_tys = [rng.choice(ctx)[1] if (ctx and rng.random() < 0.8) else gen_type(1) for _ in range(n)]
+            vnames = [f"b{len(ctx)}_{i}" for i in range(n)]
+            
+            # Build body with extended context
+            inner_ctx = ctx + list(zip(vnames, block_arg_tys))
+            body = gen_term(inner_ctx, target_ty, int(budget * 0.5))
+            
+            # Wrap in Lambdas
+            func_part = body
+            for i in reversed(range(n)):
+                func_part = ("Lam", vnames[i], block_arg_tys[i], func_part)
+            
+            # Apply to arguments
+            for i in range(n):
+                func_part = ("App", func_part, gen_term(ctx, block_arg_tys[i], budget // 10))
+            return func_part
+
+        # 5. Mandatory Abstraction for Function Types
+        if target_ty[0] == "Fun":
+            arg_ty, ret_ty = target_ty[1], target_ty[2]
+            vname = f"v{len(ctx)}"
+            return ("Lam", vname, arg_ty, gen_term(ctx + [(vname, arg_ty)], ret_ty, budget - 1))
+
+        # 6. General Application (Fallback)
+        # Use a type from context as the argument type to increase used_vars
+        arg_ty = rng.choice(ctx)[1] if (ctx and rng.random() < 0.8) else gen_type(1)
+        # Skew budget to function part to encourage nested App/Lam
+        return ("App", 
+                gen_term(ctx, ("Fun", arg_ty, target_ty), int(budget * 0.75)), 
+                gen_term(ctx, arg_ty, int(budget * 0.15)))
+
+    # Generate a complex type to start
+    start_ty = gen_type(rng.randint(8, 11))
+    # Budget 110 targets tm_size ~25-30 while staying under 100 limit
+    term = gen_term([], start_ty, 110)
+    return start_ty, term
+
+# EVOLVE-BLOCK-END
+
+import lc
+
+def run() -> lc.RunOutput:
+    """Run the analysis"""
+    size = 1000
+    rng = random.Random()
+    return lc.run(
+        size=size,
+        rng=rng,
+        generate_sample=generate_sample,
+    )

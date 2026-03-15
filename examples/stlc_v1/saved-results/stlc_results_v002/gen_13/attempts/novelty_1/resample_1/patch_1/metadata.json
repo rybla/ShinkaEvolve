@@ -1,0 +1,14 @@
+{
+  "generation": 13,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "greedy_context_redex_synthesis",
+  "patch_description": "This implementation shifts from a passive recursive descent to a \"greedy\" synthesis strategy. It maximizes the `applied_lambdas` and `used_vars` metrics by:\n1. **Aggressive Redex Injection**: Instead of occasionally generating applications, it frequently wraps the target term in an immediate lambda application (`(\\x. body) arg`), which counts as an applied lambda and provides a new variable for the context.\n2. **Context-First Variable Selection**: Before falling back to literals or new sub-trees, it exhaustively searches the context for \"callables\" (functions that can produce the target type) and \"direct matches\".\n3. **Dynamic Budgeting**: It uses a higher initial budget and a \"decay\" factor that ensures terms grow significantly (averaging 20-40 nodes) without hitting the 100-node hard limit, while ensuring every `Fun` type is strictly satisfied by a `Lam` to maintain a 1.0 `good_ratio`.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T02:56:27.481162",
+  "llm_cost": 0.009503999999999999,
+  "llm_model": null
+}

@@ -1,0 +1,14 @@
+{
+  "generation": 14,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 2,
+  "patch_name": "context_inhabited_arg_selection_and_redex_chaining",
+  "patch_description": "This improvement focuses on two key areas:\n1. **Context-Inhabited Argument Selection**: In the general `App` generation, we now prioritize selecting an `arg_ty` that is already present in the context. This creates a \"virtuous cycle\" where the argument part of an application is much more likely to be a `Var` from the context, significantly boosting `used_vars_proportions_average`.\n2. **Redex Chain Refinement**: The redex chain logic is updated to ensure that the inner lambda correctly uses the newly introduced variables, and the budget allocation is tuned to ensure these complex structures don't exceed the global node limit while still contributing to `tm_sizes_average` and `applied_lambdas_proportions_average`.\n3. **Variable Lookup Bias**: Increased the probability of using a matching variable from the context when the budget is low to ensure terms terminate cleanly and use their binders.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T02:56:33.974460",
+  "llm_cost": 0.0095365,
+  "llm_model": null
+}

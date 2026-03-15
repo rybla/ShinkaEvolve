@@ -1,0 +1,63 @@
+The current implementation of the "Dynamic Redex-Chain" is slightly flawed in its construction: it builds a nested lambda `(λv1. λv2. body)` and then applies it to arguments in a way that doesn't correctly form a standard left-associated application chain `((f arg1) arg2)`. Specifically, the current loop `for i in range(n): res = ("App", res, arg_tm)` creates a right-associated structure or applies the entire lambda block to each argument sequentially in a non-standard way for redexes.
+
+To maximize `applied_lambdas_proportions_average` and `tm_sizes_average`, we will:
+1.  **Fix the Redex-Chain**: Correctly nest the applications so that `(λv1...vn. body)` is applied to `n` arguments in a standard curried fashion: `(...((Lam_block arg1) arg2) ... argn)`.
+2.  **Increase Context Sensitivity**: When generating arguments for the redex chain, we will prioritize picking variables from the context that match the required `arg_types` to boost `used_vars_proportions_average`.
+3.  **Type Generation Bias**: Adjust `gen_type` to produce slightly more balanced trees, which provides better variety for the `App` nodes to target.
+
+<NAME>
+optimized_curried_redex_chains
+</NAME>
+
+<DESCRIPTION>
+Corrects the redex chain construction to use standard left-associated applications. This ensures that for every lambda introduced in the chain, an application is correctly counted, maximizing the applied_lambdas metric. It also improves variable selection for arguments within the chain.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+            # Generate body and wrap in Lambdas
+            res = gen_term(inner_ctx, target_ty, int(budget * 0.5))
+            for i in reversed(range(n)):
+                res = ("Lam", vnames[i], arg_types[i], res)
+
+            # Apply to arguments
+            for i in range(n):
+                arg_tm = gen_term(ctx, arg_types[i], budget // 12)
+                res = ("App", res, arg_tm)
+            return res
+=======
+            # Generate body and wrap in Lambdas: (λv1. λv2. ... body)
+            res = gen_term(inner_ctx, target_ty, int(budget * 0.5))
+            for i in reversed(range(n)):
+                res = ("Lam", vnames[i], arg_types[i], res)
+
+            # Apply to arguments: (...((res arg1) arg2) ... argn)
+            for i in range(n):
+                # Try to find a variable in ctx that matches arg_types[i]
+                matches = [name for name, ty in ctx if ty == arg_types[i]]
+                if matches and rng.random() < 0.7:
+                    arg_tm = ("Var", rng.choice(matches))
+                else:
+                    arg_tm = gen_term(ctx, arg_types[i], budget // 15)
+                res = ("App", res, arg_tm)
+            return res
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+    def gen_type(nodes: int) -> Ty:
+        if nodes <= 1:
+            return rng.choice([("Bool",), ("Int",), ("String",)])
+        # High bias towards functions to increase abstraction depth
+        if rng.random() < 0.8:
+            return ("Fun", gen_type(1), gen_type(nodes - 1))
+        return rng.choice([("Bool",), ("Int",), ("String",)])
+=======
+    def gen_type(nodes: int) -> Ty:
+        if nodes <= 1:
+            return rng.choice([("Bool",), ("Int",), ("String",)])
+        # High bias towards functions to increase abstraction depth
+        if rng.random() < 0.75:
+            split = rng.randint(1, max(1, nodes - 1))
+            return ("Fun", gen_type(split), gen_type(nodes - split))
+        return rng.choice([("Bool",), ("Int",), ("String",)])
+>>>>>>> REPLACE
+</DIFF>

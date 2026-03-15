@@ -1,0 +1,109 @@
+# INDIVIDUAL PROGRAM SUMMARIES
+
+The following are summaries of individual programs evaluated since the last meta update:
+
+**Program Name: Recursive Random Generator for Simply-Typed Lambda Calculus Terms**
+- **Implementation**: The generator uses a recursive approach with a depth limit to produce types and terms, favoring base case literals (Bool, Int, String) and occasionally wrapping them in identity-like lambda abstractions.
+- **Performance**: Achieved a combined score of 10.28 with a 1.00 good_ratio, but showed very low structural complexity (average term/type size of 1.33).
+- **Feedback**: While the program is perfectly correct and type-safe, the implementation produces highly repetitive, shallow trees that fail to utilize variables or function applications. The reliance on hardcoded literals and a simple "Fun" wrapper limits the diversity and depth of the generated lambda terms.
+**Program Identifier:** Generation 0 - Patch Name initial_program - Correct Program: True
+
+**Program Name: Context-Aware Recursive Term Generator for Simply-Typed Lambda Calculus**
+- **Implementation**: The generator uses a recursive approach with a budget-based `size_limit` and a typing context to ensure well-typed terms, specifically handling `App` nodes by generating random argument types.
+- **Performance**: Achieved a combined score of 8.36, with a high unique subterm proportion (0.96) but relatively low average term size (11.62) and variable usage (0.21).
+- **Feedback**: The program is marked incorrect because it fails validation tests, likely due to the `App` case generating function types that exceed the size budget or failing to guarantee termination within the strict AST constraints.
+**Program Identifier:** Generation 1 - Patch Name stlc_random_generator - Correct Program: False
+
+**Program Name: Type-Driven Recursive Term Generator with Contextual Variable Selection**
+- **Implementation**: The generator uses a recursive approach that tracks a typing context to prioritize variable usage and ensures type safety by matching term generation to a pre-generated target type. It employs a budget-based system to control recursion depth and balances literal generation with function applications and lambda abstractions.
+- **Performance**: Achieved a 1.00 good_ratio with a combined score of 11.37, producing an average term size of 6.24 and a unique subterm proportion of 0.69.
+- **Feedback**: The implementation is highly reliable for generating valid typed terms, though the low variable usage proportion (0.10) suggests that the budget and branching logic favor literals and new abstractions over context lookups.
+**Program Identifier:** Generation 2 - Patch Name stlc_generator_v1 - Correct Program: True
+
+**Program Name: Recursive Type-Driven Term Generator with Contextual Variable Tracking**
+- **Implementation**: The generator uses a recursive approach with a budget-based system to construct terms, employing a weighted selection process to choose between literals, variables from a tracked context, lambdas, and applications. It specifically attempts to force lambda abstractions within application nodes to increase the frequency of applied lambdas.
+- **Performance**: The program failed to produce valid results (good_ratio: 0.00), resulting in "nan" for all size and complexity metrics.
+- **Feedback**: The failure likely stems from a missing `List` import or a logic error in the fallback mechanism that produces malformed terms. While the strategy for maximizing variable usage and applications was theoretically sound, the implementation crashed during the evaluation phase.
+**Program Identifier:** Generation 3 - Patch Name contextual_backtracking_generator - Correct Program: False
+
+**Program Name: Context-Aware Recursive Term Generator with Type-Driven Heuristics**
+- **Implementation**: The generator uses a recursive descent approach with a typing context to prioritize variable selection and function applications that satisfy specific target types. It balances term complexity by allocating a numeric budget across subtrees and favoring lambda abstractions when the target is a function type.
+- **Performance**: Achieved a combined score of 12.22 with a 100% validity ratio and an average term size of 13.22.
+- **Feedback**: The implementation successfully avoids type errors by strictly following the target type, though the variable usage proportion (0.30) suggests room for more aggressive variable shadowing or reuse. The high unique subterm proportion (0.94) indicates excellent structural diversity in the generated samples.
+**Program Identifier:** Generation 4 - Patch Name improve_term_usage_and_size - Correct Program: True
+
+**Program Name: Type-Directed Recursive Term Generator with Budgeted Context Management**
+- **Implementation**: The generator uses a recursive `gen_term` function with a budget-based termination strategy, prioritizing lambda abstractions for function types and attempting to resolve applications by matching types in the variable context.
+- **Performance**: Combined score: nan; good_ratio: 0.00; all metrics (size, variable usage, unique subterms) failed to record due to a runtime error.
+- **Feedback**: The program failed because it referenced an undefined `List` type from the `typing` module, causing a `NameError`. While the logic for type-matching and budget splitting was sophisticated, the lack of basic import validation prevented any samples from being successfully generated.
+**Program Identifier:** Generation 5 - Patch Name weighted_contextual_lambda_generator - Correct Program: False
+
+**Program Name: Type-Driven Recursive Term Generator with Redex Preference**
+- **Implementation**: The generator uses a recursive strategy that prioritizes matching context variables and forces lambda abstractions for function types, while specifically biasing towards "redex" creation by generating applied lambdas.
+- **Performance**: Achieved a combined score of 12.12 with a 1.00 validity ratio and a high applied lambda proportion of 0.50.
+- **Feedback**: The implementation successfully balances term complexity and validity by using a budget-based recursion and a targeted approach to increasing applied lambdas, though variable usage remains moderate at 0.31.
+**Program Identifier:** Generation 6 - Patch Name optimize_term_generation_for_size_and_usage - Correct Program: True
+
+**Program Name: Context-Aware Recursive Term Generator with Type-Driven Backtracking**
+- **Implementation**: The generator uses a recursive `gen_term` function that prioritizes lambda abstractions to expand the variable context and employs a targeted search for existing functions in the context to satisfy application requirements. It manages a complexity budget to balance between literal fallbacks and deep expression trees.
+- **Performance**: Achieved a combined score of 12.17 with a 100% validity ratio and a high unique subterm proportion of 0.94.
+- **Feedback**: The strategy of favoring function types (70% probability) and prioritizing lambda generation effectively increased the average term size and variable usage. The high applied lambda proportion (0.54) indicates the generator successfully created meaningful interactions between terms rather than just nested literals.
+**Program Identifier:** Generation 7 - Patch Name dynamic_budget_and_context_exploitation - Correct Program: True
+
+**Program Name: Type-Driven Recursive Term Generator with Memoization and Redex Boosting**
+- **Implementation**: The generator uses a recursive descent approach guided by target types, incorporating a local memoization cache and a "redex boost" strategy to explicitly create application-lambda pairs. It prioritizes variable lookup from the context and enforces lambda generation for function types to maintain structural integrity.
+- **Performance**: Combined score: 0.0; the program failed validation tests despite its complex generation logic.
+- **Feedback**: While the implementation attempts sophisticated features like memoization and budget-based branching, it likely fails due to type-safety fallbacks or structural mismatches that violate the strict STLC embedding requirements. The high probability of generating complex function types may have led to recursion depth issues or invalid term-type pairings.
+**Program Identifier:** Generation 8 - Patch Name type_inhabitant_memoization_and_redex_boost - Correct Program: False
+
+**Program Name: Type-Directed Random Lambda Term Generator with Explicit Redex Injection**
+- **Implementation**: The generator uses a budget-based recursive approach to synthesize terms matching a target type, prioritizing variable lookups and explicitly injecting beta-redexes (`App` of a `Lam`) to increase complexity. It balances term growth by allocating specific budget percentages to function and argument branches during application generation.
+- **Performance**: Achieved a combined score of 12.34 with a 100% validity ratio, an average term size of 11.94, and a high applied lambda proportion of 0.61.
+- **Feedback**: The strategy of favoring existing context variables and forcing redexes successfully maximized the applied lambda metric while maintaining high structural uniqueness. The budget constraints effectively prevented infinite recursion while ensuring terms remained within the desired size limits.
+**Program Identifier:** Generation 9 - Patch Name enhance_variable_usage_and_redex_generation - Correct Program: True
+
+# GLOBAL INSIGHTS SCRATCHPAD
+
+The following are global insights about optimization approaches and their effectiveness:
+
+## Successful Algorithmic Patterns
+
+*   **Explicit Redex Injection**: The current best program (Generation 9, score 12.34) introduced a specific "Explicit Redex" block that generates an `App` of a `Lam` even when not strictly required by the type. This strategy, combined with a 30% probability trigger, directly boosted the `applied_lambdas_proportions_average` to 0.61, the highest recorded.
+*   **Context-Driven Application (Callable Lookup)**: Successful programs (Generations 7 and 9) prioritize searching the context for variables of type `Fun` that return the `target_ty`. Generation 7 achieved a score of 12.17 by using this "targeted search," which ensures that applications are meaningful and utilize existing variables rather than just generating new sub-trees.
+*   **Weighted Type Generation with High Function Bias**: Consistently high-performing programs (Generations 6, 7, and 9) use a 70% bias toward generating `Fun` types. This creates a "top-heavy" type structure that forces the term generator to use `Lam` and `App` nodes, leading to high unique subterm proportions (0.94 in Generation 9).
+*   **Proportional Budget Splitting**: The most stable and high-scoring programs (Generations 6 and 9) use a 50/40 or 60/40 budget split for `App` nodes. This prevents lopsided trees and ensures that both the function and the argument branches have enough "fuel" to generate complex terms, maintaining a 1.00 `good_ratio`.
+
+## Ineffective Approaches
+
+*   **Undefined Module References**: Generation 5 failed completely (score: nan) due to a `NameError` from referencing `List` without importing it from `typing`. This highlights that even sophisticated logic (budget splitting, type-matching) is useless without basic import validation.
+*   **Over-Engineering with Memoization**: Generation 8 (score 0.0) attempted to implement a local memoization cache and "redex boosting." This complexity likely led to type-safety fallbacks or recursion depth issues that violated STLC requirements, proving that structural integrity is more important than algorithmic complexity.
+*   **Unconstrained Random Argument Generation**: Earlier failed attempts (Generation 1) generated random argument types for `App` nodes without checking if those types could be satisfied within the remaining budget, leading to invalid terms or termination failures.
+*   **Literal Bias**: Generation 0 (score 10.28) relied on hardcoded literals. While valid, this resulted in a very low average term size (1.33) and failed to utilize the variable context, resulting in the lowest scores among valid programs.
+
+## Implementation Insights
+
+*   **Dynamic Variable Naming**: The current best program (Generation 9) uses `f"v{len(ctx)}"` to generate unique variable names. This allows the generator to track the depth of the context and ensures that `Var` nodes always point to valid, type-matched binders, contributing to a `used_vars_proportions_average` of 0.39.
+*   **Type-Safety Fallbacks**: Generation 9 includes specific fallback logic for literals and a "safety" `Lam` for unexpected `Fun` types. This ensures that even if the budget is exhausted, the function returns a valid `Tm` that matches the `target_ty`, maintaining the 1.00 `good_ratio`.
+*   **Contextual Variable Re-use**: To boost variable usage, Generation 9 attempts to pick an `arg_ty` for an `App` node from the existing context (50% chance) rather than generating a new random type. This links different parts of the term tree together through shared variables.
+*   **Budget-Triggered Termination**: The use of a `budget` parameter that decreases with each recursive call (e.g., `budget - 1` for `Lam`, `budget // 2` for redexes) is the primary mechanism for controlling term size while allowing for deep trees (average size 11.94).
+
+## Performance Analysis
+
+*   **The Redex Correlation**: There is a direct correlation between the `applied_lambdas_proportions_average` and the final score. Generation 6 (0.50 proportion) scored 12.12, while Generation 9 (0.61 proportion) reached 12.34. Explicitly forcing `App(Lam(...), ...)` structures is the most effective way to increase this metric.
+*   **Complexity vs. Validity**: Generation 9 achieved the highest score (12.34) by balancing a high budget (85) with strict type-matching. It outperformed Generation 7 (12.17) primarily by increasing the `used_vars_proportions_average` from 0.31 to 0.39 through more aggressive context exploitation.
+*   **Unique Subterm Saturation**: Most high-performing programs (Generations 7 and 9) have hit a "ceiling" in `unique_subterms_proportions_average` at 0.94. This suggests that the recursive generation of random types and terms naturally produces high structural diversity.
+*   **Stability of Success**: Programs that prioritize `target_ty` matching (Generations 6, 7, 9) consistently achieve a 1.00 `good_ratio`, whereas programs that prioritize "features" like memoization (Generation 8) or complex backtracking (Generation 5) often fail to produce valid output.
+
+# META RECOMMENDATIONS
+
+The following are actionable recommendations for the next program generations:
+
+1. **Implement Deep Currying for Callable Lookups**: The current "callable lookup" only finds variables that return the `target_ty` directly. Extend this logic to search the context for variables whose return type is a function that *eventually* returns the `target_ty` (e.g., to get `C`, look for `A -> B -> C`). This will generate nested `App` nodes and significantly increase both `tm_sizes_average` and `applied_lambdas_proportions_average` by chaining applications.
+
+2. **Introduce "Redex-Chain" Generation**: Building on the success of the "Explicit Redex" block (which currently generates a single `App(Lam, arg)`), implement a version that generates a chain of redexes (e.g., `App(App(Lam, Lam), arg, arg)`). By increasing the probability of these structures when the budget is high (>40), you can push the `applied_lambdas_proportions_average` beyond the current 0.61 ceiling.
+
+3. **Context-Inhabited Argument Selection**: Instead of generating a random `arg_ty` for an `App` node, prioritize selecting a type that is already present in the context. If the context contains a variable of type `T`, use `T` as the `arg_ty` for the new `App` node; this creates a "virtuous cycle" where new applications are guaranteed to have a variable ready to be used as an argument, boosting `used_vars_proportions_average`.
+
+4. **Dynamic Budget Reallocation for High-Value Nodes**: Currently, budget splitting is static (e.g., 50/40). Implement a "greedy" budget allocation where, if a "callable lookup" or "redex injection" is triggered, it receives a larger share of the remaining budget (e.g., 80%) to ensure these complex structures are fully realized rather than truncated by the fallback literal logic.
+
+5. **Type-Directed Variable Shadowing**: To increase `unique_subterms_proportions_average` and test the robustness of the context, occasionally (10% chance) reuse a variable name already in the context when generating a `Lam`. This "shadowing" forces the generator to handle overlapping scopes and creates more complex term structures that differ from the standard `v0, v1, v2` linear progression.

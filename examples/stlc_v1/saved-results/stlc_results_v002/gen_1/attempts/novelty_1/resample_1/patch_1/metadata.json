@@ -1,0 +1,14 @@
+{
+  "generation": 1,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "stlc_random_generator",
+  "patch_description": "I will implement a more sophisticated generator for the simply-typed lambda calculus. \n1.  **Type Generation**: A dedicated `gen_type` function that respects the size limit (10 nodes) and produces diverse types (Bool, Int, String, Fun).\n2.  **Term Generation**: A `gen_term` function that tracks the typing context (mapping variables to types) to ensure well-typedness.\n3.  **Heuristics for Quality**:\n    -   It prioritizes using variables from the context to increase `used_vars_proportions`.\n    -   It attempts to create applications (`App`) to increase `applied_lambdas_proportions` and term size.\n    -   It uses a budget-based approach to stay within the 100-node limit while aiming for larger terms.\n    -   It ensures that when a function type is required, it can either pick a variable of that type or generate a lambda.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T02:55:12.429631",
+  "llm_cost": 0.004881,
+  "llm_model": null
+}

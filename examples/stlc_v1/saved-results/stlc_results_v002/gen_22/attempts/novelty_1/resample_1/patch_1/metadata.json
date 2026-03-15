@@ -1,0 +1,14 @@
+{
+  "generation": 22,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 3,
+  "patch_name": "deep_currying_and_variable_reclamation",
+  "patch_description": "This edit implements \"Deep Currying\" for context lookups and improves variable usage. \n1. **Deep Currying**: Instead of only looking for `A -> B`, the generator now searches the context for variables that can produce the `target_ty` after multiple applications (e.g., `A -> B -> C` to get a `C`). This creates nested `App(App(Var, arg1), arg2)` structures which significantly boosts `tm_sizes_average` and `used_vars_proportions_average`.\n2. **Variable Selection for Reds**: When generating redexes or general applications, we now prefer types that are more abundant in the context, ensuring that arguments are more likely to be satisfied by `Var` nodes rather than new subtrees.\n3. **Budget Rebalancing**: Slightly adjusted the budget distribution in redex chains to ensure the generated arguments have enough depth to be interesting without hitting the recursion limit.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T02:57:38.265933",
+  "llm_cost": 0.010598,
+  "llm_model": null
+}

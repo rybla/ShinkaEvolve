@@ -1,0 +1,14 @@
+{
+  "generation": 34,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "context_aware_redex_weaver",
+  "patch_description": "The previous implementation achieved high term sizes but lower `used_vars_proportions` and `applied_lambdas_proportions`. This new strategy introduces \"Inhabited Type Bias\": when generating arguments for redexes or general applications, it strictly prioritizes types that already exist in the context to ensure they can be grounded in `Var` nodes rather than literals. \n\nKey changes:\n1. **Inhabited Type Matching**: We scan the context to find types that are \"inhabited\" by existing variables and use these as argument types for `App` and `Redex` nodes with a higher probability (90%).\n2. **Recursive Path Discovery**: Instead of just matching top-level function types, the context lookup now tries to find variables that can reach the target type through multiple applications, boosting the `applied_lambdas` metric through automated currying.\n3. **Redex Chain Tightening**: Increased the probability of triggering the redex-chain logic and tightened the budget allocation to the \"operator\" side of applications to encourage nested lambda-application structures over deep literal trees.\n4. **Initial Budget Tuning**: Adjusted the initial budget to 120 to hit the 25-30 node sweet spot while maintaining a high `unique_subterms_proportions`.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T02:59:18.446374",
+  "llm_cost": 0.012527,
+  "llm_model": null
+}

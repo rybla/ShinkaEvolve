@@ -1,0 +1,14 @@
+{
+  "generation": 24,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "TypeInformed_Shadowing_Synthesis",
+  "patch_description": "The structural redesign focuses on maximizing `used_vars_proportions` and `applied_lambdas` through three main architectural changes:\n1. **Type-Informed Context Sampling**: When generating `App` nodes, we no longer generate random argument types. Instead, we pull types directly from the current context (75% bias). This ensures that the argument branch can frequently be a simple `Var`, saving budget for the function branch to become a complex `Lam` (creating a redex).\n2. **Probability-Driven Shadowing**: We introduce a 15% chance to reuse variable names from the outer context. While this tests binder logic, it primarily forces the generator to create deeper, more diverse nested structures to maintain type-safety, improving the `unique_subterms` and `tm_sizes` metrics.\n3. **Recursive Redex heavy-tailing**: The `gen_term` function is restructured to prioritize `App(Lam(...), ...)` patterns whenever the budget allows, using a decreasing probability curve to ensure we don't hit recursion limits while maintaining a high density of applied lambdas.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T02:57:51.202656",
+  "llm_cost": 0.012445999999999999,
+  "llm_model": null
+}

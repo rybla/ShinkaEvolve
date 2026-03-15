@@ -1,0 +1,134 @@
+from typing import Literal, Tuple
+import random
+import tqdm
+
+"""
+`Ty` and `Tm` define the shape of a simply-typed lambda-calculus deeply embedded in Python.
+
+Each value, be it the encoding of a type or a term, is a tuple where the first component of the tuple is the "constructor" and the rest of the components are the arguments. For example, this value encodes the `Bool` type:
+
+    ('Bool',)
+
+As another example, this value encodes the function type from `Bool` to `Bool`, which is often written `Bool -> Bool`:
+
+    ('Fun', ('Bool',), ('Bool',))
+
+As another example, this value encodes the function term, which takes a single `String` input and just returns that input (also known as the identity function):
+
+    ('Lam', 'x', ('String',), ('Var', 'x'))
+
+Note that ALL lambda terms must have a type annotation as the 1st argument, where in the above example the type annotation was the ('String',).
+
+Closely read the above below type aliases to understand the complete structure of this deep embedding of the lambda calculus in Python.
+"""
+
+type Ty = BoolTy | IntTy | StringTy | FunTy
+type BoolTy = Tuple[Literal["Bool"]]
+type IntTy = Tuple[Literal["Int"]]
+type StringTy = Tuple[Literal["String"]]
+type FunTy = Tuple[Literal["Fun"], Ty, Ty]
+
+
+type Tm = LitTm | VarTm | LamTm | AppTm
+type LitTm = (
+    Tuple[Literal["Bool"], bool]
+    | Tuple[Literal["Int"], int]
+    | Tuple[Literal["String"], str]
+)
+type VarTm = Tuple[Literal["Var"], str]
+type LamTm = Tuple[Literal["Lam"], str, Ty, Tm]
+type AppTm = Tuple[Literal["App"], Tm, Tm]
+
+
+# EVOLVE-BLOCK-START
+
+def generate_sample(rng: random.Random) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a context-aware synthesis strategy.
+    """
+
+    def gen_type(depth: int) -> Ty:
+        if depth <= 1 or rng.random() > 0.7:
+            return rng.choice([("Bool",), ("Int",), ("String",)])
+        return ("Fun", gen_type(depth - 1), gen_type(depth - 1))
+
+    def gen_term(ctx: list[Tuple[str, Ty]], target_ty: Ty, budget: int) -> Tm:
+        # 1. Base Case: Low budget or random chance to use variable
+        matching_vars = [n for n, t in ctx if t == target_ty]
+        if matching_vars and (budget <= 1 or rng.random() < 0.4):
+            return ("Var", rng.choice(matching_vars))
+
+        # 2. Mandatory Lambda: If target is Fun, we must produce a Lam to be safe/efficient
+        if target_ty[0] == "Fun":
+            arg_ty, ret_ty = target_ty[1], target_ty[2]
+            vname = f"x{len(ctx)}"
+            return ("Lam", vname, arg_ty, gen_term(ctx + [(vname, arg_ty)], ret_ty, budget - 1))
+
+        # 3. High-Value Structure: Applied Lambda (Redex)
+        # This boosts applied_lambdas and unique_subterms significantly
+        if budget > 10 and rng.random() < 0.4:
+            # Pick an argument type that might already be in context to help used_vars
+            if ctx and rng.random() < 0.6:
+                arg_ty = rng.choice(ctx)[1]
+            else:
+                arg_ty = gen_type(2)
+            
+            vname = f"x{len(ctx)}"
+            # The function is a lambda: (Lam vname arg_ty body)
+            inner_body = gen_term(ctx + [(vname, arg_ty)], target_ty, budget // 2)
+            lam = ("Lam", vname, arg_ty, inner_body)
+            # The argument
+            arg = gen_term(ctx, arg_ty, budget // 2)
+            return ("App", lam, arg)
+
+        # 4. Contextual Application: Use a function variable from context
+        callables = [(n, t[1]) for n, t in ctx if t[0] == "Fun" and t[2] == target_ty]
+        if callables and budget > 2 and rng.random() < 0.5:
+            vname, arg_ty = rng.choice(callables)
+            return ("App", ("Var", vname), gen_term(ctx, arg_ty, budget - 1))
+
+        # 5. General Application: Synthesize a function
+        if budget > 5:
+            arg_ty = gen_type(1)
+            # Allocate more budget to the function side to encourage depth
+            return ("App", 
+                    gen_term(ctx, ("Fun", arg_ty, target_ty), int(budget * 0.6)), 
+                    gen_term(ctx, arg_ty, int(budget * 0.3)))
+
+        # 6. Final Fallback: Literals
+        if target_ty == ("Bool",):
+            return ("Bool", rng.choice([True, False]))
+        if target_ty == ("Int",):
+            return ("Int", rng.randint(0, 1000))
+        if target_ty == ("String",):
+            return ("String", rng.choice(["apple", "lambda", "type"]))
+        
+        # Absolute fallback (should not be reached for valid Ty)
+        return ("Bool", True)
+
+    # Generate a reasonably complex target type
+    target_type = gen_type(rng.randint(3, 6))
+    # Start with a healthy budget to ensure tm_sizes_average is high (max 100 nodes)
+    # A budget of 40-60 usually results in 20-40 nodes due to branching
+    generated_term = gen_term([], target_type, 50)
+    
+    return target_type, generated_term
+
+# EVOLVE-BLOCK-END
+
+# This part remains fixed (not evolved)
+
+import lc
+
+
+def run() -> lc.RunOutput:
+    """Run the analysis"""
+
+    size = 1000
+    rng = random.Random()
+
+    return lc.run(
+        size=size,
+        rng=rng,
+        generate_sample=generate_sample,
+    )

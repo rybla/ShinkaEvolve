@@ -1,0 +1,76 @@
+To improve the `combined_score`, we need to specifically target the `applied_lambdas_proportions_average` and `tm_sizes_average`. The current implementation of the "Dynamic Redex-Chain" has a logical flaw in how it constructs the application: it builds a nested lambda but then applies it in a way that doesn't maximize the nested redex depth as effectively as it could. 
+
+By restructuring the Redex-Chain to generate the application arguments first and then ensuring the function part is a freshly built lambda, we can guarantee a higher density of applied lambdas. Additionally, slightly increasing the base budget and the probability of branching into complex applications will push the `tm_sizes_average` higher.
+
+<NAME>
+optimized_redex_chain_and_budget_scaling
+</NAME>
+
+<DESCRIPTION>
+1. Refines the Dynamic Redex-Chain: Ensures that the generated structure is a true sequence of nested applications on a nested lambda, maximizing `applied_lambdas_proportions_average`.
+2. Adjusts branching logic: Increases the probability of picking argument types from the existing context to 85% to improve `used_vars_proportions_average`.
+3. Scales the initial budget and target type complexity slightly to increase `tm_sizes_average` and `ty_sizes_average`.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+        # Dynamic Redex-Chain: ((\v1. ... \vn. body) arg1) ... argn
+        if budget > 40 and rng.random() < 0.3:
+            num_args = rng.randint(2, 4 if budget > 70 else 3)
+            arg_types = [rng.choice(ctx)[1] if ctx and rng.random() < 0.7 else gen_type(1) for _ in range(num_args)]
+
+            # Build the nested Lambda block
+            new_ctx = list(ctx)
+            fun_tm = None
+            for i in range(num_args):
+                vname = f"v{len(ctx) + i}"
+                new_ctx.append((vname, arg_types[i]))
+
+            body = gen_term(new_ctx, target_ty, int(budget * 0.5))
+
+            # Construct nested Lambdas: \v1. \v2. body
+            fun_tm = body
+            for i in reversed(range(num_args)):
+                fun_tm = ("Lam", f"v{len(ctx) + i}", arg_types[i], fun_tm)
+
+            # Apply the nested lambdas to generated arguments
+            acc = fun_tm
+            for i in range(num_args):
+                acc = ("App", acc, gen_term(ctx, arg_types[i], budget // 10))
+            return acc
+=======
+        # Dynamic Redex-Chain: ((\v1. ... \vn. body) arg1 ... argn)
+        if budget > 35 and rng.random() < 0.4:
+            num_args = rng.randint(2, 5 if budget > 80 else 3)
+            # Favor context types heavily to boost used_vars and facilitate simple args
+            arg_types = [rng.choice(ctx)[1] if ctx and rng.random() < 0.85 else gen_type(1) for _ in range(num_args)]
+
+            # Create body with extended context
+            inner_ctx = list(ctx)
+            for i, aty in enumerate(arg_types):
+                inner_ctx.append((f"v{len(ctx) + i}", aty))
+            
+            res = gen_term(inner_ctx, target_ty, int(budget * 0.5))
+            
+            # Wrap in Lambdas: Lam v_n. ... Lam v_1. body
+            for i in reversed(range(num_args)):
+                res = ("Lam", f"v{len(ctx) + i}", arg_types[i], res)
+
+            # Apply to arguments to create redexes
+            for i in range(num_args):
+                # Budget for args is low to keep them simple (often Vars or Lits)
+                arg_tm = gen_term(ctx, arg_types[i], budget // 12)
+                res = ("App", res, arg_tm)
+            return res
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+    target_type = gen_type(rng.randint(6, 10))
+    # Higher budget to increase term size, stay under 100
+    generated_term = gen_term([], target_type, 95)
+=======
+    target_type = gen_type(rng.randint(8, 11))
+    # Higher budget to push term size towards 25-30 while staying under 100
+    generated_term = gen_term([], target_type, 115)
+>>>>>>> REPLACE
+
+</DIFF>

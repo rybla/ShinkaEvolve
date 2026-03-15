@@ -1,0 +1,47 @@
+<NAME>
+dynamic_redex_chains
+</NAME>
+
+<DESCRIPTION>
+The `applied_lambdas_proportions_average` metric is currently limited by the fixed structure of redex chains. By implementing a dynamic "Redex-Chain" that scales the number of nested lambdas (and corresponding applications) based on the available budget, we can significantly increase both the lambda density and variable usage. This change replaces the fixed 2-level chain with a loop-based generator that can create 2 to 4 nested redexes, ensuring each binder is added to the context before generating the inner body, thus maximizing the probability of variable re-use within a single large sub-term.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+        # Redex-Chain: ((\x. \y. body) arg1) arg2
+        if budget > 30 and rng.random() < 0.25:
+            a1_ty = rng.choice(ctx)[1] if ctx and rng.random() < 0.5 else gen_type(1)
+            a2_ty = rng.choice(ctx)[1] if ctx and rng.random() < 0.5 else gen_type(1)
+            v1, v2 = f"v{len(ctx)}", f"v{len(ctx)+1}"
+            # Greedy budget: give the body most of the budget to ensure depth
+            inner_lam = ("Lam", v2, a2_ty, gen_term(ctx + [(v1, a1_ty), (v2, a2_ty)], target_ty, int(budget * 0.5)))
+            outer_lam = ("Lam", v1, a1_ty, inner_lam)
+            return ("App", ("App", outer_lam, gen_term(ctx, a1_ty, budget // 5)), gen_term(ctx, a2_ty, budget // 5))
+=======
+        # Dynamic Redex-Chain: ((\v1. ... \vn. body) arg1) ... argn
+        if budget > 40 and rng.random() < 0.3:
+            num_args = rng.randint(2, 4 if budget > 70 else 3)
+            arg_types = [rng.choice(ctx)[1] if ctx and rng.random() < 0.7 else gen_type(1) for _ in range(num_args)]
+
+            # Build the nested Lambda block
+            new_ctx = list(ctx)
+            fun_tm = None
+            for i in range(num_args):
+                vname = f"v{len(ctx) + i}"
+                new_ctx.append((vname, arg_types[i]))
+
+            body = gen_term(new_ctx, target_ty, int(budget * 0.5))
+
+            # Construct nested Lambdas: \v1. \v2. body
+            fun_tm = body
+            for i in reversed(range(num_args)):
+                fun_tm = ("Lam", f"v{len(ctx) + i}", arg_types[i], fun_tm)
+
+            # Apply the nested lambdas to generated arguments
+            acc = fun_tm
+            for i in range(num_args):
+                acc = ("App", acc, gen_term(ctx, arg_types[i], budget // 10))
+            return acc
+>>>>>>> REPLACE
+
+</DIFF>

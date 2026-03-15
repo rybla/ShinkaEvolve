@@ -1,0 +1,14 @@
+{
+  "generation": 15,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 2,
+  "patch_name": "greedy_budget_and_context_interleaving",
+  "patch_description": "To maximize the `combined_score`, I am implementing a \"greedy\" budget reallocation strategy. When a high-value node like a redex or a callable lookup is triggered, it now receives a larger, prioritized share of the remaining budget to ensure these complex structures are fully realized rather than truncated. Additionally, I've increased the probability of selecting argument types from the existing context during general application, which directly boosts the `used_vars_proportions_average` and creates more interconnected, unique sub-terms.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T02:56:37.670015",
+  "llm_cost": 0.0099935,
+  "llm_model": null
+}

@@ -1,0 +1,14 @@
+{
+  "generation": 38,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "curried_context_synthesis",
+  "patch_description": "This algorithm shifts from simple recursive descent to a \"Context-First\" synthesis strategy. Instead of generating random types for applications, it actively scans the typing context for \"Deep Currying\" opportunities\u2014finding variables that can reach the target type through multiple applications. This significantly boosts `used_vars_proportions_average`. \n\nTo maximize `applied_lambdas_proportions_average` and `tm_sizes_average`, it employs a \"Block-Redex\" generator that constructs multi-argument lambda abstractions and immediately applies them to arguments derived from the context. The budget management is strictly non-linear, favoring the \"function\" side of applications to ensure that the operator of an `App` is more likely to be a `Lam` or another `App`, rather than a leaf `Var`.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T02:59:49.258860",
+  "llm_cost": 0.012240999999999998,
+  "llm_model": null
+}

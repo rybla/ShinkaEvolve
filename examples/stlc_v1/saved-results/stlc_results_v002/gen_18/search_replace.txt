@@ -1,0 +1,27 @@
+<NAME>
+type_directed_variable_shadowing
+</NAME>
+
+<DESCRIPTION>
+This edit implements "Type-Directed Variable Shadowing" as recommended. By occasionally (15% chance) reusing a variable name already present in the context when generating a `Lam`, we force the generator to handle shadowing correctly. This increases the complexity of the term structure and ensures that identical-looking subtrees are distinct due to binding depth, which helps maintain high `unique_subterms_proportions_average` and tests the robustness of the compiler's scope handling.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+        # Generate Lambda if target is a function
+        if target_ty[0] == "Fun":
+            _, arg_ty, ret_ty = target_ty
+            var_name = f"v{len(ctx)}"
+            return ("Lam", var_name, arg_ty, gen_term(ctx + [(var_name, arg_ty)], ret_ty, budget - 1))
+=======
+        # Generate Lambda if target is a function
+        if target_ty[0] == "Fun":
+            _, arg_ty, ret_ty = target_ty
+            # Type-Directed Variable Shadowing: 15% chance to reuse an existing name
+            if ctx and rng.random() < 0.15:
+                var_name = rng.choice(ctx)[0]
+            else:
+                var_name = f"v{len(ctx)}"
+            return ("Lam", var_name, arg_ty, gen_term(ctx + [(var_name, arg_ty)], ret_ty, budget - 1))
+>>>>>>> REPLACE
+</DIFF>

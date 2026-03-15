@@ -1,0 +1,14 @@
+{
+  "generation": 6,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "optimize_term_generation_for_size_and_usage",
+  "patch_description": "The current generator is good but can be improved by:\n1.  **Increasing Type Complexity**: Setting a fixed higher range for `gen_type` to consistently hit the size 10 limit, which increases `ty_sizes_average`.\n2.  **Explicit Variable Capture**: Improving the probability of selecting a variable from the context, especially prioritizing deeper variables to ensure `used_vars_proportions_average` increases.\n3.  **Application Density**: Encouraging the creation of `App` nodes where the operator is a freshly generated `Lam` (Beta-redexes), which directly improves `applied_lambdas_proportions_average`.\n4.  **Budget Control**: Refining recursion depth and budget distribution to maximize `tm_sizes_average` toward the 100-node limit without exceeding it.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T02:55:39.451616",
+  "llm_cost": 0.007631499999999999,
+  "llm_model": null
+}

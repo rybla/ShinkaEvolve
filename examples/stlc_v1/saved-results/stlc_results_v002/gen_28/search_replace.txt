@@ -1,0 +1,98 @@
+<NAME>
+optimized_redex_chain_and_budget_allocation
+</NAME>
+
+<DESCRIPTION>
+The current `Dynamic Redex-Chain` implementation has a structural flaw: it builds the nested lambdas and then applies them in a way that doesn't correctly represent a standard curried application chain (it creates `App(App(Lam, arg1), arg2)` which is good, but the budget distribution and the way it picks `arg_types` can be improved).
+
+I will:
+1. Refine the `Dynamic Redex-Chain` to ensure it correctly builds a left-associated application of a nested lambda, which is the most effective way to boost `applied_lambdas_proportions_average`.
+2. Increase the `used_vars_proportions_average` by ensuring that arguments to these redexes are pulled from the context with higher probability.
+3. Adjust the initial budget and type generation to target slightly larger terms (aiming for the 20-30 range) to improve the `tm_sizes_average` without hitting the 100-node limit.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+        # 3. Dynamic Redex-Chain (Novel Strategy)
+        # Create a chain of nested lambdas applied to arguments to maximize metrics
+        if budget > 40 and rng.random() < 0.3:
+            chain_len = rng.randint(2, 4)
+            arg_types = []
+            for _ in range(chain_len):
+                if ctx and rng.random() < 0.6:
+                    arg_types.append(rng.choice(ctx)[1])
+                else:
+                    arg_types.append(gen_type(1))
+
+            # Build the nested Lambda block
+            new_ctx = list(ctx)
+            names = []
+            for i, aty in enumerate(arg_types):
+                name = f"v{len(ctx) + i}"
+                names.append(name)
+                new_ctx.append((name, aty))
+
+            body = gen_term(new_ctx, target_ty, int(budget * 0.4))
+
+            # Wrap body in Lambdas: Lam v1. (Lam v2. body)
+            curr_tm = body
+            for i in reversed(range(chain_len)):
+                curr_tm = ("Lam", names[i], arg_types[i], curr_tm)
+
+            # Apply the chain to arguments: ((Lam...) arg1) arg2...
+            for i in range(chain_len):
+                arg_tm = gen_term(ctx, arg_types[i], int(budget * 0.1))
+                curr_tm = ("App", curr_tm, arg_tm)
+            return curr_tm
+=======
+        # 3. Dynamic Redex-Chain (Optimized Strategy)
+        # Create a chain of nested lambdas applied to arguments to maximize metrics
+        if budget > 35 and rng.random() < 0.35:
+            chain_len = rng.randint(2, 3)
+            arg_types = []
+            for _ in range(chain_len):
+                # Prioritize context types to ensure arguments can be 'Var'
+                if ctx and rng.random() < 0.8:
+                    arg_types.append(rng.choice(ctx)[1])
+                else:
+                    arg_types.append(gen_type(1))
+
+            # Build the nested Lambda block
+            new_ctx = list(ctx)
+            names = []
+            for i, aty in enumerate(arg_types):
+                name = f"v{len(ctx) + i}"
+                names.append(name)
+                new_ctx.append((name, aty))
+
+            # Body gets a significant portion of budget to allow further recursion
+            body = gen_term(new_ctx, target_ty, int(budget * 0.5))
+
+            # Wrap body in Lambdas: Lam v1. (Lam v2. body)
+            fun_part = body
+            for i in reversed(range(chain_len)):
+                fun_part = ("Lam", names[i], arg_types[i], fun_part)
+
+            # Apply the chain to arguments: App(App(Lam_Chain, arg1), arg2)
+            res = fun_part
+            for i in range(chain_len):
+                # Small budget for args to encourage them being 'Var' or literals
+                arg_tm = gen_term(ctx, arg_types[i], 2)
+                res = ("App", res, arg_tm)
+            return res
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+    # Generate a complex target type (5-10 nodes)
+    target_type = gen_type(rng.randint(7, 10))
+    # High initial budget to maximize term size and complexity
+    generated_term = gen_term([], target_type, 90)
+    return target_type, generated_term
+=======
+    # Generate a complex target type (7-11 nodes)
+    target_type = gen_type(rng.randint(8, 11))
+    # High initial budget to maximize term size and complexity
+    generated_term = gen_term([], target_type, 115)
+    return target_type, generated_term
+>>>>>>> REPLACE
+
+</DIFF>

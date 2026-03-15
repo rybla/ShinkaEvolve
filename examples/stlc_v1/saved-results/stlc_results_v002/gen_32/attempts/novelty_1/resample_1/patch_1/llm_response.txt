@@ -1,0 +1,92 @@
+To improve the `combined_score`, we need to increase the `tm_sizes_average` and `applied_lambdas_proportions_average` while maintaining the high `used_vars_proportions_average`. 
+
+The current implementation has a relatively low `tm_sizes_average` (13.12). By introducing a "Dynamic Redex Chain" (similar to the 12.50 score version but refined) and increasing the initial budget, we can significantly boost the term size and the density of applied lambdas. We will also ensure that the arguments for these redexes are pulled from the context to keep the variable usage high.
+
+<NAME>
+dynamic_redex_chains_and_budget_boost
+</NAME>
+
+<DESCRIPTION>
+1.  **Dynamic Redex Chains**: Replaces the simple redex injection with a multi-level chain `((\v1...\vn. body) arg1 ... argn)`. This creates a high density of `App(Lam(...))` nodes.
+2.  **Context-Inhabited Arguments**: When generating redex chains or general applications, we prioritize `arg_ty` from the existing context. This ensures that the `arg` subterm can be a `Var`, boosting `used_vars_proportions`.
+3.  **Budget Increase**: Increases the initial budget from 95 to 115 and the target type complexity to push `tm_sizes_average` toward the 20-30 range.
+4.  **Shadowing Prevention**: Uses a more robust naming convention `f"v{len(ctx)}_{budget}"` to ensure unique variables and maximize the context size.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    def gen_term(ctx: list[Tuple[str, Ty]], target_ty: Ty, budget: int) -> Tm:
+        # 1. Variable Match (Critical for used_vars metric)
+        matching_vars = [name for name, ty in ctx if ty == target_ty]
+        if matching_vars and (budget <= 3 or rng.random() < 0.50):
+            return ("Var", rng.choice(matching_vars))
+
+        # 2. Immediate Redex Injection (Maximize applied_lambdas)
+        # Force a redex where the argument is a variable from the context
+        if budget > 15 and rng.random() < 0.45:
+            # Pick a type already in context if possible to ensure the 'arg' is a Var
+            if ctx and rng.random() < 0.85:
+                arg_ty = rng.choice(ctx)[1]
+            else:
+                arg_ty = gen_type(1)
+            
+            vname = f"v{len(ctx)}"
+            # The function part of the App is a Lambda
+            lam_body = gen_term(ctx + [(vname, arg_ty)], target_ty, int(budget * 0.6))
+            lam = ("Lam", vname, arg_ty, lam_body)
+            # The argument part is a small term, ideally a Var
+            arg = gen_term(ctx, arg_ty, 2) 
+            return ("App", lam, arg)
+=======
+    def gen_term(ctx: list[Tuple[str, Ty]], target_ty: Ty, budget: int) -> Tm:
+        # 1. Variable Match (Critical for used_vars metric)
+        matching_vars = [name for name, ty in ctx if ty == target_ty]
+        if matching_vars and (budget <= 2 or rng.random() < 0.45):
+            return ("Var", rng.choice(matching_vars))
+
+        # 2. Dynamic Redex-Chain (The Performance Multiplier)
+        if budget > 30 and rng.random() < 0.4:
+            n = 2 if budget < 60 else 3
+            arg_types = []
+            for _ in range(n):
+                arg_types.append(rng.choice(ctx)[1] if (ctx and rng.random() < 0.8) else gen_type(1))
+            
+            vnames = [f"v{len(ctx) + i}_{budget}" for i in range(n)]
+            inner_ctx = ctx + list(zip(vnames, arg_types))
+            
+            res = gen_term(inner_ctx, target_ty, int(budget * 0.55))
+            for i in reversed(range(n)):
+                res = ("Lam", vnames[i], arg_types[i], res)
+            
+            for i in range(n):
+                res = ("App", res, gen_term(ctx, arg_types[i], budget // 10))
+            return res
+>>>>>>> REPLACE
+
+<DIFF>
+<<<<<<< SEARCH
+        # 4. Mandatory Lambda for Function Types (Growth of context)
+        if target_ty[0] == "Fun":
+            _, arg_ty, ret_ty = target_ty
+            var_name = f"v{len(ctx)}"
+            return ("Lam", var_name, arg_ty, gen_term(ctx + [(var_name, arg_ty)], ret_ty, budget - 1))
+=======
+        # 4. Mandatory Lambda for Function Types (Growth of context)
+        if target_ty[0] == "Fun":
+            _, arg_ty, ret_ty = target_ty
+            var_name = f"v{len(ctx)}_{budget}"
+            return ("Lam", var_name, arg_ty, gen_term(ctx + [(var_name, arg_ty)], ret_ty, budget - 1))
+>>>>>>> REPLACE
+
+<DIFF>
+<<<<<<< SEARCH
+    # Start with a robust type and budget
+    target_type = gen_type(rng.randint(8, 12))
+    generated_term = gen_term([], target_type, 95)
+    return target_type, generated_term
+=======
+    # Start with a robust type and budget
+    target_type = gen_type(rng.randint(9, 12))
+    generated_term = gen_term([], target_type, 115)
+    return target_type, generated_term
+>>>>>>> REPLACE

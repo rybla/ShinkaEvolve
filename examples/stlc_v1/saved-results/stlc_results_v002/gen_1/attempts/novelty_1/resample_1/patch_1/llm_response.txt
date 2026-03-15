@@ -1,0 +1,113 @@
+<NAME>
+stlc_random_generator
+</NAME>
+
+<DESCRIPTION>
+I will implement a more sophisticated generator for the simply-typed lambda calculus. 
+1.  **Type Generation**: A dedicated `gen_type` function that respects the size limit (10 nodes) and produces diverse types (Bool, Int, String, Fun).
+2.  **Term Generation**: A `gen_term` function that tracks the typing context (mapping variables to types) to ensure well-typedness.
+3.  **Heuristics for Quality**:
+    -   It prioritizes using variables from the context to increase `used_vars_proportions`.
+    -   It attempts to create applications (`App`) to increase `applied_lambdas_proportions` and term size.
+    -   It uses a budget-based approach to stay within the 100-node limit while aiming for larger terms.
+    -   It ensures that when a function type is required, it can either pick a variable of that type or generate a lambda.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+=======
+def generate_sample(rng: random.Random) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    Ensures well-typedness and aims for high AST node counts and variable usage.
+    """
+
+    def gen_type(size_limit: int) -> Ty:
+        if size_limit <= 1 or rng.random() < 0.3:
+            return rng.choice([("Bool",), ("Int",), ("String",)])
+        
+        # Fun type has 1 (Fun) + left + right nodes.
+        left_limit = rng.randint(1, size_limit - 2)
+        right_limit = size_limit - 1 - left_limit
+        return ("Fun", gen_type(left_limit), gen_type(right_limit))
+
+    def type_size(ty: Ty) -> int:
+        if ty[0] == "Fun":
+            return 1 + type_size(ty[1]) + type_size(ty[2])
+        return 1
+
+    def gen_term(ctx: list[Tuple[str, Ty]], target_ty: Ty, size_limit: int) -> Tm:
+        # Try to use a variable from context if it matches target_ty
+        valid_vars = [name for name, ty in ctx if ty == target_ty]
+        
+        # Base cases: Literals or Variables
+        if size_limit <= 1 or (not valid_vars and target_ty[0] == "Fun" and size_limit < 3):
+            if valid_vars and (rng.random() < 0.7 or target_ty[0] == "Fun"):
+                return ("Var", rng.choice(valid_vars))
+            
+            if target_ty == ("Bool",):
+                return ("Bool", rng.choice([True, False]))
+            if target_ty == ("Int",):
+                return ("Int", rng.randint(0, 100))
+            if target_ty == ("String",):
+                return ("String", rng.choice(["abc", "xyz", "lambda"]))
+            
+        # Recursive cases
+        choices = []
+        if valid_vars:
+            choices.append("var")
+        if target_ty[0] == "Fun":
+            choices.append("lam")
+        if size_limit > 3:
+            choices.append("app")
+
+        pick = rng.choice(choices) if choices else "lit"
+
+        if pick == "var":
+            return ("Var", rng.choice(valid_vars))
+        
+        if pick == "lam" and target_ty[0] == "Fun":
+            # target_ty is (Fun, A, B)
+            var_name = f"v{len(ctx)}"
+            inner_tm = gen_term(ctx + [(var_name, target_ty[1])], target_ty[2], size_limit - 1)
+            return ("Lam", var_name, target_ty[1], inner_tm)
+
+        if pick == "app":
+            # To generate (App f x) where f: A -> target_ty and x: A
+            arg_ty = gen_type(3) # Keep arg type small to save budget
+            f_ty = ("Fun", arg_ty, target_ty)
+            # Split budget: 1 for App node, rest for f and x
+            f_limit = (size_limit - 1) // 2
+            x_limit = size_limit - 1 - f_limit
+            return ("App", gen_term(ctx, f_ty, f_limit), gen_term(ctx, arg_ty, x_limit))
+
+        # Fallback to literal
+        return gen_term(ctx, target_ty, 1)
+
+    # Generate a type with max 10 nodes
+    target_type = gen_type(10)
+    # Generate a term with max 100 nodes
+    term = gen_term([], target_type, 100)
+    
+    return target_type, term
+>>>>>>> REPLACE
+</DIFF>

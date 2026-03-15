@@ -1,0 +1,14 @@
+{
+  "generation": 20,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "dynamic_scaling_redex_chains",
+  "patch_description": "This approach maximizes the `applied_lambdas_proportions` and `used_vars_proportions` metrics by introducing a \"Deep Redex Chain\" mechanism. Instead of fixed-length chains, the algorithm dynamically scales the length of nested lambda-application blocks (2 to 4 binders) based on the remaining budget. By aggressively picking argument types from the existing context and using a specific budget-weighting (70% to the operator, 20% to the arguments), the generator ensures that the \"head\" of an application is more likely to be a lambda, creating a valid redex. Additionally, it favors complex `Fun` types in the initial generation to provide more opportunities for binders.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T02:57:19.585116",
+  "llm_cost": 0.012462,
+  "llm_model": null
+}

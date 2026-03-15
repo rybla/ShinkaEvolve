@@ -1,0 +1,14 @@
+{
+  "generation": 36,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "biased_higher_order_redex_synthesis",
+  "patch_description": "This implementation introduces a \"Biased Higher-Order Redex\" strategy. Unlike previous iterations that primarily used base types for redex arguments, this approach forces 60% of generated redex arguments to be function types. This significantly boosts the `applied_lambdas` metric by ensuring that the \"argument\" side of an application is often a lambda or a complex application itself. Additionally, it uses a \"Context-Aware Type Selection\" for applications, where the generator scans the typing context to find types that are already bound, maximizing the `used_vars_proportions` by creating more opportunities for variable references in leaf nodes.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T02:59:27.152828",
+  "llm_cost": 0.0115535,
+  "llm_model": null
+}
