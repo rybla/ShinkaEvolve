@@ -1,4 +1,4 @@
-from typing import List, Literal, Tuple
+from typing import Literal, Tuple
 import random
 import tqdm
 
@@ -76,13 +76,6 @@ def run() -> lc.RunOutput:
 
     size = 1000
     rng = random.Random()
-
-    # samples: List[Tuple[Ty, Tm]] = []
-    # for _ in tqdm.tqdm(
-    #     desc="Generating samples",
-    #     iterable=range(size),
-    # ):
-    #     samples.append(generate_sample(rng))
 
     return lc.run(
         size=size,

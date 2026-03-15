@@ -24,7 +24,18 @@ class BugException(Exception):
     pass
 
 
-class CheckingException(Exception):
+class GrammarException(Exception):
+    msgs: List[str]
+
+    def __init__(self, *msgs: str):
+        super().__init__()
+        self.msgs = list(msgs)
+
+    def __str__(self):
+        return "\n".join(self.msgs)
+
+
+class TypingException(Exception):
     msgs: List[str]
 
     def __init__(self, *msgs: str):
@@ -71,7 +82,7 @@ class TypeFormArg:
 
 class Form:
     @abstractmethod
-    def check(self, a: Any) -> Generator[CheckingException, Any, None]:
+    def check(self, a: Any) -> Generator[Exception, Any, None]:
         pass
 
 
@@ -83,14 +94,14 @@ class MultiForm(Form):
         self.label = label
         self.variants = variants
 
-    def check(self, a: Any) -> Generator[CheckingException, Any, None]:
+    def check(self, a: Any) -> Generator[Exception, Any, None]:
 
         # We have to do this here rather than in constructor since not all the
         # form are added to the dict yet.
         forms = list(map(getSingleForm, self.variants))
 
         if not isinstance(a, tuple):
-            yield CheckingException(
+            yield GrammarException(
                 f"The construct {a} must be a tuple where the first component is the constructor and the rest of the components are the construct's arguments."
             )
             return None
@@ -102,7 +113,7 @@ class MultiForm(Form):
                 return None
             else:
                 pass
-        yield CheckingException(
+        yield GrammarException(
             f"The construct {a} is expected to be of the form '{self.label}', but it's constructor, '{a[0]}', is not a valid constructor for the form '{self.label}'. The valid constructors are: {", ".join([ f"'{form.constructor}'" for form in forms ])}."
         )
 
@@ -112,15 +123,15 @@ class SingleForm(Form):
     constructor: str
     params: List[TypeFormArg | LiteralFormArg | NameFormArg]
 
-    def check(self, a: Any) -> Generator[CheckingException, Any, None]:
+    def check(self, a: Any) -> Generator[Exception, Any, None]:
         if not isinstance(a, tuple):
-            yield CheckingException(
+            yield GrammarException(
                 f"The value {a} could not be checked because it's not even a tuple."
             )
             return None
 
         if not a[0] == self.constructor:
-            yield CheckingException(
+            yield GrammarException(
                 f"The value {a} must have constructor {self.constructor} in order to be checked by this Form."
             )
             return None
@@ -129,7 +140,7 @@ class SingleForm(Form):
         correctUsage = f"To be constructed correctly, the '{self.constructor}' form must be constructed as a tuple in this format: {template}"
 
         if not len(a[1:]) == len(self.params):
-            yield CheckingException(
+            yield GrammarException(
                 f"The construct {a} is not well-formed since the '{self.constructor}' form must have exactly {len(self.params)} arguments, but the construct has {len(a)} arguments. {correctUsage}"
             )
             return None
@@ -139,7 +150,7 @@ class SingleForm(Form):
         for i, (arg, param) in enumerate(zip(a[1:], self.params)):
             if isinstance(param, TypeFormArg):
                 if not isinstance(arg, param.ty):
-                    yield CheckingException(
+                    yield GrammarException(
                         f"The construct {a} is not well-formed since the '{self.constructor}' form's argument {i} must be a '{param}', whereas {arg} was used. {correctUsage}"
                     )
                 else:
@@ -147,14 +158,14 @@ class SingleForm(Form):
 
             elif isinstance(param, LiteralFormArg):
                 if not isinstance(arg, str):
-                    yield CheckingException(
+                    yield GrammarException(
                         f"The construct {a} is not well-formed since the '{self.constructor}' form's argument {i} must a str from the options {param.variants}, whereas the non-str {arg} was used. {correctUsage}"
                     )
                 else:
                     pass
 
                 if not arg in param.variants:
-                    yield CheckingException(
+                    yield GrammarException(
                         f"The construct {a} is not well-formed since the '{self.constructor}' form's argument {i} must one of the options {", ".join([ f"'{param}'" for param in param.variants ])}, whereas {arg} was used. {correctUsage}"
                     )
                 else:
@@ -265,14 +276,14 @@ type Ctx = List[Tuple[str, Ty]]
 # ==============================================================================
 
 
-def lookup(ctx: Ctx, x: str) -> Generator[CheckingException, Any, Ty | None]:
+def lookup(ctx: Ctx, x: str) -> Generator[Exception, Any, Ty | None]:
     for c in ctx:
         if c[0] == x:
             return c[1]
         else:
             pass
 
-    yield CheckingException(f"The variable '{x}' is out of scope in context '{ctx}'.")
+    yield TypingException(f"The variable '{x}' is out of scope in context '{ctx}'.")
 
 
 def extend(x: str, ty: Ty, ctx: Ctx) -> Ctx:
@@ -284,18 +295,18 @@ def extend(x: str, ty: Ty, ctx: Ctx) -> Ctx:
 # ==============================================================================
 
 
-def validateTy(ty: Ty) -> Generator[CheckingException, Any, None]:
+def validateTy(ty: Ty) -> Generator[Exception, Any, None]:
     yield from TyForm.check(ty)
 
 
-def validateTm(a: Tm) -> Generator[CheckingException, Any, None]:
+def validateTm(a: Tm) -> Generator[Exception, Any, None]:
     yield from TmForm.check(a)
 
 
 # ==============================================================================
 
 
-def inferType(ctx: Ctx, tm: Tm) -> Generator[CheckingException, Any, Ty | None]:
+def inferType(ctx: Ctx, tm: Tm) -> Generator[Exception, Any, Ty | None]:
     if tm[0] == "Bool":
         return ("Bool",)
     elif tm[0] == "Int":
@@ -326,7 +337,7 @@ def inferType(ctx: Ctx, tm: Tm) -> Generator[CheckingException, Any, Ty | None]:
             _, alpha, beta = phi
             yield from checkType_aux(ctx, alpha, a)
         else:
-            yield CheckingException(
+            yield TypingException(
                 f"The term {f} was applied to the argument {a}, so it is expected to have a function type, but it actually has type {phi}"
             )
             return None
@@ -355,13 +366,11 @@ def eqTy(ty1: Ty, ty2: Ty) -> bool:
     return True
 
 
-def checkType_aux(
-    ctx: Ctx, ty_expected: Ty, tm: Tm
-) -> Generator[CheckingException, Any, None]:
+def checkType_aux(ctx: Ctx, ty_expected: Ty, tm: Tm) -> Generator[Exception, Any, None]:
 
     if tm[0] == "Bool":
         if not eqTy(ty_expected, BoolTy_):
-            yield CheckingException(
+            yield TypingException(
                 f"The term {tm} is expected to have type {ty_expected}, but it actually has type {BoolTy_}"
             )
         else:
@@ -369,7 +378,7 @@ def checkType_aux(
 
     elif tm[0] == "Int":
         if not eqTy(ty_expected, IntTy_):
-            yield CheckingException(
+            yield TypingException(
                 f"The term {tm} is expected to have type {ty_expected}, but it actually has type {IntTy_}"
             )
         else:
@@ -377,7 +386,7 @@ def checkType_aux(
 
     elif tm[0] == "String":
         if not eqTy(ty_expected, StringTy_):
-            yield CheckingException(
+            yield TypingException(
                 f"The term {tm} is expected to have type {ty_expected}, but it actually has type {StringTy_}"
             )
 
@@ -387,7 +396,7 @@ def checkType_aux(
         if ty_actual is None:
             return None
         elif not eqTy(ty_actual, ty_expected):
-            yield CheckingException(
+            yield TypingException(
                 f"The variable '{x}' is expected to have type {ty_expected} but it actually has type {ty_actual}."
             )
         else:
@@ -398,7 +407,7 @@ def checkType_aux(
         if ty_expected[0] == "Fun":
             _, alpha_expected, beta = ty_expected
             if not eqTy(alpha_actual, alpha_expected):
-                yield CheckingException(
+                yield TypingException(
                     f"The term {tm} is a function that is expected to have domain {alpha_expected}, but it actually has domain {alpha_actual}."
                 )
             else:
@@ -408,7 +417,7 @@ def checkType_aux(
             ctx = extend(x, alpha, ctx)
             yield from checkType_aux(ctx, beta, b)
         else:
-            yield CheckingException(
+            yield TypingException(
                 f"The term {tm} is expected to have the non-function type {ty_expected}, but it is a lambda and so actually has a function type."
             )
 
@@ -421,7 +430,7 @@ def checkType_aux(
             _, alpha, beta = phi
             yield from checkType_aux(ctx, alpha, a)
         else:
-            yield CheckingException(
+            yield TypingException(
                 f"The term {f} was applied to the argument {a}, so it is expected to have a function type, but it actually has type {phi}"
             )
             return None
@@ -430,14 +439,14 @@ def checkType_aux(
         raise BugException(f"Unhandled term constructor '{tm[0]}' in term: {tm}")
 
 
-def checkType(ty: Ty, tm: Tm) -> Generator[CheckingException, Any, None]:
+def checkType(ty: Ty, tm: Tm) -> Generator[Exception, Any, None]:
     yield from checkType_aux([], ty, tm)
 
 
 # ==============================================================================
 
 
-def check_aux(ty: Any, tm: Any) -> Generator[CheckingException, Any, None]:
+def check_aux(ty: Any, tm: Any) -> Generator[Exception, Any, None]:
     validateTy_exns = list(validateTy(ty))
     validateTm_exns = list(validateTm(tm))
     validate_exns = validateTy_exns + validateTm_exns
@@ -448,7 +457,7 @@ def check_aux(ty: Any, tm: Any) -> Generator[CheckingException, Any, None]:
         yield from checkType(ty, tm)
 
 
-def check(ty: Any, tm: Any) -> List[CheckingException]:
+def check(ty: Any, tm: Any) -> List[Exception]:
     return list(check_aux(ty, tm))
 
 
@@ -465,7 +474,7 @@ def size_of_tuple(t: Tuple) -> int:
 
 # ------------------------------------------------------------------------------
 
-type RunOutput = Tuple[List[GoodResult], List[BadResult]]
+type RunOutput = Tuple[List[GoodResult], List[BadResult], List[ErrorResult]]
 
 
 @dataclass
@@ -621,29 +630,39 @@ class BadResult:
     result: Tuple[Ty, Tm] | None
     exns: List[Exception]
 
-    def __str__(self) -> str:
+    def show_verbosely(self) -> str:
         if self.result is None:
             return f"""
-Failed to generate type and term because of these errors:
+Encountered exceptions when generating a type and term:
+
 {"\n".join([ f"- {exn}" for exn in self.exns ])}
 """.strip()
 
         else:
             ty, tm = self.result
             return f"""
-Successfully generated type {ty} and term {tm}. However, the generated term is not well-typed with the generated type. These are the errors yielded from all checks:
+Successfully generated type {ty} and term {tm}. However, these exceptions were yielded from grammar and typing checks:
 
 {"\n".join([ f"- {exn}" for exn in self.exns ])}
 """.strip()
+
+
+@dataclass
+class ErrorResult:
+    exn: Exception
+
+    def show_verbosely(self) -> str:
+        return "TODO"
 
 
 def run(
     size: int,
     rng: random.Random,
     generate_sample: Callable[[random.Random], Tuple[Ty, Tm]],
-):
+) -> RunOutput:
     goods: List[GoodResult] = []
     bads: List[BadResult] = []
+    errors: List[ErrorResult] = []
 
     for _ in tqdm.tqdm(
         iterable=range(size),
@@ -656,11 +675,8 @@ def run(
             if len(exns) == 0:
                 goods.append(GoodResult(ty, tm))
             else:
-                # This must be unsafely coerced since Python lists are mutable
-                # and so lists are invariant in the type argument.
-                exns_: List[Exception] = exns  # type: ignore
-                bads.append(BadResult((ty, tm), exns_))
+                bads.append(BadResult((ty, tm), exns))
         except Exception as exn:
-            bads.append(BadResult(None, [exn]))
+            errors.append(ErrorResult(exn))
 
-    return goods, bads
+    return goods, bads, errors

@@ -1,5 +1,5 @@
 """
-Evaluator for fuzzing.
+Evaluator for stlc.
 """
 
 import os
@@ -8,16 +8,21 @@ import numpy as np
 from typing import Tuple, Optional, List, Dict, Any
 
 from lc import RunOutput
-from .common import ty_size_max, tm_size_max
+from .common import (
+    ty_size_max,
+    tm_size_max,
+    bads_preview_count_max,
+    errors_preview_count_max,
+)
 from shinka.core import run_shinka_eval
 
 
-def validate_fuzzing(
+def validate_stlc(
     run_output: RunOutput,
     atol=0.0,
 ) -> Tuple[bool, Optional[str]]:
     """
-    Validates fuzzing results based on the output of 'run'.
+    Validates stlc results based on the output of 'run'.
 
     Args:
         run_output: output from run.
@@ -28,44 +33,71 @@ def validate_fuzzing(
 
     # produce feedback that helps model generate valid results
 
-    # TODO: reject badly-typed generations?
+    goods, bads, errors = run_output
 
-    goods, bads = run_output
+    goods_count = len(goods)
+    bads_count = len(bads)
+    errors_count = len(errors)
+    total_count = goods_count + bads_count + errors_count
 
-    if len(bads) == 0:
-        return True, "All generations were successful and well-typed."
-    else:
+    good_ratio = goods_count / total_count
+    bad_ratio = bads_count / total_count
+    error_ratio = errors_count / total_count
+
+    if errors_count > 0:
         return (
-            True,
-            """
-Some generations raised exceptions during generation, grammar checking, or type checking. These are some examples:
-TODO: some example exceptions
+            False,
+            f"""
+Some generation attempts failed. These are some examples:
+
+{"\n\n".join([ error.show_verbosely() for error in errors[:errors_preview_count_max] ])}
+
+{f"There were {len(errors) - errors_preview_count_max} other generation attempts that also had similar problems, which was {error_ratio*100.0}% of the total generations." if (len(errors) - errors_preview_count_max) > 0 else ""}
 """.strip(),
         )
+    elif bads_count > 0:
+        return (
+            True,
+            f"""
+All generation attempts were successful. However, many of the generated types and terms ended up failing grammar and type checks. These are some examples:
+
+{"\n\n".join([ bad.show_verbosely() for bad in bads[:bads_preview_count_max] ])}
+
+{f"There were {len(bads) - bads_preview_count_max} other generation attempts that also had similar problems, which was {bad_ratio*100.0}% of the total generations." if (len(bads) - bads_preview_count_max) > 0 else ""}
+""".strip(),
+        )
+    else:
+        return True, "All generation attempts were successful and well-typed."
 
 
-def get_fuzzing_kwargs(run_index: int) -> Dict[str, Any]:
-    """Provides keyword arguments for fuzzing runs (none needed)."""
+def get_stlc_kwargs(run_index: int) -> Dict[str, Any]:
+    """Provides keyword arguments for stlc runs (none needed)."""
 
     return {}
 
 
-def aggregate_fuzzing_metrics(
+def aggregate_stlc_metrics(
     results: List[RunOutput], results_dir: str
 ) -> Dict[str, Any]:
     """
-    Aggregates metrics for fuzzing. Assumes num_runs=1.
-    Saves extra.npz with detailed fuzzing information.
+    Aggregates metrics for stlc. Assumes num_runs=1.
+    Saves extra.npz with detailed stlc information.
     """
 
     if not results:
         return {"combined_score": 0.0, "error": "No results to aggregate"}
 
-    goods, bads = results[0]
+    run_output = results[0]
+
+    goods, bads, errors = run_output
 
     goods_count = len(goods)
     bads_count = len(bads)
-    goods_to_bads_ratio = goods_count / bads_count
+    errors_count = len(errors)
+    total_count = goods_count + bads_count + errors_count
+
+    good_ratio = goods_count / total_count
+    error_ratio = errors_count / total_count
 
     # only for goods
     tm_sizes = np.array([good.tm_size() for good in goods])
@@ -88,7 +120,7 @@ def aggregate_fuzzing_metrics(
     unique_subterms_proportions_average = np.average(unique_subterms_proportions)
 
     public_metrics = {
-        "goods_bads_proportion": goods_to_bads_ratio,
+        "good_ratio": good_ratio,
         "tm_sizes_average": tm_sizes_average,
         "ty_sizes_average": ty_sizes_average,
         "used_vars_proportions_average": used_vars_proportions_average,
@@ -99,7 +131,7 @@ def aggregate_fuzzing_metrics(
     metrics = {
         "combined_score": float(
             0.0
-            + 10.0 * goods_to_bads_ratio
+            + 10.0 * good_ratio
             + 1.0 * (min(ty_sizes_average, ty_size_max) / ty_size_max)
             + 1.0 * (min(tm_sizes_average, tm_size_max) / tm_size_max)
             + 1.0 * used_vars_proportions_average
@@ -113,7 +145,7 @@ def aggregate_fuzzing_metrics(
     extra_file = os.path.join(results_dir, "extra.npz")
     try:
         np.savez(extra_file)
-        print(f"Detailed fuzzing data saved to {extra_file}")
+        print(f"Detailed stlc data saved to {extra_file}")
     except Exception as e:
         print(f"Error saving extra.npz: {e}")
         metrics["extra_npz_save_error"] = str(e)  # type: ignore
@@ -122,7 +154,7 @@ def aggregate_fuzzing_metrics(
 
 
 def main(program_path: str, results_dir: str):
-    """Runs the fuzzing evaluation using shinka.eval."""
+    """Runs the stlc evaluation using shinka.eval."""
 
     print(f"Evaluating program: {program_path}")
     print(f"Saving results to: {results_dir}")
@@ -134,15 +166,15 @@ def main(program_path: str, results_dir: str):
     def _aggregator_with_context(
         r: List[RunOutput],
     ) -> Dict[str, Any]:
-        return aggregate_fuzzing_metrics(r, results_dir)
+        return aggregate_stlc_metrics(r, results_dir)
 
     metrics, correct, error_msg = run_shinka_eval(
         program_path=program_path,
         results_dir=results_dir,
         experiment_fn_name="run",
         num_runs=num_experiment_runs,
-        get_experiment_kwargs=get_fuzzing_kwargs,
-        validate_fn=validate_fuzzing,
+        get_experiment_kwargs=get_stlc_kwargs,
+        validate_fn=validate_stlc,
         aggregate_metrics_fn=_aggregator_with_context,
     )
 
@@ -160,7 +192,7 @@ def main(program_path: str, results_dir: str):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Fuzzing evaluator using shinka.eval")
+    parser = argparse.ArgumentParser(description="stlc evaluator using shinka.eval")
     parser.add_argument(
         "--program_path",
         type=str,

@@ -80,7 +80,8 @@ evo_config:
     # - "gemini-3-flash-preview"
     # - "gpt-5-mini"
     # - "gpt-5-nano"
-    - "openrouter/google/gemini-3-flash-preview"
+    # - "openrouter/google/gemini-3-flash-preview"
+    - "openrouter/minimax/minimax-m2.5"
   # Shared generation kwargs for main proposal LLM calls.
   llm_kwargs:
     # Candidate temperatures to sample for generation diversity.
@@ -136,7 +137,7 @@ evo_config:
     # Cost-penalty weight in model-selection scoring.
     cost_aware_coef: 0.7
   # Directory where run outputs, logs, and artifacts are written.
-  results_dir: results/results_circle_async_small
+  results_dir: results/results_stlc_async_small
 
   # Whether prompt variants are evolved during the run.
   evolve_prompts: True
