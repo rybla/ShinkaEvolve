@@ -482,9 +482,6 @@ class GoodResult:
     ty: Ty
     tm: Tm
 
-    def unique_subexpressions_count(self) -> int:
-        raise Exception("Unimplemented")
-
     def ty_size(self) -> int:
         return size_of_tuple(self.ty)
 
@@ -546,7 +543,7 @@ class GoodResult:
 
         go(tm=self.tm, ctx=[])
 
-        return len(used_vars) / len(all_vars)
+        return len(used_vars) / (len(all_vars) + 1)
 
     def applied_lambdas_proportion(self) -> float:
         lambdas_count = 0
@@ -584,7 +581,7 @@ class GoodResult:
 
         go(self.tm)
 
-        return applied_lambdas_count / lambdas_count
+        return applied_lambdas_count / (lambdas_count + 1)
 
     def unique_subterms_proportion(self) -> float:
         unique_subterms: Set[Tm] = set()
@@ -622,7 +619,7 @@ class GoodResult:
 
         go(self.tm)
 
-        return len(unique_subterms) / subterms_count
+        return len(unique_subterms) / (subterms_count + 1)
 
 
 @dataclass

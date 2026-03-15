@@ -8,7 +8,7 @@ import numpy as np
 from typing import Tuple, Optional, List, Dict, Any
 
 from lc import RunOutput
-from .common import (
+from common import (
     ty_size_max,
     tm_size_max,
     bads_preview_count_max,
