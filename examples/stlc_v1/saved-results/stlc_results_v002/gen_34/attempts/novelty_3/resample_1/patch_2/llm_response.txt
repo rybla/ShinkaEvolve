@@ -1,0 +1,17 @@
+The user is asking me to improve the current program. Let me analyze the issue and provide a valid edit.
+
+Looking at the current program, it has:
+- good_ratio: 1.00 (perfect!)
+- used_vars_proportions_average: 0.00 (no variables used!)
+- applied_lambdas_proportions_average: 0.00 (no applications!)
+
+The key problem is that the current implementation:
+1. Never uses the bound variable in the lambda body
+2. Never applies one function to another
+
+I need to modify the generate_sample function to:
+1. Track bound variables
+2. Have probability to return a variable referencing a bound variable
+3. Add function application
+
+Let me create the SEARCH/REPLACE block properly.

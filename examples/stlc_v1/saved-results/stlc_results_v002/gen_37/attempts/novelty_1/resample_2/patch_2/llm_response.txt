@@ -1,0 +1,20 @@
+The user is saying the previous edit was not successful. Let me re-read the current program and propose a targeted improvement.
+
+Looking at the current program:
+- It generates simple literals (Bool, Int, String) and lambda terms
+- No variables are used (used_vars_proportions_average: 0.00)
+- No applications (applied_lambdas_proportions_average: 0.00)
+- The lambda always uses "x" as the variable name
+
+The key insight from the prior programs is that:
+1. Programs that tracked bound variables (context) achieved higher scores
+2. Programs that used unique variable names achieved higher unique_subterms_proportions_average
+3. Type-safe application is important for maintaining good_ratio
+
+Let me propose a change that:
+1. Adds a context parameter to track bound variables
+2. Uses the context to potentially return variables
+3. Uses unique variable names
+4. Adds application capability with type safety
+
+I'll make a targeted change to the generate_sample function.

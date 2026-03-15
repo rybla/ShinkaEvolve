@@ -1,0 +1,43 @@
+
+The user is asking me to make an edit to improve the performance of the code. Let me analyze the situation more carefully.
+
+Looking at the current program:
+- It has good_ratio: 1.00 (perfect type correctness)
+- tm_sizes_average: 1.35
+- used_vars_proportions_average: 0.00
+- applied_lambdas_proportions_average: 0.00
+- Combined score: 10.29
+
+The best prior program (10.30) had:
+- good_ratio: 1.00
+- tm_sizes_average: 1.38 (slightly higher)
+- used_vars_proportions_average: 0.00
+- applied_lambdas_proportions_average: 0.00
+- unique_subterms_proportions_average: 0.15 (slightly higher)
+
+So the current program is slightly worse because:
+1. tm_sizes_average is lower (1.35 vs 1.38)
+2. unique_subterms_proportions_average is lower (0.14 vs 0.15)
+
+The key issue is that the current program doesn't decrease depth when recursing, causing infinite recursion or stack overflow issues in some cases, but more importantly, it always generates the same pattern.
+
+Looking at the current code:
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)  # Note: depth is not decremented!
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+The problem is that depth never decreases in the recursive case, which causes infinite recursion. Additionally, it always uses the same literals and variable name. To improve, I need to decrement depth in the recursive call, use varied variable names, and randomize the literal values. This will increase term size and uniqueness while maintaining type correctness.

@@ -1,0 +1,77 @@
+Let me analyze the current program and understand what changes need to be made. The previous error might have been because I didn't provide any SEARCH/REPLACE block. Let me provide a proper edit.
+
+Looking at the code, I need to modify the `generate_sample` function in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END section.
+
+The current implementation:
+- Only generates simple literals or very simple lambdas
+- Has no variable tracking
+- Doesn't generate applications
+- Has very small type and term sizes
+
+I need to create a more sophisticated generator that:
+1. Generates larger types (up to 10 nodes)
+2. Generates larger terms (up to 100 nodes)
+3. Uses variables introduced by lambdas
+4. Applies lambdas to arguments
+5. Has more unique subterms
+
+Let me write the improved code:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+    
+    # First, generate a type
+    ty = generate_type(rng, depth)
+    
+    # Then generate a term with that type
+    tm = generate_term(rng, ty, depth, [])
+    
+    return (ty, tm)
+
+
+def generate_type(rng: random.Random, depth: int) -> Ty:
+    """Generate a random type with size up to depth."""
+    if depth <= 0:
+        # Base types only when depth exhausted
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return ("Bool",)
+        elif i == 1:
+            return ("Int",)
+        else:
+            return ("String",)
+    
+    # Decide whether to create a function type or base type
+    i = rng.randrange(0, 4)
+    if i == 0:
+        return ("Bool",)
+    elif i == 1:
+        return ("Int",)
+    elif i == 2:
+        return ("String",)
+    else:
+        # Function type: generate smaller types for domain and codomain
+        domain = generate_type(rng, depth // 2 - 1)
+        codomain = generate_type(rng, depth // 2 - 1)
+        return ("Fun", domain, codomain)
+
+
+def generate_term(rng: random.Random, target_type: Ty, depth: int, context: List[Ty]) -> Tm:
+    """Generate a random term with the given target type."""
+    
+    # If depth is exhausted or we should generate a variable/lambda
+
+I'll continue generating the type and term generation functions, focusing on creating more complex and interesting lambda calculus structures while maintaining type safety and increasing term size.
+
+When depth is limited, I'll prioritize generating variables from the existing context. This ensures I can create meaningful references even when recursion depth is constrained. I'll carefully select a random variable index that matches the available context, ensuring type consistency and preserving the generation strategy.
+
+If context is available and meets certain conditions, I'll generate a variable term. Otherwise, I'll fall back to generating a literal value as a default strategy. The approach maintains flexibility by allowing different term generation paths based on available context and depth constraints.
+
+The generation strategy involves carefully balancing variable selection, literal creation, and depth management to produce diverse and well-typed lambda calculus terms. I'm exploring a nuanced term generation strategy with probabilistic choices and depth management. The approach involves recursively constructing lambda terms while carefully controlling complexity through depth tracking. By dynamically selecting between literals, variables, lambdas, and applications, the method aims to generate varied and structurally interesting terms within specified depth constraints.
+
+The generation process balances multiple construction pathways: literal creation, variable reference, lambda abstraction, and term application. Each pathway considers current depth, target type, and available context to ensure type-consistent term generation.
+
+Depth decrementing occurs strategically, ensuring termination while allowing progressive term construction. The random selection mechanism introduces variability, preventing predictable or repetitive term generation patterns.

@@ -1,0 +1,20 @@
+The user is asking me to provide a new program that improves the performance metrics. Let me analyze what needs to be done:
+
+1. The current implementation has depth=10 as a parameter, but terms can have up to 100 nodes
+2. Types are always simple (Bool, Int, String) - never nested function types
+3. Variable selection is random, not filtered by target type
+4. Application generation doesn't properly ensure type matching
+
+I need to provide a complete new program. Let me write it properly this time.
+
+Looking at the code structure:
+- `generate_sample(rng, depth=10, bound_vars=None)` returns `Tuple[Ty, Tm]`
+- It needs to generate well-typed terms
+- The metrics show we need bigger terms and types, more variable usage, more lambda applications
+
+Let me write a new implementation that:
+1. Uses a size budget instead of depth to allow bigger terms (up to 100 nodes)
+2. Generates complex nested function types (up to 10 nodes)
+3. Filters variables by target type when selecting
+4. Properly ensures type-correct applications
+5. Increases probability of using variables and applying lambdas

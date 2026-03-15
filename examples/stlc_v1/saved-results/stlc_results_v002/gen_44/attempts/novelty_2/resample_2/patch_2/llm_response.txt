@@ -1,0 +1,20 @@
+The user is asking me to rewrite a program to improve its performance. Let me analyze the current state and provide a complete new program.
+
+Looking at the metrics:
+- Current score: 10.30
+- good_ratio: 1.00 (perfect type correctness)
+- tm_sizes_average: 1.38
+- used_vars_proportions_average: 0.00 (no variables used!)
+- applied_lambdas_proportions_average: 0.00 (no applications!)
+
+The key issue is that the current program:
+1. Never uses variables from the lambda's scope
+2. Never applies functions
+
+I need to design a program that:
+1. Uses a context (bound_vars) to track variables in scope
+2. Can generate Var terms using variables from context  
+3. Can generate App terms by applying functions (with type checking)
+4. Uses unique variable names to increase unique_subterms_proportions
+
+Let me write the complete code:

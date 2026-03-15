@@ -1,0 +1,20 @@
+Let me analyze the problem more carefully. I need to provide a complete solution that improves upon the current program while maintaining the same inputs and outputs.
+
+Looking at the metrics:
+- Current score: 10.29 with good_ratio=1.00
+- The key issues: used_vars=0.00, applied_lambdas=0.00, unique_subterms=0.14
+
+The best programs achieve perfect good_ratio (1.00) but don't use variables or apply lambdas. To improve, I need to:
+1. Maintain good_ratio close to 1.00 (most important)
+2. Increase used_vars_proportions_average
+3. Increase applied_lambdas_proportions_average
+4. Increase unique_subterms_proportions_average
+
+My approach:
+- Use depth to control complexity (decrement it!)
+- Track bound variables properly
+- Create lambdas that actually use their bound variables sometimes
+- Add applications with proper type checking
+- Add some randomness to primitive values for uniqueness
+
+Let me write the complete code:

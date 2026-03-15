@@ -1,0 +1,40 @@
+
+The user says the previous edit was not successful. Looking at the conversation, I haven't actually made any edit yet - I was just analyzing the problem. Let me now propose a concrete edit.
+
+Looking at the current program, it has these issues:
+1. Never uses variables (used_vars_proportions_average: 0.00)
+2. Never applies lambdas (applied_lambdas_proportions_average: 0.00)
+3. Depth is not decremented in recursive calls (potential issue, but works by luck)
+
+I need to add bound variable tracking and use them occasionally. Let me create a SEARCH/REPLACE block.
+
+The current code is:
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+I want to modify it to:
+1. Add bound_vars parameter
+2. With low probability, use a Var to reference a bound variable
+3. Decrement depth properly
+4. Keep good_ratio high
+
+Let me write the edit:

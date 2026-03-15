@@ -1,0 +1,40 @@
+The user is asking me to improve the performance of the code. Let me analyze the current program and the error message.
+
+Looking at the current program, I notice that in the application branch, there's a potential type mismatch issue. The code creates a `func_type` but then generates a `func_term` that may not actually have that type. Also, it doesn't check if the function type is actually "Fun" before applying.
+
+Let me look at the specific issue:
+
+```python
+# Create an application - need type-correct function and argument
+# First generate a function type
+arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+func_type = ("Fun", arg_type, ret_type)
+
+# Generate function term - could be a lambda or variable
+if rng.random() < 0.5 and bound_vars:
+    # Use an existing variable of function type
+    for var_name, var_type in bound_vars:
+        if var_type[0] == "Fun":
+            func_term = ("Var", var_name)
+            break
+    else:
+        # No function variable available, create a lambda
+        func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+else:
+    # Create a lambda
+    func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+
+# Generate argument term matching the function's input type
+arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+```
+
+The issue here is that:
+1. When using an existing variable, it correctly checks `if var_type[0] == "Fun"` but doesn't verify that the variable's type matches `func_type`
+
+
+2. When generating the lambda, it uses the generated `arg_type` but doesn't ensure the body produces `ret_type`
+
+There's also a potential type mismatch between `arg_type` and what `generate_sample` returns for the argument term - the generated term might not match the function's expected input type.
+
+The best-performing programs handle this by checking `func_type[0] == "Fun"` before applying and returning the argument as a fallback when the function type is invalid. This prevents crashes and improves the good_ratio. Additionally, they generate the function term first, use its actual type, then create a matching argument rather than generating them independently with potentially incompatible types.

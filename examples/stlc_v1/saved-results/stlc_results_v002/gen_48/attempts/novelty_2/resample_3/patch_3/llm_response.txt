@@ -1,0 +1,22 @@
+The user is asking me to rewrite a program that generates lambda calculus samples. Let me analyze the current program and the metrics to understand what improvements can be made.
+
+Looking at the current program and the insights from the top-performing programs:
+
+1. **Program 1 (Score: 10.8819)** - The best one uses:
+   - `bound_vars` parameter to track bound variables
+   - `rng.random() < 0.35` to probabilistically choose variables
+   - `f"x{rng.randint(0, 100)}"` for unique variable names
+   - Type-safe application: checks `func_type[0] == "Fun"` before applying
+   - Hybrid termination: `depth <= 0 or (not bound_vars and rng.random() < 0.5)`
+
+2. The current program already has some good features but could be improved with:
+   - Type-filtered variable selection: When selecting a variable from bound_vars, filter by the target_type needed
+   - Type-safe application with proper type checking: When generating an application, ensure the argument term's type matches the expected input type
+
+Let me design a novel approach that:
+1. Uses type-filtered variable selection (filter bound_vars by target_type)
+2. Uses proper type-safe application with fallback
+3. Increases probability of using bound variables
+4. Makes lambda bodies more likely to use the bound variable
+
+Here's my proposed solution:

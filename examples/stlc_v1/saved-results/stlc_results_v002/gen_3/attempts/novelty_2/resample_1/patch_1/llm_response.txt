@@ -1,0 +1,70 @@
+Let me analyze the current program and the metrics to understand what needs to be improved.
+
+Current metrics:
+- Combined score to maximize: 10.30
+- good_ratio: 1.00 (all samples are well-formed and well-typed)
+- tm_sizes_average: 1.38 (very small terms)
+- ty_sizes_average: 1.38 (very small types)
+- used_vars_proportions_average: 0.00 (no variables are used)
+- applied_lambdas_proportions_average: 0.00 (no lambdas are applied)
+- unique_subterms_proportions_average: 0.15 (low uniqueness)
+
+The key issues are:
+1. Very small term sizes (target is up to 100 nodes)
+2. Very small type sizes (target is up to 10 nodes)
+3. No variable usage (introduced by lambdas but never used)
+4. No lambda applications
+
+Looking at the current `generate_sample` function:
+- It has a `depth` parameter but it's never used properly
+- It only generates base types and literals, or a simple lambda wrapping another term
+- It doesn't track variables or generate applications
+- The recursion doesn't properly use the depth to grow the term
+
+To improve:
+1. Use the depth parameter properly to control size
+2. Generate larger types (FunTy with nested types)
+3. Generate terms that use variables
+4. Generate applications to apply lambdas to arguments
+5. Track variable bindings to ensure well-typedness
+
+Let me redesign the program:
+
+1. **Type generation**: Need to generate types up to size 10. Start with base types and optionally wrap in function types.
+
+2. **Term generation**: Need to generate terms up to size 100. This requires:
+   - Tracking available variables (with their types)
+   - Generating lambdas that bind variables
+   - Generating applications
+   - Using variables appropriately
+
+The key insight is that we need to generate types first, then generate terms that match those types. We also need to track the context (variable bindings) to ensure well-typedness.
+
+Let me think about the structure:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    # Generate a type first
+    ty = generate_type(rng, depth)
+    # Generate a term with that type
+    tm = generate_term(rng, depth, ty, context={})
+    return (ty, tm)
+```
+
+I'll focus on generating a type that matches the depth constraint, then create a term that matches that type. The context tracking will be crucial for ensuring we generate well-typed terms that use variables appropriately.
+
+The generation strategy involves carefully selecting between base and function types while respecting size limitations. I'll track type complexity by counting nodes and ensuring we don't exceed the maximum depth. This means sometimes returning a simple type, other times creating a more complex function type.
+
+The key is balancing type generation with term generation, using the context to bind variables and create meaningful lambda abstractions. We'll need random choices to introduce variability while maintaining type safety.
+
+For term generation, I'll focus on creating lambdas and applications that respect the type constraints. The context helps track available variables, ensuring we can generate meaningful variable references and function applications.
+
+The generation process requires careful type tracking, especially when creating lambda abstractions. We'll need to ensure the lambda's parameter type matches the expected type, and the body type corresponds to the result type.
+
+Key strategies involve:
+- Generating base values for simple types
+- Creating lambda abstractions for function types
+- Applying functions when appropriate
+- Selecting variables from the existing context
+
+The goal is to systematically explore different term constructions while maintaining type consistency and respecting the depth and complexity limits.

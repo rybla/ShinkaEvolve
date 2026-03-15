@@ -1,0 +1,5 @@
+ty, tm = generate_sample(rng)  # Note: depth is not decremented!
+return (
+    ("Fun", ("Int",), ty),
+    ("Lam", "x", ("Int",), tm),
+)

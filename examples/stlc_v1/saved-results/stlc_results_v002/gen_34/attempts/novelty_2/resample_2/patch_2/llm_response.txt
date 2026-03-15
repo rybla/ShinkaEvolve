@@ -1,0 +1,39 @@
+The user is saying the previous edit was not successful. Let me re-read the current program and propose a proper edit.
+
+Looking at the current program in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END:
+
+```python
+# EVOLVE-BLOCK-START
+
+
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+
+
+# EVOLVE-BLOCK-END
+```
+
+I need to make changes within this block. Let me propose a modification that:
+1. Tracks bound variables
+2. Uses them in the generated terms
+3. Applies lambdas to arguments
+4. Generates proper function types
+
+Let me write the SEARCH/REPLACE block correctly.

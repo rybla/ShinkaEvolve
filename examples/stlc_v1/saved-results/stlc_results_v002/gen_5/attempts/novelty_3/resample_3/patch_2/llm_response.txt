@@ -1,0 +1,13 @@
+Let me analyze the problem again. The user wants me to modify the generate_sample function to improve the performance metrics. Let me look at what needs to be changed.
+
+The current code has these issues:
+1. The depth parameter is not being used properly in recursion
+2. Types are too small (only 1.38 average)
+3. Terms are too small (only 1.38 average)
+4. No variable usage (0%)
+5. No lambda applications (0%)
+6. Few unique subterms (0.15)
+
+I need to replace the generate_sample function with a better implementation.
+
+Let me write the SEARCH/REPLACE block properly.

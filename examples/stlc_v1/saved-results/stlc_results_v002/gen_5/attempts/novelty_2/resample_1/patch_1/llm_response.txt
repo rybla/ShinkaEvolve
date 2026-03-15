@@ -1,0 +1,39 @@
+Let me analyze the current situation:
+
+1. The goal is to generate well-typed lambda calculus terms that are "better" according to several criteria:
+   - Bigger types (max 10 nodes in AST)
+   - Bigger terms (max 100 nodes in AST)
+   - More use of variables introduced by lambdas
+   - More applications of lambdas to arguments
+   - More unique sub-terms (application and lambda sub-terms)
+
+2. Current metrics:
+   - good_ratio: 1.00 (all generated samples are well-typed)
+   - tm_sizes_average: 1.38 (very small terms)
+   - ty_sizes_average: 1.38 (very small types)
+   - used_vars_proportions_average: 0.00 (no variables used)
+   - applied_lambdas_proportions_average: 0.00 (no lambdas applied)
+   - unique_subterms_proportions_average: 0.15 (low variety)
+
+3. The current `generate_sample` function:
+   - Only generates base types and simple int→funtype lambdas
+   - Doesn't generate variables or applications
+   - Doesn't recursively generate larger types
+   - The `depth` parameter is not being used effectively
+
+The main issues I see:
+1. No variables are ever generated (no `Var` terms)
+2. No applications are ever generated (no `App` terms)
+3. Types are very simple (only `Bool`, `Int`, `String`, and simple `Fun Int -> ...`)
+4. The depth parameter is passed but not really used to control complexity
+
+To improve this, I need to:
+1. Generate more complex types using the depth parameter
+2. Generate variables (`Var` terms) that reference lambda-bound variables
+3. Generate applications (`App` terms) that use variables or apply lambdas
+4. Make sure the generated terms are always well-typed
+
+Let me think about the approach:
+
+
+I need to build a type environment that tracks available variables and their types, then use that to construct well-typed terms. For types, I should leverage the depth parameter to control how complex they get - starting with base types like Bool, Int, and String, then building function types by combining smaller types. For terms, I'll generate variables from the environment, create lambda abstractions that introduce new bound variables, and build applications by combining existing terms with arguments that match the expected type.

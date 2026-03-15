@@ -1,0 +1,21 @@
+Let me analyze the current program and create an improved version.
+
+Current metrics:
+- Combined score: 10.88
+- good_ratio: 0.99 (very high, but not perfect)
+- tm_sizes_average: 4.34
+- ty_sizes_average: 1.34
+- used_vars_proportions_average: 0.18 (low)
+- applied_lambdas_proportions_average: 0.18 (low)
+- unique_subterms_proportions_average: 0.39 (moderate)
+
+The main issues I see:
+1. The variable selection doesn't properly filter by target type
+2. The application argument doesn't enforce type matching
+3. The lambda body doesn't properly use the bound variable
+
+Let me create an improved version with:
+1. Type-filtered variable selection
+2. Type-correct application generation
+3. Better lambda body generation that uses the bound variable
+4. Higher probability of using variables when they're available and type-correct

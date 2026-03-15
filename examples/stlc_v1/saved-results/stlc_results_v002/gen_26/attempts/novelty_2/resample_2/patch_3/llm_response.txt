@@ -1,0 +1,36 @@
+I need to actually provide a SEARCH/REPLACE block to make changes. Let me think about what specific change to make.
+
+Looking at the current code:
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+The issues:
+1. depth is never decremented - infinite recursion risk
+2. No bound_vars tracking
+3. No Var usage
+4. No App usage
+5. Always uses same literal values
+
+I want to add:
+1. bound_vars tracking with types
+2. Var usage when bound_vars available
+3. App usage with type checking
+4. Proper depth decrementing
+5. Vary literal values
+
+Let me make a targeted change that adds these features while maintaining type correctness.

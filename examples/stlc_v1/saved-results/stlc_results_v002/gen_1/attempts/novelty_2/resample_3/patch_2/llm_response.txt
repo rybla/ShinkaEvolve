@@ -1,0 +1,118 @@
+
+The user is saying that my previous edit was not successful. Let me think about what I need to do.
+
+I need to modify the `generate_sample` function in the EVOLVE-BLOCK-START/END section to produce better results. Looking at the current implementation:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+This generates:
+- Base types (Bool, Int, String) with corresponding literals
+- Or wraps in a lambda with type Int -> ty
+
+The problems:
+1. It only generates Int as the argument type for lambdas
+2. It always uses "x" as the variable name
+3. It never uses variables in the body
+4. It never applies lambdas
+5. Types are very small
+
+I need to rewrite this to:
+1. Generate larger types (Fun types with more complex structure)
+2. Generate larger terms
+3. Track bound variables and use them
+4. Apply lambdas
+
+Let me think about a better approach:
+
+I need:
+- A type generator that can build up to size 10
+- A term generator that:
+  - Has a size budget (up to 100)
+  - Has a context of available variables with their types
+  - Can choose to use variables from context
+  - Can create lambdas with new variables
+  - Can apply terms
+
+The key challenge is making sure the term is well-typed. I'll use a bidirectional approach where I can generate both in "infer" mode (where we just produce any type) and "check" mode (where we need to produce a specific type).
+
+Actually, a simpler approach: generate a type first, then generate a term that has that type. I can generate the type with full control over its structure, then generate a term that matches it.
+
+Here's my plan:
+1. generate_type(rng, size_budget) - generates a type with a given size budget
+2. generate_term(rng, size_budget, expected_type, context) - generates a term that has the expected_type
+
+The context maps variable names to their types. When generating a lambda, I'll add the parameter to the context. When generating an application, I need to ensure the function type matches what's expected.
+
+Let me write this:
+
+```python
+def generate_type(rng: random.Random, size_budget: int) -> Ty:
+    """Generate a type with up to size_budget nodes."""
+    if size_budget <= 1 or rng.random() < 0.3:
+        # Base type
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return ("Bool",)
+        elif i == 1:
+            return ("Int",)
+        else:
+            return ("String",)
+    else:
+        # Function type - split size budget between argument and result
+        arg_size = rng.randrange(1, size_budget)
+        res_size = size_budget - arg_size
+        arg_ty = generate_type(rng, arg_size)
+        res_ty = generate_type(rng, res_size)
+        return ("Fun", arg_ty, res_ty)
+```
+
+For terms, I need to handle different cases based on the expected type. If it's a function type, I can generate a lambda that takes an argument and returns a body. Otherwise, I generate a variable or literal that matches the type. When generating an application, I need to ensure the function is applied to an argument of the correct type, and the result matches the expected type. = arg_ty)
+            body = generate_term(rng, body_size, res_ty, ctx)
+            return ("Lam", var_name, arg_ty, body)
+    else:
+        # Application: f arg where f : A -> B and arg : A
+        if size_budget >= 4 and ctx:
+            # Choose to apply
+            func_size = rng.randrange(2, size_budget - 1)
+            arg_size = size_budget - func_size - 1  # -1 for App node
+            func_ty = generate_type(rng, func_size)
+            if isinstance(func_ty, tuple) and func_ty[0] == "Fun":
+                arg_ty = func_ty[1]
+                func = generate_term(rng, func_size, func_ty, ctx)
+                arg = generate_term(rng, arg_size, arg_ty, ctx)
+                return ("App", func, arg)
+        # Fall back to variable or literal
+        return generate_term_by_type(rng, size_budget, expected_ty
+```
+
+I'm reconsidering the approach. Rather than generating arbitrary types and trying to fit terms to them, I should think about what metrics actually matter: type size up to 10, term size up to 100, using variables when available, applying lambdas, and maximizing unique subterms.
+
+The key insight is that I don't need to pre-generate a type and then force a term to match it. Instead, I can generate a type alongside the term, keeping them in sync as I build the AST. This way I can ensure the term is always well-typed relative to its type, and I can control the complexity of both simultaneously.
+
+Looking at how `generate_sample` gets called in the runner, it's invoked repeatedly to produce samples, so I need a function that works with just the RNG and produces valid type-term pairs. The metrics calculate averages across all generated samples, so I should optimize for generating diverse, well-typed terms that exercise the full range of the type system.
+
+My approach is to generate a target type first, then construct a term that matches it. For base types like Bool, Int, and String, I'll pick a random literal. For function types, I'll recursively generate the parameter and body, then wrap them in a lambda. When generating the body, I need to ensure it produces the return type by using the parameter appropriately.
+
+The generator also needs flexibility to produce terms that don't necessarily conform to a specific type, like variables, applications, or lambdas that might not align with an expected type. I'll add separate functions for generating terms with and without type constraints, allowing the main generator to choose between them based on the context.
+
+In generate_term_with_type, when we have a function type, we can either create a lambda that introduces a new variable and generates a body producing the result type, or attempt an application if we have enough budget and available variables. For non-function types, we fall back to generating base values or variables. The generate_term function itself can then decide whether to enforce type constraints or produce unconstrained terms.

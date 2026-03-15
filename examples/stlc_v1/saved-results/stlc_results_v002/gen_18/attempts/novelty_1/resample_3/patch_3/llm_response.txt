@@ -1,0 +1,40 @@
+The user is saying my previous edit was not successful. Let me look at what I actually wrote as my response. It seems I didn't actually provide a valid SEARCH/REPLACE block - I just provided analysis.
+
+Let me provide the actual edit now. I need to provide a SEARCH block that exactly matches the current code in the EVOLVE-BLOCK-START section and a REPLACE block with the new code.
+
+Looking at the current code:
+```python
+# EVOLVE-BLOCK-START
+
+
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+
+
+# EVOLVE-BLOCK-END
+```
+
+I need to replace this with improved code that:
+1. Decrements depth to prevent infinite recursion
+2. Adds Var (variable reference) usage
+3. Adds App (function application) usage
+4. Maintains type correctness
+
+Let me write the edit properly.

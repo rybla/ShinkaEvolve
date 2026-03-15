@@ -1,0 +1,26 @@
+The user is asking me to rewrite a Python program that generates random types and terms for simply-typed lambda-calculus. Let me analyze the current state and what needs to be improved.
+
+Current metrics:
+- good_ratio: 1.00 (terms are well-typed - this is good)
+- tm_sizes_average: 1.38 (should be up to 100)
+- ty_sizes_average: 1.38 (should be up to 10)
+- used_vars_proportions_average: 0.00 (no variables used - needs improvement)
+- applied_lambdas_proportions_average: 0.00 (no lambda applications - needs improvement)
+- unique_subterms_proportions_average: 0.15 (low - needs improvement)
+
+The current `generate_sample` function is very basic:
+- It returns literals (Bool, Int, String) most of the time
+- When it does return a lambda, it's just wrapping another sample
+- It doesn't track variables in scope
+- It doesn't apply lambdas to arguments
+
+I need to write a complete new implementation. Let me create a novel approach:
+
+1. Generate types with a budget system (up to 10 nodes)
+2. Generate terms with a budget system (up to 100 nodes)
+3. Track variables in scope
+4. Use variables in applications
+5. Apply lambdas to arguments
+6. Create unique subterms
+
+Let me write the code properly.

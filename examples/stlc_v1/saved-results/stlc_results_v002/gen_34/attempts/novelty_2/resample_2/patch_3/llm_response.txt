@@ -1,0 +1,105 @@
+The user is saying the previous edit was not successful. Let me think about what might have gone wrong.
+
+Looking at the task, I need to provide a SEARCH/REPLACE block that modifies the code between EVOLVE-BLOCK-START and EVOLVE-BLOCK-END.
+
+Let me carefully construct the edit. The current code is:
+
+```python
+# EVOLVE-BLOCK-START
+
+
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+
+
+# EVOLVE-BLOCK-END
+```
+
+I need to replace this with an improved version. Let me think about what changes to make:
+
+1. Add a `bound_vars` parameter to track variables in scope
+2. With some probability, return a variable from bound_vars
+3. Add application cases
+4. Make sure types are consistent
+
+Let me write the new code:
+
+```python
+# EVOLVE-BLOCK-START
+
+
+def generate_sample(rng: random.Random, depth=10, bound_vars: list = None) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Base case: at depth 0 or with some probability, return literals
+    if depth <= 0 or (not bound_vars and rng.random() < 0.5):
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", True))
+        elif i == 1:
+            return (("Int",), ("Int", 27))
+        else:
+            return (("String",), ("String", "hello world"))
+    
+    # With some probability, return a bound variable if available
+    if bound_vars and rng.random() < 0.4:
+        var_name = rng.choice(bound_vars)
+        return (("Int",), ("Var", var_name))
+    
+    i = rng.randrange(0, 5)
+
+    if i == 0:
+        return (("Bool",), ("Bool", rng.choice([True, False])))
+    elif i == 1:
+        return (("Int",), ("Int", rng.randint(0, 100)))
+    elif i == 2:
+        return (("String",), ("String", rng.choice(["hello", "world", "test"])))
+    elif i == 3:
+        # Create a lambda that references its bound variable
+        inner_ty, inner_tm = generate_sample(rng, depth - 1, bound_vars)
+        var_name = f"x{rng.randint(0, 100)}"
+        return (
+            ("Fun", ("Int",), inner_ty),
+            ("Lam", var_name, ("Int",), inner_tm)
+        )
+    else:
+        # Apply a lambda to an argument
+        func_ty, func_tm = generate_sample(rng, depth - 1, bound_vars)
+        arg_ty, arg_tm = generate_sample(rng, depth - 1, bound_vars)
+        
+        # Type-safe application: only apply if func_ty is a function type
+        if func_ty[0] == "Fun":
+            return (
+                func_ty[2],
+                ("App", func_tm, arg_tm)
+            )
+        else:
+            # Fallback: return the argument if func is not a function
+            return (arg_ty, arg_tm)
+
+
+# EVOLVE-BLOCK-END
+```
+
+The key improvements here are tracking bound variables and using them appropriately, adding application cases, and ensuring type safety when applying functions.

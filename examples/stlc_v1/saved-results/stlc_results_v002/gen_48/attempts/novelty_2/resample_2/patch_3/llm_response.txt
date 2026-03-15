@@ -1,0 +1,44 @@
+The user is asking me to make an edit to improve the program. Let me analyze the current code and make a targeted improvement.
+
+Looking at the code, I need to find a specific improvement. The error says "No changes applied" which might mean my previous attempt didn't produce a valid SEARCH/REPLACE block.
+
+Let me focus on a simpler, more targeted improvement. Looking at the code:
+
+1. The variable selection happens at this point:
+```python
+# When we have bound variables, use them with some probability
+if bound_vars and rng.random() < 0.35:
+    var_name, var_type = rng.choice(bound_vars)
+    return (var_type, ("Var", var_name))
+```
+
+This randomly picks any variable without considering type compatibility. The improvement is to filter bound_vars to find type-compatible variables.
+
+But there's a challenge - at this point we don't know what type we need. However, we can restructure to decide lambda vs application first, then filter variables appropriately.
+
+Actually, let me look at a simpler improvement. Looking at the application branch:
+
+```python
+else:
+    # Create an application - need type-correct function and argument
+    # First generate a function type
+    arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+    ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+    func_type = ("Fun", arg_type, ret_type)
+    
+    # Generate function term - could be a lambda or variable
+    if rng.random() < 0.5 and bound_vars:
+        # Use an existing variable of function type
+        for var_name, var_type in bound_vars:
+            if var_type[0] == "Fun":
+                func_term = ("Var", var_name)
+                break
+        else:
+            # No function variable available, create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+    else:
+        # Create a lambda
+        func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+```
+
+The application branch already filters for function variables, but the variable selection at the top doesn't filter at all. The key insight is that I should decide between lambda and application first, then filter variables based on what I need. For lambdas, any variable type works, but for applications I specifically need function types. This type-aware filtering would be more effective than the current approach.

@@ -1,0 +1,42 @@
+
+The user says the previous edit was not successful. Let me think about what might have gone wrong.
+
+Looking at my previous response, I was about to propose a change but I never actually provided the SEARCH/REPLACE block. I was just analyzing the problem but didn't complete the task.
+
+Let me actually provide the edit now. I need to:
+1. Provide a NAME
+2. Provide a DESCRIPTION  
+3. Provide the SEARCH/REPLACE DIFF block
+
+Let me propose a targeted improvement that:
+1. Properly decrements depth to avoid potential infinite recursion
+2. Adds a small chance to use the bound variable within lambda bodies (to increase used_vars_proportions_average)
+3. Adds a small chance to apply the lambda to an argument (to increase applied_lambdas_proportions_average)
+
+This should be done carefully to maintain the good_ratio of 1.00.
+
+The current code:
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+My proposed change - I'll add:
+1. Depth decrement in the recursive call
+2. A small chance (e.g., 20%) to use the variable instead of recursing
+3. A small chance (e.g., 10%) to apply the lambda to an argument
+
+Let me write the edit:

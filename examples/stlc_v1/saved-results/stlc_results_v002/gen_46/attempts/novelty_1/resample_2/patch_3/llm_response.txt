@@ -1,0 +1,27 @@
+The user is asking me to make an edit to improve the program. Let me look at the current program and think about what changes could improve the performance metrics.
+
+Looking at the current program:
+- It has good_ratio: 0.99 (very high)
+- tm_sizes_average: 4.34 
+- used_vars_proportions_average: 0.18
+- applied_lambdas_proportions_average: 0.18
+- unique_subterms_proportions_average: 0.39
+
+The analysis mentioned that to push tm_sizes_average higher, we should implement a "warm-up" phase where the probability of choosing Lam or App is higher when depth is high and bound_vars is small.
+
+Currently the code uses:
+- `if bound_vars and rng.random() < 0.35:` for variable selection
+- `i = rng.randrange(0, 2)` for lambda vs application choice (50/50)
+
+The issue is that when bound_vars is empty (at the start), the probability of generating literals is:
+- `if depth <= 0 or (not bound_vars and rng.random() < 0.5):` - 50% chance of literals when bound_vars is empty
+
+This means a lot of terms are just literals, which limits the term size.
+
+Let me propose a change that:
+1. Reduces the probability of generating literals when depth is high
+2. Increases the probability of generating lambda/application structures early
+
+This should increase tm_sizes_average (term size) while maintaining good_ratio.
+
+Let me write the edit:

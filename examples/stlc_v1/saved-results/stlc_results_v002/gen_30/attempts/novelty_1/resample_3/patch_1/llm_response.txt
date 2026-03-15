@@ -1,0 +1,163 @@
+Let me analyze the current program and the prior programs to understand what's happening.
+
+The current program has:
+- good_ratio: 1.00 (perfect type correctness)
+- tm_sizes_average: 1.35
+- ty_sizes_average: 1.35
+- used_vars_proportions_average: 0.00 (never uses variables)
+- applied_lambdas_proportions_average: 0.00 (never applies lambdas)
+- unique_subterms_proportions_average: 0.14
+
+The best prior programs had scores around 10.30 with similar metrics. The key issue is that:
+1. `used_vars_proportions_average` is 0.00 - variables are never used
+2. `applied_lambdas_proportions_average` is 0.00 - lambdas are never applied
+3. `unique_subterms_proportions_average` is low at 0.14
+
+Looking at the first prior program that tried to use variables (score 8.73):
+- It had `used_vars_proportions_average: 0.16` but dropped `good_ratio` to 0.82
+
+The key insight is that we need to maintain good_ratio at 1.00 while improving the other metrics. The current approach creates lambdas like `("Lam", "x", ("Int",), tm)` but never uses `Var` to reference `"x"`.
+
+Let me think about how to improve this:
+
+1. **Variable usage**: We need to create lambdas and then use the variable within them. But we need to maintain type correctness.
+
+2. **Lambda application**: We need to create `App` terms that apply functions to arguments.
+
+3. **Unique subterms**: We should vary the primitive values and types more.
+
+The challenge is that when we create a lambda like `("Lam", "x", ("Int",), tm)`, the body `tm` needs to have type "Int" (the return type). But we also need to use `("Var", "x")` in the body somehow.
+
+
+I need to pass a context through the recursion that tracks available variables. When generating the body of a lambda, I can reference the lambda's parameter using `Var`. For lambda application, I can create functions that accept a parameter and then apply it to some argument, ensuring the types align properly.
+
+The key is maintaining type correctness: if I have `Fun(Int, Bool)`, the lambda takes an Int and returns a Bool. The body must have type Bool, and I can use the lambda's parameter (which has type Int) within that body. To apply a lambda, I need a function of type `Fun(a, b)` and an argument of type `a`, which produces a result of type `b`.
+
+I'll track available variables in a context and generate terms that reference them appropriately.
+
+```python
+def generate_sample(rng: random.Random, depth=10, ctx: list[tuple[str, Ty]] = None) -> Tuple[Ty, Tm]:
+    if ctx is None:
+        ctx = []
+    
+    # Base case: when depth is 0, generate simple literals
+    if depth <= 0:
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", True))
+        elif i == 1:
+            return (("Int",), ("Int", 27))
+        else:
+            return (("String",), ("String", "hello world"))
+    
+    # At deeper depths, we can create more complex terms
+    i = rng.randrange(0, 5)
+    
+    if i == 0:
+        # Generate a Bool literal
+        return (("Bool",), ("Bool", rng.choice([True, False])))
+    elif i == 1:
+        # Generate an Int literal
+        return (("Int",), ("Int", rng.randint(0, 100)))
+    elif i == 2:
+        # Generate a String literal
+        return (("String",), ("String", rng.choice(["hello", "world", "test", "foo", "bar"])))
+    elif i == 3 and ctx:
+        # Use a variable from context
+        var_name, var_ty = rng.choice(ctx)
+        return (var_ty, ("Var", var_name))
+    elif i == 4:
+        # Create a lambda with a variable in scope
+        arg_ty = ("Int",)
+        # Generate body with the variable in context
+        ret_ty, body = generate_sample(rng, depth - 1, ctx + [("x", arg_ty)])
+        return (
+            ("Fun", arg_ty, ret_ty),
+            ("Lam", "x", arg_ty, body)
+        )
+    else:
+        # Default to generating a literal
+        return (("Bool",), ("Bool", True))
+```
+
+The approach maintains type correctness by ensuring variables are only used when they're available in the context, and lambdas properly extend the context with their parameter. The depth parameter controls recursion depth to prevent infinite generation. I need to reconsider the approach. The core issue is that the current implementation creates lambdas but never uses their parameters, which hurts the metrics without improving type correctness.
+
+I should generate lambdas that actually apply their parameters to arguments, while ensuring the return type aligns with what the lambda expects. This means creating functions that take a parameter and then apply it to something - like `("Lam", "x", ("Int",), ("App", ("Var", "x"), ("Int", 42)))` which has type `Fun(Int, Int)`. The key is maintaining type consistency throughout while making meaningful use of the lambda's parameter. The issue is that `("Var", "x")` has type `Int`, but `("APP", ("Var", "x"), ("Int", 42))` expects a function type. I need to apply the variable to an argument, not the other way around.
+
+Let me reconsider the approach. I could create a lambda that takes an Int and returns it, then apply that lambda to a literal value. This would give me a well-typed application where the function takes an Int parameter and the argument is also an Int.
+
+The key insight is that I need to ensure the variable I'm referencing actually has a function type before trying to apply it. If the context contains a variable with type `Fun(a, b)`, I can apply it to an argument of type `a` to get a result of type `b`.
+
+I'll modify the generation to check whether the selected variable is a function before creating an application node. If it's not a function, I'll fall back to returning the variable directly. This way I maintain type correctness while still allowing function application when appropriate.
+
+The key is ensuring the lambda body has the correct return type. When generating a lambda, I need to recursively create its body with the parameter added to the context, so that any references to that parameter are properly typed. This means the recursive call should pass the updated context containing the new parameter, allowing the body generation to reference it appropriately. The issue is that when generating a lambda, I need to ensure the body actually uses the lambda's parameter. Currently, I'm recursively generating the body without guaranteeing it references the parameter.
+
+I could modify the approach to explicitly construct the body to use the parameter. For instance, I could generate a lambda that applies its parameter to some argument, or returns the parameter directly. This would require adjusting how the body is constructed rather than using a generic recursive generation.
+
+The key insight is that I need to control the body generation to include references to the lambda's parameter, rather than letting it generate arbitrary terms that might not use the parameter at all. the return type. Let me reconsider the approach.
+
+Actually, I think the simplest solution is to create lambdas that use their parameter in a type-safe way:
+
+1. Identity function: `("Lam", "x", ty, ("Var", "x"))` - returns the parameter
+2. Apply to constant: `("Lam", "x", ("Fun", a, b), ("App", ("Var", "x"), some_arg_of_type_a))` - applies parameter to an argument
+
+For option 2, I need to ensure the parameter type is a function type. Let me try:
+
+```python
+def generate_sample(rng: random.Random, depth=10, ctx: list[tuple[str, Ty]] = None) -> Tuple[Ty, Tm]:
+    if ctx is None:
+        ctx = []
+    
+    if depth <= 0:
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", True))
+        elif i == 1:
+            return (("Int",), ("Int", 27))
+        else:
+            return (("String",), ("String", "hello world"))
+    
+    i = rng.randrange(0, 6)
+    
+    if i == 0:
+        return (("Bool",), ("Bool", rng.choice([True, False])))
+    elif i == 1:
+        return (("Int",), ("Int", rng.randint(0, 100)))
+    elif i == 2:
+        return (("String",), ("String", rng.choice(["hello", "world", "test"])))
+    elif i == 3 and ctx:
+        # Use a variable from context
+        var_name, var_ty = rng.choice(ctx)
+        return (var_ty, ("Var", var_name))
+    elif i == 4:
+        # Create a lambda that returns its parameter (identity)
+        arg_ty = ("Int",)
+        ret_ty = arg_ty
+        return (
+            ("Fun", arg_ty, ret_ty),
+            ("Lam", "x", arg_ty, ("Var", "x"))
+        )
+    elif i == 5:
+        # Create a lambda that applies its parameter to an argument
+        # Parameter must be a function type
+        arg_1 = rng.choice([("Bool",), ("Int",), ("String",)])
+        arg_2 = rng.choice([("Bool",), ("Int",), ("String",)])
+        arg_ty = ("Fun", arg_1, arg_2)
+        ret_ty = arg_2
+        # Generate an argument of the correct type
+        if arg_1 == ("Bool",):
+            arg = ("Bool", True)
+        elif arg_1 == ("Int",):
+            arg = ("Int", 42)
+        else:
+            arg = ("String", "arg")
+        
+        return (
+            ("Fun", arg_ty, ret_ty),
+            ("Lam", "x", arg_ty, ("App", ("Var", "x"), arg))
+        )
+    else:
+        return (("Bool",), ("Bool", True))
+```
+
+This approach creates lambdas that either return their parameter directly or apply it to an argument, ensuring type consistency throughout. The key insight is that I need to handle the case where a variable from context might be a function type and needs application, versus a base type that should be used directly. Let me refine this by checking whether each context variable is a function—if it is, apply it to an appropriate argument; otherwise, just reference it. I'll also add more base cases to increase variation in the generated terms.

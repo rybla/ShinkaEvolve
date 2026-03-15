@@ -1,0 +1,35 @@
+Let me analyze the current program and the prior programs to understand what improvements can be made.
+
+Looking at the current program:
+- It generates simple literals (Bool, Int, String) and lambda terms
+- It has good_ratio = 1.00 (perfect!)
+- But tm_sizes_average = 1.38 and ty_sizes_average = 1.38 are quite small
+- used_vars_proportions_average = 0.00 - no variables are being used!
+- applied_lambdas_proportions_average = 0.00 - no applications are being generated!
+
+Looking at the best performing prior programs:
+- The best score was 10.8819 with good_ratio=0.9950, tm_sizes_average=4.3427, used_vars_proportions_average=0.1795, applied_lambdas_proportions_average=0.1821, unique_subterms_proportions_average=0.3927
+- That program used `bound_vars` parameter to track bound variables
+- It used `rng.random() < 0.35` to probabilistically choose variables
+- It used `f"x{rng.randint(0, 100)}"` for unique variable names
+- It had type-safe application: checks `func_type[0] == "Fun"` before applying
+
+The key insight is:
+1. The current program doesn't use variables at all (used_vars_proportions_average = 0.00)
+2. The current program doesn't generate applications (applied_lambdas_proportions_average = 0.00)
+3. To improve, we need to:
+   - Add context tracking (bound_vars) to generate variables
+   - Add application generation
+   - Make the generation type-safe
+
+Let me propose a solution that incorporates these improvements:
+
+1. Add a `bound_vars` parameter to track variables in scope
+2. Add probability-based selection of variables from context
+3. Add application generation with type checking
+4. Use unique variable names with f-strings
+
+
+5. Implement probabilistic termination to create more diverse term structures
+
+I'll focus on creating a more dynamic generation approach that balances variable usage, application creation, and type safety. The goal is to increase the complexity of generated terms while maintaining type consistency and avoiding infinite recursion.

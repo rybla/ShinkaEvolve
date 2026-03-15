@@ -1,0 +1,49 @@
+Let me analyze the current program and the performance metrics to identify potential improvements.
+
+Current metrics:
+- Combined score: 10.88
+- good_ratio: 0.99 (very high)
+- tm_sizes_average: 4.34 (term sizes)
+- ty_sizes_average: 1.34 (type sizes)
+- used_vars_proportions_average: 0.18 (variable usage)
+- applied_lambdas_proportions_average: 0.18 (application usage)
+- unique_subterms_proportions_average: 0.39
+
+Looking at the code, I can see several areas for improvement:
+
+1. **Type-safe application**: The current code doesn't check if the function term's type matches the expected function type before creating an App. This could lead to type mismatches.
+
+2. **Variable selection**: Currently, when selecting a variable from bound_vars, it doesn't filter by the target type. It just randomly picks any variable.
+
+3. **The application generation**: Currently it generates a function type and then tries to find/create a function term, but there's no guarantee that the function term has the correct type.
+
+Let me look at the specific issues:
+
+In the application branch:
+```python
+# Create an application - need type-correct function and argument
+# First generate a function type
+arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+func_type = ("Fun", arg_type, ret_type)
+
+# Generate function term - could be a lambda or variable
+if rng.random() < 0.5 and bound_vars:
+    # Use an existing variable of function type
+    for var_name, var_type in bound_vars:
+        if var_type[0] == "Fun":
+            func_term = ("Var", var_name)
+            break
+    else:
+        # No function variable available, create a lambda
+        func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+else:
+    # Create a lambda
+    func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+```
+
+The core problem is that when picking a variable from bound_vars, it only checks if the variable is a function type but ignores whether it matches the specific `func_type` we generated. Additionally, the argument generation doesn't enforce that it produces a term of the correct `arg_type`. I need to ensure type consistency by filtering bound_vars to find variables matching the exact function signature, and then generate the argument term with the proper type constraint.
+
+The scoring breakdown shows good_ratio is already high at 0.99, but the other metrics—tm_sizes_average of 4.34, used_vars_proportions_average of 0.18, applied_lambdas_proportions_average of 0.18, and unique_subterms_proportions_average of 0.39—all have room for improvement. The main lever here is increasing variable usage, which requires filtering bound_vars by type and generating arguments that match the expected argument type.
+
+I should modify the variable selection logic to filter by target_type, ensure arguments match the function's input type, and add type-safe fallback logic when the function isn't actually a function type.

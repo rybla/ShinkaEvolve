@@ -1,0 +1,24 @@
+The user is asking me to improve the current program. Let me analyze the current state and propose a targeted improvement.
+
+Looking at the current program:
+- It has good_ratio: 1.00 (all terms are well-typed)
+- But tm_sizes_average: 1.35 is very small (max is 100)
+- ty_sizes_average: 1.35 is also small (max is 10)
+- used_vars_proportions_average: 0.00 - no variables are used
+- applied_lambdas_proportions_average: 0.00 - no lambda applications
+- unique_subterms_proportions_average: 0.14 - low diversity
+
+The main issues:
+1. No bound_vars tracking - can't use Var to reference bound variables
+2. No App constructor - can't apply functions to arguments
+3. Always uses "x" as variable name
+4. Always uses ("Int",) as type annotation
+5. Depth is not decremented properly
+
+I need to propose a change that:
+1. Adds bound_vars tracking
+2. Adds App constructor
+3. Properly decrements depth
+4. Uses more diverse types and variables
+
+Let me write a targeted improvement.

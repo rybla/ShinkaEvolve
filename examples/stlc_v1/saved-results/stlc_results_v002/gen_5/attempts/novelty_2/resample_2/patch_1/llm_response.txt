@@ -1,0 +1,46 @@
+Let me analyze the current program and understand what needs to be improved.
+
+The current program generates simple types and terms in the simply-typed lambda-calculus. Looking at the metrics:
+- good_ratio: 1.00 (all samples are well-formed and well-typed)
+- tm_sizes_average: 1.38 (very small term size, max is 100)
+- ty_sizes_average: 1.38 (very small type size, max is 10)
+- used_vars_proportions_average: 0.00 (no variables are used)
+- applied_lambdas_proportions_average: 0.00 (no lambdas are applied)
+- unique_subterms_proportions_average: 0.15 (low uniqueness)
+
+The current implementation only generates:
+1. Literals (Bool, Int, String)
+2. Simple lambda with Int -> ty
+
+The key issues:
+1. Type size is very small (max 10 nodes allowed)
+2. Term size is very small (max 100 nodes allowed)
+3. No variable usage (lambdas introduce variables but they're never used)
+4. No lambda applications
+5. Low uniqueness
+
+To improve, I need to:
+1. Generate larger types (more Fun nodes to build up to size 10)
+2. Generate larger terms (more lambdas and applications to build up to size 100)
+3. Use the variables introduced by lambdas
+4. Apply lambdas to arguments
+5. Have more unique subterms
+
+Let me design a better generator:
+
+1. First, generate a type of a target size (up to 10 nodes)
+2. Then generate a term that has that type
+3. Use a context to track available variables
+4. Build up terms with lambdas, applications, and use variables
+
+Here's my approach:
+- Generate types recursively with a size budget
+- Generate terms with a size budget, using the type to guide what kind of term to generate
+- Track variables in scope
+- When generating a lambda, add the variable to scope
+
+
+- When generating an application, I need to ensure the function type matches the argument type
+- Variables can only be used if they're in scope
+
+I'll implement this with helper functions for type generation, variable tracking, and term generation that respects type constraints.

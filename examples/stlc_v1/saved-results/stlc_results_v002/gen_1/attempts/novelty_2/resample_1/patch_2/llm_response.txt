@@ -1,0 +1,146 @@
+
+Let me analyze the issue more carefully. The current `generate_sample` function has several problems:
+
+1. The `depth` parameter is passed but never decremented in recursive calls
+2. It only generates literals (Bool, Int, String) and simple identity functions
+3. It never generates `Var` terms (variables)
+4. It never generates `App` terms (application)
+5. The generated terms don't use the variables they bind
+
+I need to rewrite the `generate_sample` function to:
+1. Properly use the depth parameter to control size
+2. Generate bigger types (up to 10 nodes)
+3. Generate bigger terms (up to 100 nodes)
+4. Generate Var terms that reference bound variables
+5. Generate App terms that apply lambdas to arguments
+6. Ensure all terms are well-typed
+
+Let me think about how to maintain well-typedness:
+- We need a context (list of variable names and their types)
+- When generating a lambda, we add the bound variable to the context
+- When generating a variable, we pick from the context
+- When generating an application, we need a function type on the left and a compatible argument on the right
+
+Here's my plan:
+1. Generate a type first (with size control based on depth)
+2. Generate a term with that type using a context of available variables
+
+Let me write a new implementation:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+    
+    def gen_ty(remaining_depth: int) -> Ty:
+        """Generate a type with controlled depth/size."""
+        if remaining_depth <= 0:
+            # Base types only when we've exhausted depth
+            return rng.choice([("Bool",), ("Int",), ("String",)])
+        
+        # Decide between base type and function type
+        if rng.random() < 0.3:  # 30% chance for base type
+            return rng.choice([("Bool",), ("Int",), ("String",)])
+        else:
+            # Generate function type with remaining depth split between domain and codomain
+            dom = gen_ty(remaining_depth - 1)
+            codom = gen_ty(remaining_depth - 1)
+            return ("Fun", dom, codom)
+    
+    def count_ty_nodes(ty: Ty) -> int:
+        """Count nodes in a type AST."""
+        if ty[0] == "Bool" or ty[0] == "Int" or ty[0] == "String":
+            return 1
+        elif ty[0] == "Fun":
+            return 1 + count_ty_nodes(ty[1]) + count_ty_nodes(ty[2])
+        return 1
+    
+    # Generate a type with target size up to 10 nodes
+    ty = gen_ty(depth)
+    while count_ty_nodes(ty) > 10:
+        ty = gen_ty(depth)
+    
+    # Now generate a term with this type
+    # We need a context of available variables
+    
+    def gen_term(target_ty: Ty, context: list, term_depth: int) -> Tm:
+        """Generate a term with the given target type."""
+        if term_depth <= 0:
+            # At max depth, generate a variable or literal
+            if context and rng.random() < 0.5:
+                # Use an existing variable
+                var_name, var_ty = rng.choice(context)
+                if var_ty == target_ty:
+                    return ("Var", var_name)
+            # Otherwise generate a literal
+            if target_ty == ("Bool",):
+                return ("Bool", rng.choice([True, False]))
+            elif target_ty == ("Int",):
+                return ("Int", rng.randint(0, 100))
+            elif target_ty == ("String",):
+                return ("String", rng.choice(["hello", "world", "test"]))
+        
+        # Decide what kind of term to generate
+        choice = rng.random()
+        
+        if choice < 0.2 and context:
+            # 20% chance: use a variable from context
+            var_name, var_ty = rng.choice(context)
+            if var_ty == target_ty:
+                return ("Var", var_name)
+        
+        elif choice < 0.4:
+            # 20% chance: generate a literal (if target is base type)
+            if target_ty[0] in ["Bool", "Int", "String"]:
+                if target_ty[0] == "Bool":
+                    return ("Bool", rng.choice([True, False]))
+                elif target_ty[0] == "Int":
+                    return ("Int", rng.randint(0, 100))
+                elif target_ty[0] == "String":
+                    return ("String", rng.choice(["hello", "world", "test"]))
+        
+        elif choice < 0.7 and target_ty[0] == "Fun":
+            # 30% chance: generate a lambda
+            # We need to generate a fresh variable name
+            var_name = f"x{rng.randint(0, 1000)}"
+            # Split the function type into domain and codomain
+            dom = target_ty[1]
+            codom = target_ty[2]
+            # Generate the body with the bound variable in scope
+            body = gen_term(codom, context + [(var_name, dom)], term_depth - 1)
+            return ("Lam", var_name, dom, body)
+        
+        else:
+            # 30% chance: generate an application
+            # We need a function type
+            if target_ty[0] == "Fun":
+                dom = target_ty[1]
+                codom = target_ty[2]
+                # Generate a function that returns the target type
+                func = gen_term(("Fun", dom, codom), context, term_depth - 1)
+                # Generate an argument of the domain type
+                arg = gen_term(dom, context, term_depth - 1)
+                return ("App", func, arg)
+        
+        # Fallback: if nothing else worked, try using a variable
+        if context:
+            var_name, var_ty = rng.choice(context)
+            if var_ty == target_ty:
+                return ("Var", var_name)
+        
+        # Last resort: generate a literal
+        if target_ty[0] == "Bool":
+            return ("Bool", rng.choice([True, False]))
+        elif target_ty[0] == "Int":
+            return ("Int", rng.randint(0, 100))
+        elif target_ty[0] == "String":
+            return ("String", rng.choice(["hello", "world", "test"]))
+    
+    # Generate the term
+    tm = gen_term(ty, [], depth)
+    
+    return (ty, tm)
+```
+
+This implementation handles depth properly by decrementing it in recursive calls, generates larger types and terms, includes variables from the context, applies lambdas to arguments, and maintains well-typedness throughout.

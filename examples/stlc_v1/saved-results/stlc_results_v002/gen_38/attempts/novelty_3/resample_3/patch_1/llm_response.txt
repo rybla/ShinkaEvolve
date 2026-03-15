@@ -1,0 +1,46 @@
+Let me analyze the current program and the prior programs to understand what improvements can be made.
+
+Looking at the current program:
+- `good_ratio: 1.00` - Perfect type correctness
+- `tm_sizes_average: 1.30` - Small term sizes
+- `ty_sizes_average: 1.30` - Small type sizes
+- `used_vars_proportions_average: 0.00` - Variables are NEVER used
+- `applied_lambdas_proportions_average: 0.00` - Lambdas are NEVER applied
+- `unique_subterms_proportions_average: 0.13` - Low uniqueness
+
+Looking at the prior programs that achieved higher scores:
+- The highest scoring program (10.30) has `used_vars_proportions_average: 0.00`, `applied_lambdas_proportions_average: 0.00`, `unique_subterms_proportions_average: 0.15`
+- The score 10.27 from current program is close to 10.30 but slightly lower
+
+The key issue is that while the programs create lambdas like `("Lam", "x", ("Int",), tm)`, they NEVER:
+1. Use `Var` to reference `"x"` 
+2. Create `App` terms to apply functions to arguments
+
+Looking at the meta-review:
+- "A generated term is better the more it uses its variables"
+- "A generated term is better the more it applies its lambdas to arguments"
+- "A generated term is better the more unique sub-terms it has"
+
+The problem is that when trying to add variable usage, the type correctness went down (good_ratio dropped to 0.82). 
+
+Let me think about how to add variable usage while maintaining type correctness:
+
+1. The lambda creates a variable `x` with type annotation `("Int",)`
+2. To use the variable, we need to return it as `("Var", "x")`
+3. This would maintain type correctness since we're just returning the input
+
+
+4. But the current code creates lambdas like `("Lam", "x", ("Int",), tm)` where `tm` is generated recursively WITHOUT the variable in scope, so it can't reference "x"
+
+Looking at the code:
+```python
+ty, tm = generate_sample(rng)  # Note: depth is not decremented!
+return (
+    ("Fun", ("Int",), ty),
+    ("Lam", "x", ("Int",), tm),
+)
+```
+
+The `tm` is generated without any context about the variable `x`, so it can never reference `x`.
+
+I need to pass context to the recursive call so that when we create a lambda, the body can reference the bound variable. This way, `("Var", "x")` becomes a valid term inside the lambda body, and we can maintain type correctness while increasing variable usage.

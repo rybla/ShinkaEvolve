@@ -1,0 +1,52 @@
+The user is asking me to make an edit to the code, but my previous attempts didn't work. Let me look at the exact format needed and try again.
+
+The task is to modify the code between EVOLVE-BLOCK-START and EVOLVE-BLOCK-END. I need to use a SEARCH/REPLACE block format.
+
+Let me try again with the correct format:
+
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth limit
+    if depth <= 0 or (not bound_vars and rng.random() < 0.5):
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", True))
+        elif i == 1:
+            return (("Int",), ("Int", 27))
+        else:
+            return (("String",), ("String", "hello world"))
+    
+    i = rng.randrange(0, 5)
+    
+    if i == 0:
+        # Return a literal
+        j = rng.randrange(0, 3)
+        if j == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif j == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["hello", "world", "test"])))
+    elif i == 1 and bound_vars:
+        # Return a variable reference
+        var_name = rng.choice(bound_vars)
+        return (("Int",), ("Var", var_name))
+    elif i == 2:
+        # Create a lambda with unique variable name
+        var_name = f"x{rng.randint(0, 100)}"
+        inner_ty, inner_tm = generate_sample(rng, depth - 1, bound_vars + [var_name])
+        return (
+            ("Fun", ("Int",), inner_ty),
+            ("Lam", var_name, ("Int",), inner_tm)
+        )
+    else:
+        # Apply a function to an argument
+        func_ty, func_tm = generate_sample(rng, depth - 1, bound_vars)
+        arg
+```
+
+I'm generating a lambda with a randomly named variable, recursively building its body while tracking bound variables. Then I'm creating an application node that applies a function to an argument, both generated recursively with the same bound variables context.

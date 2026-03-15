@@ -1,0 +1,31 @@
+Looking at the performance metrics, I can see several issues:
+
+1. `tm_sizes_average: 1.30` - The terms are very small (only 1.30 nodes on average). The max allowed is 100.
+2. `ty_sizes_average: 1.30` - The types are also very small (max allowed is 10).
+3. `used_vars_proportions_average: 0.00` - Variables are never used.
+4. `applied_lambdas_proportions_average: 0.00` - Lambdas are never applied to arguments.
+5. `unique_subterms_proportions_average: 0.13` - Low uniqueness.
+
+The current implementation:
+- Only generates literals (Bool, Int, String) or simple lambdas wrapping other terms
+- Doesn't use the depth parameter properly (it's not decremented in the recursive call)
+- Doesn't generate applications (App)
+- Doesn't use variables from the context
+
+The recommendation in the prompt suggests:
+- To increase `applied_lambdas_proportions_average`, modify the `App` branch to first generate a random `FunTy` and then pass that specific type requirement down to the recursive call for the function term.
+
+Let me design a better generator that:
+1. Uses the depth parameter properly to control size
+2. Maintains a context of available variables
+3. Generates applications where the function side is properly typed
+4. Uses variables from context
+5. Creates more complex types
+
+Here's my plan:
+1. Add a context parameter to track bound variables
+2. Add proper depth decrementing
+3. Add an Application case that generates a function type first, then generates a lambda or variable of that function type, then generates an argument
+4. Make sure variables are used more often
+
+Let me write the improved code:

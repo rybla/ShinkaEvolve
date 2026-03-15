@@ -1,0 +1,43 @@
+The user says the previous edit was not successful. Let me carefully craft the edit. I need to use the exact SEARCH/REPLACE format with the proper diff markers.
+
+Let me first understand the current code in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END section:
+
+```python
+# EVOLVE-BLOCK-START
+
+
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+
+
+# EVOLVE-BLOCK-END
+```
+
+Now I need to propose an improvement. The key issues are:
+1. used_vars_proportions_average: 0.00 - no variables are used
+2. applied_lambdas_proportions_average: 0.00 - no lambdas are applied
+3. unique_subterms_proportions_average: 0.15 - could be improved
+
+The idea is to:
+1. Add a branch that uses the bound variable (type-correct!)
+2. Add a branch that creates applications with proper types
+3. Vary the primitive values
+
+Let me craft the edit carefully.

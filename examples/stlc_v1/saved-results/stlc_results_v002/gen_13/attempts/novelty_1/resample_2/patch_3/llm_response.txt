@@ -1,0 +1,43 @@
+The user is saying my edit wasn't successful, but I don't think I actually submitted an edit yet. Let me look at what happened - I think I was just thinking out loud but didn't actually produce an edit block.
+
+Let me now produce the actual edit. Looking at the current code in the EVOLVE-BLOCK-START section:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+The problem is:
+1. When depth > 0, it can pick from 4 options (0-3)
+2. Option 3 creates a Lam with a nested recursive call
+3. But it never uses Var to reference the variable
+4. It never creates App terms
+
+I need to add:
+1. Var usage - need to track available variables
+2. App usage - need to apply functions
+
+But I need to be careful about type correctness. Let me think about a simpler approach that still maintains good_ratio.
+
+Actually, looking more carefully - to keep things simple, I can:
+1. Add a Var case that just returns a variable reference
+2. Add an App case that applies a function
+3. Modify the Lam case to sometimes use Var
+
+The tricky part is type checking. But wait - the metric `good_ratio` is already 1.00, meaning all generated terms pass type checking. The issue is that the algorithm only generates simple terms that are guaranteed to type-check (primitives and identity-like lambdas).
+
+
+Since the current approach already achieves perfect type correctness, I should extend it with more sophisticated term constructions. I'll add a `Var` case for variable references, an `App` case for function application, and modify the `Lam` case to occasionally use the bound variable in the body - though I need to track variables to do this safely.

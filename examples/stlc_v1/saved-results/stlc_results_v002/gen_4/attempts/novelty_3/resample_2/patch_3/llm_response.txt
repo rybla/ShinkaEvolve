@@ -1,0 +1,3 @@
+The user is saying the previous edit wasn't applied. Let me try again with a proper SEARCH/REPLACE block. I need to be very careful to match the exact text including indentation.
+
+Looking at the code, I need to replace the generate_sample function. Let me make sure I get the exact text.

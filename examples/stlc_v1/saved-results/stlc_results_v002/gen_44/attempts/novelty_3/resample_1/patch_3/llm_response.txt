@@ -1,0 +1,101 @@
+The user is asking me to rewrite the program to improve its performance. Let me analyze the current program and the metrics to understand what improvements can be made.
+
+Looking at the current program, it already has most of the features from the best-performing program. Let me think about what structural changes could improve the metrics:
+
+1. **tm_sizes_average: 4.34** - The average term size could be increased
+2. **used_vars_proportions_average: 0.18** - Could be increased
+3. **applied_lambdas_proportions_average: 0.18** - Could be increased  
+4. **unique_subterms_proportions_average: 0.39** - Could be increased
+
+The key insight from the recommendations is:
+- **Dynamic Weighting for Structural Growth**: Implement a "warm-up" phase where the probability of choosing `Lam` or `App` is significantly higher (e.g., 80-90%) when `depth` is high and `bound_vars` is small.
+
+Let me redesign the program with a different structural approach:
+
+1. Use a more sophisticated probability system that adjusts based on depth and bound_vars
+2. Make the variable selection probability higher when there are bound variables
+3. Use a more sophisticated type-safe application mechanism
+
+Here's my proposed redesign:
+
+```python
+from typing import Literal, Tuple
+import random
+import tqdm
+
+type Ty = BoolTy | IntTy | StringTy | FunTy
+type BoolTy = Tuple[Literal["Bool"]]
+type IntTy = Tuple[Literal["Int"]]
+type StringTy = Tuple[Literal["String"]]
+type FunTy = Tuple[Literal["Fun"], Ty, Ty]
+
+
+type Tm = LitTm | VarTm | LamTm | AppTm
+type LitTm = (
+    Tuple[Literal["Bool"], bool]
+    | Tuple[Literal["Int"], int]
+    | Tuple[Literal["String"], str]
+)
+type VarTm = Tuple[Literal["Var"], str]
+type LamTm = Tuple[Literal["Lam"], str, Ty, Tm]
+type AppTm = Tuple[Literal["App"], Tm, Tm]
+
+
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Base case: generate literals when depth is exhausted or randomly at top level
+    if depth <= 0 or (not bound_vars and rng.random() < 0.5):
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # When we have bound variables, use them with some probability
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create a lambda with a fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create an application - need type-correct function and argument
+        # First generate a function type
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+# EVOLVE-BLOCK-END
+
+I'll continue the program by defining the run() function, which will execute the lambda calculus interpreter with a specified sample size and random number generator. The function will use the previously defined generate_sample method to create test cases and run the interpreter.
+
+The run() function sets up a sample size of 1000 and initializes a random number generator. It then calls lc.run() with these parameters, passing the generate_sample function as a method for creating test samples. This allows for randomized testing of the lambda calculus interpreter's behavior and performance.

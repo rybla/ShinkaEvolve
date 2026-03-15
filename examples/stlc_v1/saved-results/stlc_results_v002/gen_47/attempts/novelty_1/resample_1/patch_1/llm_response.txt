@@ -1,0 +1,43 @@
+Let me analyze the current program and the context to understand what improvements can be made.
+
+The current program has:
+- good_ratio: 0.99
+- tm_sizes_average: 4.34
+- used_vars_proportions_average: 0.18
+- applied_lambdas_proportions_average: 0.18
+- unique_subterms_proportions_average: 0.39
+- Combined score: 10.88
+
+Looking at the context programs mentioned in the system prompt, the best one (Program 1) achieved a score of 10.8819 with:
+- good_ratio=0.9950
+- tm_sizes_average=4.3427
+- used_vars_proportions_average=0.1795
+- applied_lambdas_proportions_average=0.1821
+- unique_subterms_proportions_average=0.3927
+
+The current program is very similar to Program 1, so there's not much room for improvement by just copying it. I need to find a novel approach.
+
+Key insights from the analysis:
+1. Type-safe application is important - checking if func_type[0] == "Fun" before applying
+2. Context-aware variable injection using bound_vars
+3. Fresh variable generation with f-strings
+4. Probabilistic termination
+
+Looking at the current implementation issues:
+1. When generating an application, the arg_term is generated without ensuring its type matches the expected arg_type. This could lead to type mismatches.
+2. The function variable selection logic could be improved - it tries to find a function variable but doesn't properly check the type.
+
+Let me think about novel improvements:
+
+1. **Type-Directed Argument Generation**: Instead of generating arg_term without type guidance, pass the expected arg_type to ensure type consistency.
+
+2. **Improved Function Variable Selection**: When selecting a function variable from bound_vars, properly check if it matches the expected function type signature.
+
+3. **Better Lambda Body Generation**: When creating lambdas, ensure the body type matches the declared return type.
+
+
+4. **Refined Probability Tuning**: Adjust the probabilities for variable usage, lambda creation, and application to optimize term complexity and diversity.
+
+I'll focus on implementing type-directed generation with explicit type tracking, which should help maintain type consistency and potentially improve the good_ratio. The key is to ensure that each term generated respects its expected type signature, particularly in application and lambda constructions.
+
+The implementation will require careful modification of the generate_sample function to accept and propagate type information throughout the generation process. This approach should help address the current limitations in type matching and term diversity.

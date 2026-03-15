@@ -1,0 +1,5 @@
+# Create an application - need type-correct function and argument
+# First generate a function type
+arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+func_type = ("Fun", arg_type, ret_type)

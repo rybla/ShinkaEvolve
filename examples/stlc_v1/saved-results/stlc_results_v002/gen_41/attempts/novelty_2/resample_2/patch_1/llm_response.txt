@@ -1,0 +1,76 @@
+Let me analyze the current situation carefully.
+
+Looking at the performance metrics:
+- good_ratio: 1.00 (perfect - all generated terms are type-correct)
+- tm_sizes_average: 1.38 (term size)
+- ty_sizes_average: 1.38 (type size)
+- used_vars_proportions_average: 0.00 (never uses variables to reference bound vars)
+- applied_lambdas_proportions_average: 0.00 (never applies functions)
+- unique_subterms_proportions_average: 0.15 (relatively low diversity)
+
+The key problems:
+1. The current program only creates `Lam` (lambda) terms but never uses `Var` to reference the bound variable inside the lambda body
+2. It never creates `App` (application) terms to apply functions
+3. The subterm diversity is low (0.15)
+
+The current code:
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+This always creates lambdas with `"x"` as the variable name and always puts the recursive call as the body. It never:
+1. Uses `Var` to reference the bound variable
+2. Creates `App` (application) terms
+
+
+3. Varies the variable names or type annotations
+
+I need to modify the generator to occasionally reference the bound variable within lambda bodies, introduce function applications with type-safe argument pairing, and vary the structure more. However, I must preserve the perfect type correctness (good_ratio = 1.00) while doing so.
+
+The most straightforward approach is to track bound variables and introduce a chance to reference them via `Var`, while being careful about type consistency when applying functions.
+
+For function application, I can wrap a lambda around a value to ensure the types align properly. Let me refactor the implementation:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    if depth <= 0:
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", True))
+        elif i == 1:
+            return (("Int",), ("Int", 27))
+        else:
+            return (("String",), ("String", "hello world"))
+    
+    i = rng.randrange(0, 6)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    elif i == 3:
+        # Create a lambda that returns the bound variable
+        body_ty, body_tm = generate_sample(rng, depth - 1)
+        return (
+            ("Fun", ("Int",), body_ty),
+            ("Lam", "x", ("Int",), ("Var", "x"))
+        )
+```
+
+The depth-based recursion stops generating when it reaches zero, otherwise it picks from six possible constructors. When building lambdas, I either reference the bound variable directly or recursively generate a body, maintaining type consistency throughout.

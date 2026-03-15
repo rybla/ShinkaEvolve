@@ -1,0 +1,8 @@
+The user is saying the previous edit was not successful. Let me try again with the correct format. I need to provide a complete new program code that improves the performance metrics.
+
+Looking at the analysis:
+- used_vars_proportions_average: 0.00 → need to use Var to reference bound variables
+- applied_lambdas_proportions_average: 0.00 → need to create App terms
+- unique_subterms_proportions_average: 0.15 → need more variety in subterms
+
+I'll rewrite the generate_sample function to address these issues while maintaining type correctness.

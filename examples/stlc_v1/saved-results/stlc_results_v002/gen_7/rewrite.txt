@@ -1,0 +1,1 @@
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:

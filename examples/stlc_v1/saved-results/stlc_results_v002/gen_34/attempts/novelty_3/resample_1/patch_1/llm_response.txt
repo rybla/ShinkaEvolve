@@ -1,0 +1,43 @@
+Let me analyze the current program and the prior programs to understand what improvements can be made.
+
+Looking at the current program:
+- Combined score: 10.31
+- good_ratio: 1.00 (perfect!)
+- tm_sizes_average: 1.41
+- ty_sizes_average: 1.41
+- used_vars_proportions_average: 0.00 (no variables used!)
+- applied_lambdas_proportions_average: 0.00 (no applications!)
+- unique_subterms_proportions_average: 0.16
+
+The key issue is that `used_vars_proportions_average` and `applied_lambdas_proportions_average` are both 0.00. This means:
+1. No variables are being used (the lambda body never references the bound variable)
+2. No function applications are happening
+
+Looking at the prior programs, the best one (score 10.5488) had:
+- used_vars_proportions_average: 0.1694
+- applied_lambdas_proportions_average: 0.0565
+
+The key insight from the best program was:
+1. Using `bound_vars` parameter to track bound variables
+2. Using `rng.random() < 0.4` to probabilistically choose variables
+3. Type-safe application: checks `func_type[0] == "Fun"` before applying
+4. Hybrid termination: `depth <= 0 or (not bound_vars and rng.random() < 0.5)`
+
+The current program only generates literals and lambda abstractions, but never:
+1. Uses the bound variable in the lambda body
+2. Applies one function to another
+
+To improve, I need to:
+1. Add tracking of bound variables
+2. Add probability to return a variable that references a bound variable
+3. Add function application
+
+Let me create an improved version that:
+1. Tracks bound variables with a parameter
+2. Has probability to use a bound variable in the body
+
+
+3. Introduces function application to create more complex terms
+4. Implements type-safe application with proper type checking
+
+I'll focus on generating higher-order functions by incorporating application and variable usage, which should significantly increase the complexity and diversity of the generated lambda calculus terms.

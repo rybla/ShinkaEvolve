@@ -1,0 +1,49 @@
+Looking at the current program, I need to understand what's happening:
+
+1. The current `generate_sample` function is very basic - it just generates simple literals or very simple lambda terms
+2. The metrics show:
+   - tm_sizes_average: 1.38 (very small, should be up to 100)
+   - ty_sizes_average: 1.38 (very small, should be up to 10)
+   - used_vars_proportions_average: 0.00 (should use variables more)
+   - applied_lambdas_proportions_average: 0.00 (should apply lambdas more)
+   - unique_subterms_proportions_average: 0.15 (should have more unique subterms)
+
+The current implementation only generates:
+- Bool literals
+- Int literals
+- String literals
+- Very simple lambdas with Int as argument type
+
+The problem is that the generator:
+1. Doesn't generate proper function types with complex bodies
+2. Doesn't generate applications of lambdas
+3. Doesn't use variables that are bound by lambdas
+4. Has very limited depth control
+
+I need to create a more sophisticated generator that:
+1. Can generate types up to size 10 (currently limited)
+2. Can generate terms up to size 100
+3. Makes use of variables (by generating variables that reference bound names)
+4. Applies lambdas to arguments
+5. Has more unique subterms
+
+Let me think about the structure:
+- I need to keep track of available variables (their names and types)
+- When generating a lambda, I add the argument to the available variables
+- When generating a variable, I should pick from available variables
+- When generating an application, I need to ensure the function type matches
+
+Let me design a better generator:
+
+1. First, generate a type up to size 10
+2. Then generate a term of that type, keeping track of:
+   - Available variables with their types
+   - Target type
+
+I'll need to track:
+- The type environment (mapping from variable names to types)
+
+
+- A depth parameter to control complexity and prevent infinite recursion
+
+I'll implement recursive generation strategies that carefully manage type complexity. The key is to create a balanced approach that can generate larger, more interesting lambda calculus structures while maintaining type correctness and avoiding uncontrolled growth.

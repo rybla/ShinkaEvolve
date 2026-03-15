@@ -1,0 +1,53 @@
+Let me analyze the problem and understand what's being asked.
+
+The current implementation is a simple generator for simply-typed lambda-calculus types and terms. Looking at the metrics:
+
+1. good_ratio: 1.00 - all generated samples are well-formed and well-typed
+2. tm_sizes_average: 1.38 - very small term sizes (max is 100)
+3. ty_sizes_average: 1.38 - very small type sizes (max is 10)
+4. used_vars_proportions_average: 0.00 - variables are never used
+5. applied_lambdas_proportions_average: 0.00 - lambdas are never applied
+6. unique_subterms_proportions_average: 0.15 - low uniqueness
+
+The current implementation:
+- Only generates literals or simple lambdas with Int domain
+- Doesn't track variable bindings properly
+- Doesn't generate applications that use variables
+
+I need to design a fundamentally different approach that:
+1. Generates larger types (up to 10 nodes)
+2. Generates larger terms (up to 100 nodes)
+3. Uses variables (lambdas introduce variables that are used)
+4. Applies lambdas to arguments
+5. Has more unique subterms
+
+The key insight is that we need a context-tracking approach where:
+- We track bound variables (from lambdas)
+- We generate terms that actually use those variables
+- We generate applications that apply functions to arguments
+- We track type information properly to ensure well-typedness
+
+Let me think about a new algorithm:
+
+**Approach: Context-Based Generation with Size Budget**
+
+Instead of the simple recursive approach, I'll use:
+1. A "size budget" for types and terms
+2. A context (environment) tracking bound variables with their types
+3. Generation choices based on available budget and context
+
+Key differences:
+- Track type context (bound variables with their types)
+- Generate applications by choosing from available variables
+- Use size budgets to control growth
+- Ensure variables are actually used
+
+
+- Generate terms that are guaranteed to be well-typed
+
+The generation strategy:
+1. First generate a type with a size budget
+2. Then generate a term with a matching type using the size budget
+3. Track bound variables to enable variable usage in applications
+
+This method ensures type consistency, promotes variable utilization, and expands term complexity effectively.

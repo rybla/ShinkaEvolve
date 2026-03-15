@@ -1,0 +1,140 @@
+Let me analyze the programs more carefully and create a proper crossover.
+
+Looking at the current program:
+- It has good_ratio = 1.00 (perfect type correctness)
+- But used_vars_proportions_average = 0.00 (never uses variables)
+- And applied_lambdas_proportions_average = 0.00 (never applies lambdas)
+
+The crossover inspiration program:
+- Has used_vars_proportions_average = 0.06 and applied_lambdas_proportions_average = 0.03
+- But good_ratio = 0.68 (type errors)
+
+The goal is to combine the best of both - maintain high good_ratio while increasing variable usage and lambda application.
+
+The key insight is that the current program creates lambdas like:
+```python
+("Lam", "x", ("Int",), tm)
+```
+where `tm` is generated recursively but never uses `Var` to reference "x".
+
+To fix this while maintaining type correctness, I need to:
+1. Sometimes create lambdas that DO reference their bound variable (using Var)
+2. Sometimes apply functions (using App)
+3. But ensure type correctness is maintained
+
+The challenge is that App requires type-compatible function and argument. Let me think about this more carefully.
+
+For a lambda `("Lam", x, param_ty, body_tm)`:
+- The type of the lambda is `("Fun", param_ty, body_ty)` where body_ty is the type of body_tm
+- To apply this lambda, we need an argument of type param_ty
+
+So if I want to create an App, I need to:
+1. First create a lambda with some body
+2. Then create an argument of the correct type
+3. Apply them together
+
+Let me try a simpler approach - just add the Var case to the current program, but make sure it's type-correct.
+
+Actually, looking at the current program more carefully:
+```python
+else:
+    ty, tm = generate_sample(rng)
+    return (
+        ("Fun", ("Int",), ty),
+        ("Lam", "x", ("Int",), tm),
+    )
+```
+
+This creates a lambda with parameter type ("Int",) and body `tm`. The type of the whole thing is ("Fun", ("Int",), ty). But `tm` could be anything - it doesn't necessarily have type "Int". This is actually a type error, but the good_ratio is 1.00, so maybe the type checker is lenient or I'm misunderstanding something.
+
+Wait, let me re-read the type definitions. The return type of generate_sample is Tuple[Ty, Tm]. So it returns a pair of (type, term). In the lambda case:
+- ty is the type of tm
+- The lambda type is ("Fun", ("Int",), ty)
+
+So if tm has type ty, then the lambda has type ("Fun", ("Int",), ty). This is correct!
+
+Now, to add variable usage, I need to sometimes create a lambda body that actually uses the variable. The simplest case is to return the variable itself:
+```python
+("Lam", "x", ("Int",), ("Var", "x"))
+```
+
+This is an identity function of type ("Fun", ("Int",), ("Int",)).
+
+For App, I need to apply a function to an argument. The function must be of type ("Fun", arg_ty, result_ty) and the argument must be of type arg_ty.
+
+Let me create a crossover that:
+1. Keeps the depth-based recursion
+2. Adds a small probability of using Var (identity lambda)
+3. Adds a small probability of using App (applying a function)
+4. Maintains type correctness
+
+Here's my plan:
+- At each depth, with small probability, create an identity lambda: ("Lam", "x", ("Int",), ("Var", "x"))
+- With small probability, apply a function to an argument
+- Otherwise, use the current program's logic
+
+Let me write the code:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    if depth <= 0:
+        # Base cases - return simple literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", True))
+        elif i == 1:
+            return (("Int",), ("Int", 27))
+        else:
+            return (("String",), ("String", "hello world"))
+    
+    i = rng.randrange(0, 6)  # 6 options now
+    
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    elif i == 3:
+        # Identity lambda using variable - type correct!
+        return (
+            ("Fun", ("Int",), ("Int",)),
+            ("Lam", "x", ("Int",), ("Var", "x"))
+        )
+    elif i == 4:
+        # Apply identity to an argument - type correct!
+        arg_ty, arg_tm = generate_sample(rng, depth - 1)
+        # arg_ty should be ("Int",) for type correctness
+        return (
+            ("Int",),
+            ("App", 
+                ("Lam", "x", ("Int",), ("Var", "x")),
+                arg_tm
+            )
+        )
+    else:
+        # Recursive lambda (current program's logic)
+        inner_ty, inner_tm = generate_sample(rng, depth - 1)
+        return (
+            ("Fun", ("Int",), inner_ty),
+            ("Lam", "x", ("Int",), inner_tm)
+        )
+```
+
+Wait, there's an issue. When I apply the identity function, the argument needs to have type ("Int",), but the recursive call might return any type. I need to ensure the argument is actually an integer.
+
+Let me fix this by generating a specific integer argument for the application case:
+
+```python
+elif i == 4:
+    # Apply identity to an integer argument - type correct!
+    return (
+        ("Int",),
+        ("App", 
+            ("Lam", "x", ("Int",), ("Var", "x")),
+            ("Int", rng.randint(0, 100))
+        )
+    )
+```
+
+This ensures the argument matches the parameter type of the lambda.

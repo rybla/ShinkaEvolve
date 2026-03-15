@@ -1,0 +1,40 @@
+The previous edit wasn't successful. Let me re-analyze the problem and try a different approach.
+
+Looking at the current code more carefully, I need to understand what's happening and identify specific improvements.
+
+Let me think about what changes would actually help:
+
+1. The current program already has a good good_ratio of 0.99, so it's mostly generating valid terms
+2. The tm_sizes_average is 4.34, which is reasonable
+3. The used_vars_proportions_average is 0.18 - this could be improved
+4. The applied_lambdas_proportions_average is 0.18 - this could be improved  
+5. The unique_subterms_proportions_average is 0.39 - this could be improved
+
+One key issue I see is in the application creation - when generating the argument term, it doesn't ensure the argument has the correct type to match the function's input type. Let me look at that section:
+
+```python
+# Generate argument term matching the function's input type
+arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+```
+
+This should generate an argument that has the correct type (arg_type), but it doesn't pass that information along. The argument could be any type.
+
+Actually, wait - I need to re-read the problem. Let me think about what the "type-safe application" means in this context.
+
+Looking at the analysis provided earlier, the top-performing programs:
+1. Use `bound_vars` parameter to track bound variables
+2. Use probabilistic variable selection
+3. Have type-safe application: checks `func_type[0] == "Fun"` before applying
+4. Use unique variable names
+
+Looking at the current code, it already does many of these things. But there's one key difference - the current code doesn't ensure type-safe application in the sense of checking if the function type is actually "Fun" before applying.
+
+Actually, let me re-read the current code more carefully. The issue is that when we generate the application, we create:
+
+
+- A function term (could be lambda or variable)
+- An argument term
+
+I see the critical problem now. When generating the argument, we're not ensuring it matches the function's input type. This means we could create an application with mismatched argument types, which would invalidate the type safety. The current implementation randomly generates arguments without considering the expected input type of the function, potentially leading to type-inconsistent applications.
+
+To fix this, we need to modify the argument generation to explicitly respect the function's input type constraints. This would involve adding a type-checking mechanism that ensures the generated argument matches the function's expected parameter type before creating the application.

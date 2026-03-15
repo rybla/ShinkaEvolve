@@ -1,0 +1,30 @@
+The user is asking me to improve the performance of the current program. Let me analyze what's happening:
+
+1. Current program has:
+   - Combined score: 10.31
+   - good_ratio: 1.00 (all terms are well-typed)
+   - used_vars_proportions_average: 0.00 (no Var terms being used)
+   - applied_lambdas_proportions_average: 0.00 (no App terms)
+
+2. The issue is that the current program only generates:
+   - Literals (Bool, Int, String)
+   - Lambda abstractions where the body doesn't use the bound variable
+
+To improve, I need to:
+1. Track bound variables and sometimes use them (Var terms)
+2. Add function applications (App terms)
+3. Maintain type safety
+
+Let me create an improved version that:
+1. Adds a `bound_vars` parameter to track bound variables
+2. Uses those bound variables in lambda bodies
+3. Adds App terms for function application
+4. Maintains type safety
+
+The key changes:
+- Add `bound_vars` parameter (list of variable names)
+- When generating lambda body, sometimes use a bound variable
+- Add App case to apply functions
+- Type-safe application (check if func_type[0] == "Fun")
+
+Let me write the edit:

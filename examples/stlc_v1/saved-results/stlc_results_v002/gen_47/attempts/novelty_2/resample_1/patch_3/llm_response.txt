@@ -1,0 +1,27 @@
+The user is asking me to rewrite the program with improved parameters. Let me think about what specific changes to make.
+
+Looking at the current program:
+- It has `rng.random() < 0.35` for variable usage
+- It has `depth <= 0 or (not bound_vars and rng.random() < 0.5)` for base case
+- For lambda vs application: `i == 0 and depth > 1` means lambda, else application
+
+Key parameters I can tune:
+1. Variable usage probability: 0.35 → could increase to 0.4 or 0.45
+2. Base case probability: 0.5 → could adjust
+3. Lambda depth threshold: depth > 1 → could be depth > 2
+4. The arg_type in application - currently doesn't ensure type matching
+
+Let me create a new version with different parameters. I'll focus on:
+- Making sure argument generation respects the expected type
+- Adjusting probabilities for better term diversity
+
+Actually, looking more carefully at the code, I see a potential issue: in the App case, when generating `arg_term`, it doesn't ensure the generated term has the correct type. The `generate_sample` function returns both a type and a term, but in the App case, only the term is used (`[1]`), ignoring the type. This could lead to type mismatches.
+
+Let me create a new version with:
+1. Type-aware argument generation (pass target type)
+2. Adjusted parameters:
+   - Variable usage: 0.35 → 0.4
+   - Base case when no bound_vars: 0.5 → 0.4
+   - Lambda creation: depth > 1 → depth > 2 (creates more depth before lambda)
+   - Application function generation: bias more towards lambdas
+   - Variable selection bias: higher chance to use variables that match the expected function type

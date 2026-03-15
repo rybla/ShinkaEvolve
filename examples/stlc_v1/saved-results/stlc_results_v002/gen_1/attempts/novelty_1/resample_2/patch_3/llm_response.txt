@@ -1,0 +1,19 @@
+The user is asking me to rewrite the generate_sample function to improve performance. Let me analyze the current code and the requirements.
+
+Current issues:
+1. tm_sizes_average: 1.38 (needs to be bigger, max 100)
+2. ty_sizes_average: 1.38 (needs to be bigger, max 10)
+3. used_vars_proportions_average: 0.00 (needs to use variables)
+4. applied_lambdas_proportions_average: 0.00 (needs to apply lambdas)
+5. unique_subterms_proportions_average: 0.15 (needs more unique subterms)
+
+I need to write a generator that:
+1. Generates larger types (function types with depth)
+2. Generates larger terms (with lambdas, applications, variables)
+3. Uses variables from lambda bindings
+4. Applies lambdas
+5. Creates unique subterms
+
+The key is to generate a type first, then generate a term of that type using a context of bound variables.
+
+Let me write the new generate_sample function.

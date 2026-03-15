@@ -1,0 +1,30 @@
+Let me analyze the current program and prior programs more carefully to design an improved version.
+
+Current best program (score 10.30):
+- Uses fixed literals: True, 27, "hello world"
+- Creates lambdas but never uses Var to reference the bound variable
+- No App terms
+- good_ratio=1.00 (perfect)
+- Other metrics very low
+
+The key insight is that the current program achieves perfect type correctness (good_ratio=1.00) but fails on:
+- used_vars_proportions_average: 0.00 (never uses variables)
+- applied_lambdas_proportions_average: 0.00 (never applies lambdas)
+- unique_subterms_proportions_average: 0.15 (low, uses same literals)
+
+The problem is that when we try to use variables and applications, we often get type errors which lowers good_ratio.
+
+Strategy:
+1. Keep the base case that generates correct types (for good_ratio)
+2. When generating lambdas, sometimes make the body use the bound variable
+3. When generating applications, ensure type compatibility
+4. Vary primitive values more
+
+Let me design a new algorithm that:
+1. Uses depth-controlled recursion properly
+2. Tracks bound variables properly
+3. Has a chance to use bound variables in lambda bodies
+4. Has a chance to apply functions when we have function types
+5. Varies primitive values
+
+The key is to maintain high good_ratio while improving the other metrics.

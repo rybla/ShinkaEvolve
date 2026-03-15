@@ -1,0 +1,12 @@
+The user is asking me to improve the performance of the lambda-calculus generator. Let me analyze the current state and propose improvements.
+
+Looking at the current code in the EVOLVE-BLOCK-START section, I can see the issues:
+1. The types are very small
+2. The terms are very small (only literals or simple lambdas)
+3. No variables are being used
+4. No lambdas are being applied
+5. Low uniqueness of subterms
+
+I need to rewrite the generate_sample function to generate larger, more complex types and terms.
+
+Let me propose a new implementation:

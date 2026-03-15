@@ -1,0 +1,56 @@
+Let me analyze the current program and the metrics to understand what needs to be improved.
+
+Current metrics:
+- Combined score to maximize: 10.30
+- good_ratio: 1.00 (all samples are well-typed)
+- tm_sizes_average: 1.38 (very small terms)
+- ty_sizes_average: 1.38 (very small types)
+- used_vars_proportions_average: 0.00 (no variables are used!)
+- applied_lambdas_proportions_average: 0.00 (no lambdas are applied)
+- unique_subterms_proportions_average: 0.15 (low uniqueness)
+
+The key issues are:
+1. Terms are very small (1.38 nodes on average, max is 100)
+2. Types are very small (1.38 nodes on average, max is 10)
+3. No variables are used (0%)
+4. No lambdas are applied (0%)
+5. Low uniqueness of subterms
+
+Looking at the current `generate_sample` function:
+- It has a `depth` parameter but it's never actually used properly
+- It only generates literals or simple lambdas with Int type
+- It never generates applications
+- It never uses variables that were introduced by lambdas
+- It doesn't track the context (bound variables)
+
+The function needs to:
+1. Use the depth parameter to control size
+2. Generate more complex types (Fun types)
+3. Generate applications
+4. Track bound variables and use them
+5. Apply lambdas to arguments
+
+Let me design a better algorithm:
+
+Parameters to adjust:
+- depth: should be used to limit recursion and build larger structures
+- type_depth: separate depth for type generation
+- context: track bound variables for variable generation
+
+The algorithm should:
+1. Generate types with increasing complexity based on remaining depth
+2. Generate terms that:
+   - Use literals
+   - Use variables from context
+   - Create lambdas that add to context
+   - Apply terms to other terms
+   - Use the variables from context in applications
+
+I'll create a more sophisticated generator that:
+
+
+- Implements separate depth tracking for types and terms
+- Maintains a context of bound variables during generation
+- Intelligently selects between different term constructors based on available depth
+- Ensures type annotations match the generated term types
+- Maximizes variable usage and lambda applications within size constraints

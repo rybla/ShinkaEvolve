@@ -1,0 +1,41 @@
+Let me analyze the performance metrics carefully:
+
+**Current best program (10.30):**
+- good_ratio: 1.00 (perfect type correctness)
+- tm_sizes_average: 1.38
+- ty_sizes_average: 1.38
+- used_vars_proportions_average: 0.00 (never uses variables)
+- applied_lambdas_proportions_average: 0.00 (never applies lambdas)
+- unique_subterms_proportions_average: 0.15 (low uniqueness)
+
+**Current program (10.29):**
+- good_ratio: 1.00 (perfect type correctness - same)
+- tm_sizes_average: 1.35 (slightly smaller)
+- ty_sizes_average: 1.35 (slightly smaller)
+- used_vars_proportions_average: 0.00 (never uses variables)
+- applied_lambdas_proportions_average: 0.00 (never applies lambdas)
+- unique_subterms_proportions_average: 0.14 (low uniqueness)
+
+The key insight is:
+1. good_ratio is at maximum (1.0) - this seems to be the most important factor
+2. The other metrics are terrible: 0.00 for used_vars and applied_lambdas
+
+Looking at the prompt, it mentions:
+- "A generated term is better the more it uses its variables"
+- "A generated term is better the more it applies its lambdas to arguments"
+- "A generated term is better the more unique sub-terms it has"
+
+The issue is that adding variable usage or lambda application typically breaks type correctness and reduces good_ratio. 
+
+Let me think about this more carefully. The problem with the current approach is:
+1. It creates lambdas like `("Lam", "x", ("Int",), tm)` but never references `"x"` with a `Var`
+2. It never applies functions to arguments with `App`
+
+But the current program achieves PERFECT good_ratio (1.00). Any attempt to add Var or App usage seems to break type correctness.
+
+
+Looking at the first prior program that tried to add Var/App, its score dropped to 8.73 with good_ratio at 0.82 - the type errors killed its performance. I need to find a way to introduce Var and App constructs while maintaining perfect type correctness. The lambda currently receives `tm` as its body, so I need to ensure any variable reference or function application I add preserves type consistency throughout the term.
+
+The current approach builds up through nested lambdas like `("Lam", "x", ("Int",), ("Lam", "y", ("Int",), ("Lam", "z", ("Int",), ...)))` but never actually references those variables. To fix this, I should create a version that passes the context through recursion, allowing lambdas to reference their bound variables in a type-safe manner, then use that context to generate correct Var terms when the depth reaches zero.
+
+The challenge is balancing good_ratio (which stays perfect at 1.0) against the other metrics. Since the score combines these factors, I need to find the sweet spot where I can improve uniqueness and variable usage without dropping good_ratio below the threshold where it would actually hurt the overall score. Let me experiment with a conservative approach that adds more structural variation while keeping type checking intact.

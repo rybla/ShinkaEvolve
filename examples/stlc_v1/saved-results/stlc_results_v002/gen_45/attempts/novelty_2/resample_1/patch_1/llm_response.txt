@@ -1,0 +1,60 @@
+Let me analyze the current program and the performance metrics to identify potential improvements.
+
+Current metrics:
+- Combined score: 10.88
+- good_ratio: 0.99
+- tm_sizes_average: 4.34
+- ty_sizes_average: 1.34
+- used_vars_proportions_average: 0.18
+- applied_lambdas_proportions_average: 0.18
+- unique_subterms_proportions_average: 0.39
+
+Looking at the current program, I can see several patterns from the best-performing programs:
+
+1. **Type-safe application**: The current code generates an application but doesn't properly ensure type consistency between the function and argument. When generating an App term, we need to ensure that the argument term's type matches the function's input type.
+
+2. **Bound variables**: Currently uses `bound_vars` to track context, which is good.
+
+3. **Variable selection**: Currently uses `rng.choice(bound_vars)` without considering whether the variable type matches what's needed.
+
+Let me look at the application generation more closely:
+
+```python
+else:
+    # Create an application - need type-correct function and argument
+    # First generate a function type
+    arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+    ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+    func_type = ("Fun", arg_type, ret_type)
+    
+    # Generate function term - could be a lambda or variable
+    if rng.random() < 0.5 and bound_vars:
+        # Use an existing variable of function type
+        for var_name, var_type in bound_vars:
+            if var_type[0] == "Fun":
+                func_term = ("Var", var_name)
+                break
+        else:
+            # No function variable available, create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+    else:
+        # Create a lambda
+        func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+    
+    # Generate argument term matching the function's input type
+    arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+```
+
+The critical issue is that when generating the argument term, I'm not constraining it to match `arg_type`. I need to pass the expected type to `generate_sample` so it produces an argument with the correct type, ensuring type consistency in the application. I need to pass `target_type` to recursive calls when generating the argument for an application, ensuring type compatibility between the function's expected input and the argument being constructed. This maintains type correctness while preserving the term generation structure.
+
+However, I'm noticing something in the metrics - `applied_lambdas_proportions_average` is only 0.18, which seems low. The current approach generates a lambda for the function side unconditionally, whereas a more balanced strategy would randomly choose between using an existing bound variable or creating a new lambda. This could help increase the proportion of applied lambdas in the output.
+
+Let me trace through what the current code actually produces. When building an application, it selects random argument and return types, then either reuses a bound variable if one's available or constructs a fresh lambda. The argument term gets generated without any type constraint though - that's likely where the issue lies. I should ensure the argument term's type actually matches what the function expects.
+
+The function_term generation creates either a variable referencing an existing bound function or a fresh lambda, but there's an inconsistency: when it's a lambda, the body gets generated recursively with `bound_vars + [("f", arg_type)]` added to the context, yet when using a variable, that context extension doesn't happen. Additionally, the arg_term generation doesn't enforce that its type aligns with arg_type.
+
+The main fix needed is to generate the argument term with the correct type constraint. Since `generate_sample` returns a tuple of `(type, term)`, I should call it with the appropriate depth and bound_vars parameters to ensure type consistency.
+
+I can add a `target_type` parameter to `generate_sample` that lets me specify what type to produce. When generating an argument for an application, I'd pass `arg_type` so the argument matches the function's expected input type. Then in the function body, I'd use this target_type to guide which constructors to select—if it's a function type, I can choose between lambda and application, or if it's a base type, I'd pick the corresponding literal.
+
+For the argument generation case, I need to ensure the term produced has the correct type. The cleanest approach is to call `generate_sample` with `target_type=arg_type` so it constrains what it generates to match the function's parameter type. I'll need to thread this parameter through all the recursive calls and add logic that checks whether the generated term's type actually matches what was requested, regenerating if there's a mismatch.

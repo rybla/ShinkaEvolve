@@ -1,0 +1,24 @@
+Looking at the error message "No changes applied", it seems my previous edit wasn't actually submitted. Let me analyze the situation and provide a proper edit.
+
+Looking at the problem:
+- The current code generates lambda terms but never uses the variable (`Var`) or applies functions (`App`)
+- The metrics show 0.00 for both `used_vars_proportions_average` and `applied_lambdas_proportions_average`
+- The `unique_subterms_proportions_average` is also low (0.14)
+
+The key insight is that we need to:
+1. Add a case that creates `Var` terms
+2. Add a case that creates `App` terms
+3. When creating `Lam`, occasionally use the bound variable in the body
+
+Let me think about the type system:
+- `Var` takes a string (variable name) and refers to a previously bound variable
+- `App` applies a function (first arg) to an argument (second arg)
+- For `App f x` to be well-typed, `f` must have type `A -> B` and `x` must have type `A`
+
+A simple approach to improve:
+1. Keep the primitive literals (Bool, Int, String) with high probability at low depth
+2. Add a small probability of generating `Var` terms
+3. Add a small probability of generating `App` terms
+4. When generating `Lam`, with some probability use `Var` in the body
+
+Let me write the edit:

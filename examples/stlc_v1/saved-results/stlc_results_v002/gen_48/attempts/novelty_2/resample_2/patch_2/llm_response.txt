@@ -1,0 +1,51 @@
+The user is asking me to make an edit to improve the program. Let me analyze the current code and the error message.
+
+Looking at the code, I need to find a specific improvement. The error says "No changes applied" which might mean my previous attempt didn't produce a valid SEARCH/REPLACE block.
+
+Let me focus on the key improvement: Type-Filtered Variable Selection.
+
+Currently in the code:
+```python
+# When we have bound variables, use them with some probability
+if bound_vars and rng.random() < 0.35:
+    var_name, var_type = rng.choice(bound_vars)
+    return (var_type, ("Var", var_name))
+```
+
+This randomly picks any variable from bound_vars without considering what type is needed. This leads to many mismatches.
+
+The improvement should filter bound_vars to find variables of compatible types. But there's a challenge - at this point in the code, we don't necessarily know what type we need (we haven't decided whether we're generating a lambda or application yet).
+
+Actually, looking more carefully at the code flow:
+1. First it checks base case (depth <= 0 or no bound_vars with random)
+2. Then it tries to use a variable
+3. Then it chooses between lambda and application
+
+The issue is that when we try to use a variable, we don't know what type is needed. We could:
+1. First decide what construct to build (lambda vs application vs literal)
+2. Then based on that, filter variables appropriately
+
+But that would require a bigger refactor. Let me think of a simpler improvement...
+
+Actually, looking at the application case more closely:
+```python
+else:
+    # Create an application - need type-correct function and argument
+    # First generate a function type
+    arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+    ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+    func_type = ("Fun", arg_type, ret_type)
+    
+    # Generate function term - could be a lambda or variable
+    if rng.random() < 0.5 and bound_vars:
+        # Use an existing variable of function type
+        for var_name, var_type in bound_vars:
+            if var_type[0] == "Fun":
+                func_term = ("Var", var_name)
+                break
+        else:
+            # No function variable available, create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+```
+
+In the application branch, the code already filters for function variables correctly. The real problem is in the earlier variable selection step, which doesn't filter by type at all. I should add type filtering there to match the behavior already present in the application case. The core issue is that randomly selecting from bound_vars often produces type mismatches. I should restructure the generation to decide between lambda and application first, then filter variables accordingly. For lambdas, I can pick any variable type, but for applications I need function types specifically. This type-aware approach would be more effective than trying to filter retroactively.

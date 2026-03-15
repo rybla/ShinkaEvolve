@@ -1,0 +1,30 @@
+Let me analyze the prior programs and their performance metrics to understand what techniques lead to higher scores.
+
+Looking at the performance metrics from the prior programs:
+
+1. **Program 1** (Score: 8.73): Had `used_vars_proportions_average: 0.16` - the highest among them, but `good_ratio: 0.82` was lower. This suggests it tried to use variables but sometimes generated invalid terms.
+
+2. **Program 2** (Score: 10.26): Used context tracking (`ctx` parameter) to track bound variables, but `used_vars_proportions_average: 0.02` is very low. The code path for using variables was only triggered when `ctx` was non-empty and had a specific probability.
+
+3. **Programs 3-6** (Scores: 10.26-10.30): Very simple - just literals and lambdas wrapping them. No variables used, no applications. These are "safe" but don't explore the full space.
+
+4. **Current program** (Score: 10.29): Similar to programs 3-6.
+
+The key insight from the meta-review is that **Program 1 broke the 10.30 ceiling** by:
+1. Introducing `bound_vars` tracking
+2. Probabilistically choosing to return variables from bound context
+3. Type-safe application with fallback
+4. Unique variable naming with `f"x{rng.randint(0, 100)}"`
+
+But Program 1 had `good_ratio: 0.82` - some generated terms were invalid.
+
+Looking at what metrics matter for the combined score:
+- `good_ratio`: Higher is better (1.00 is perfect)
+- `used_vars_proportions_average`: Higher is better (more variable usage)
+- `applied_lambdas_proportions_average`: Higher is better (more applications)
+- `unique_subterms_proportions_average`: Higher is better (more unique subterms)
+
+
+- `tm_sizes_average` and `ty_sizes_average`: These contribute positively when larger
+
+The current approach achieves perfect validity but produces trivial terms. I need to balance safety with complexity by tracking bound variables while ensuring type-safe generation, allowing variable usage with fallback to literals when the context doesn't support it, and incorporating applications through type-safe operations.

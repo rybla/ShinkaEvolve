@@ -1,0 +1,29 @@
+I need to provide a complete new program code. Let me write the full code with the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END markers.
+
+Looking at the requirements:
+- The generator must ALWAYS produce well-formed types and terms 
+- The generator must ALWAYS produce well-typed terms, and where the term's type matches the generated type.
+
+Key metrics to improve:
+- tm_sizes_average: currently 1.30, want higher (bigger terms)
+- ty_sizes_average: currently 1.30, want higher (bigger types)
+- used_vars_proportions_average: currently 0.00, want higher (use variables from lambdas)
+- applied_lambdas_proportions_average: currently 0.00, want higher (apply lambdas to arguments)
+- unique_subterms_proportions_average: currently 0.13, want higher
+
+The current simple approach generates:
+1. Bool literal
+2. Int literal  
+3. String literal
+4. Lambda wrapping another generate_sample call
+
+The problem is the lambda just wraps - it doesn't really use variables or apply lambdas.
+
+I need to add:
+1. A context to track variables in scope
+2. Use variables from context (with some probability)
+3. Apply lambdas to arguments
+
+But I need to be careful to maintain well-typed terms.
+
+Let me write a cleaner implementation:

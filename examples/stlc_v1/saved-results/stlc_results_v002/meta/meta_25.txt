@@ -1,0 +1,196 @@
+# INDIVIDUAL PROGRAM SUMMARIES
+
+The following are summaries of individual programs evaluated since the last meta update:
+
+**Program Name: Recursive Constant-Value Simply-Typed Lambda Calculus Generator**
+- **Implementation**: The generator uses a recursive approach to produce either primitive literals (Bool, Int, String) or identity-like functions that wrap nested terms in a lambda abstraction. It utilizes a depth-controlled random selection to ensure termination, though it currently uses hardcoded literal values and a fixed variable name "x".
+- **Performance**: Achieved a combined score of 10.30 with a 1.00 good_ratio, but very low structural complexity (average term/type size of 1.38).
+- **Feedback**: While the program is perfectly valid and produces well-typed terms, the lack of variable usage and application terms results in minimal term diversity. The implementation effectively guarantees correctness but fails to explore the broader state space of the lambda calculus.
+**Program Identifier:** Generation 0 - Patch Name initial_program - Correct Program: True
+
+**Program Name: Deeply Embedded Simply-Typed Lambda Calculus Generator**
+- **Implementation**: The program defines a recursive structure for types and terms using Python type aliases and tuples, attempting to generate samples via a `generate_sample` function that delegates to type and term generators.
+- **Performance**: Combined score: nan; good_ratio: 0.00; all other metrics (size, variety, variable usage) are nan.
+- **Feedback**: The implementation is incomplete and fails because `generate_type` and `generate_term` are referenced but never defined, leading to a runtime error. To succeed, it requires a robust bidirectional type-checking or synthesis algorithm to ensure generated terms match their assigned types.
+**Program Identifier:** Generation 3 - Patch Name none - Correct Program: False
+
+**Program Name: Deeply Embedded Simply-Typed Lambda Calculus Generator**
+- **Implementation**: The program defines a structural representation of types and terms using nested Python tuples and type aliases to simulate a formal grammar. It utilizes a placeholder `generate_sample` function intended to produce random terms within the constraints of the defined `Ty` and `Tm` structures.
+- **Performance**: Combined score: 0.0; the program failed to pass validation tests.
+- **Feedback**: The implementation is incomplete as it lacks the logic for the `generate_sample` function and the necessary type-checking or evaluation engine. The failure stems from providing type definitions without the operational code required to generate or process valid lambda calculus terms.
+**Program Identifier:** Generation 6 - Patch Name none - Correct Program: False
+
+**Program Name: Random Deeply-Embedded Simply-Typed Lambda Calculus Generator**
+- **Implementation**: The program defines a structural representation of types and terms using nested Python tuples and type aliases, intended to generate random samples via a `generate_sample` function.
+- **Performance**: Combined score: 0.0; the program fails to produce valid output as the generation logic is missing.
+- **Feedback**: The implementation provides a robust type-system definition but lacks the actual recursive logic required to synthesize well-typed terms, resulting in a failure to pass validation.
+**Program Identifier:** Generation 7 - Patch Name none - Correct Program: False
+
+**Program Name: Recursive Constant-Value Simply-Typed Lambda Calculus Generator**
+- **Implementation**: The generator uses a recursive approach to produce literal terms (Bool, Int, String) or identity-like lambda abstractions that wrap nested terms with a fixed "Int" parameter.
+- **Performance**: Achieved a combined score of 10.28 with a 1.00 good_ratio, but very low structural complexity (average term/type size of 1.34).
+- **Feedback**: While the program is perfectly valid and type-safe, it produces highly repetitive code with zero variable usage and no function applications. The depth-limited recursion successfully avoids infinite loops but lacks the variety needed for complex term generation.
+**Program Identifier:** Generation 9 - Patch Name none - Correct Program: True
+
+**Program Name: Recursive Constant-Value Lambda Generator**
+- **Implementation**: The generator uses a recursive approach to produce either primitive literals (Bool, Int, String) or identity-like lambda abstractions that wrap a nested term. It employs a depth-limited random choice to ensure termination, though it currently uses hardcoded literal values and a fixed variable name "x".
+- **Performance**: Achieved a combined score of 10.27 with a 1.00 good_ratio, but very low structural complexity (average term/type sizes of 1.30).
+- **Feedback**: While the program is perfectly valid and type-safe, the reliance on fixed literals and the lack of variable usage or applications results in minimal term diversity and zero variable utilization.
+**Program Identifier:** Generation 8 - Patch Name none - Correct Program: True
+
+**Program Name: Recursive Lambda Calculus Generator with Hardcoded Identity and Application Patterns**
+- **Implementation**: The generator uses a recursive depth-based approach to produce literals or lambda abstractions that either return a bound variable or apply it to a constant. It utilizes a fixed set of types (`Int`, `Bool`, `String`) and hardcoded variable names like "x" for lambda terms.
+- **Performance**: Achieved a combined score of 8.73 with a high `good_ratio` of 0.82, but suffered from low term/type complexity (averages ~1.60) and zero applied lambdas.
+- **Feedback**: While the program successfully generates valid typed terms, the reliance on hardcoded structures and lack of recursive `App` or `Lam` body generation results in very small, repetitive trees and poor utilization of the available term space.
+**Program Identifier:** Generation 10 - Patch Name none - Correct Program: True
+
+**Program Name: Recursive Constant-Value Simply-Typed Lambda Calculus Generator**
+- **Implementation**: The generator uses a recursive approach to produce either primitive literals (Bool, Int, String) or identity-like lambda abstractions that wrap nested terms. It employs a depth-controlled random selection to ensure termination, though it uses a fixed variable name "x" and constant literal values.
+- **Performance**: Achieved a combined score of 10.28 with a 1.00 good_ratio, but very low structural complexity (average term/type size of 1.34).
+- **Feedback**: While the program is perfectly correct and type-safe, the reliance on hardcoded literals and a single variable name results in zero variable usage and low subterm uniqueness. The generator produces valid but highly repetitive and shallow expression trees.
+**Program Identifier:** Generation 11 - Patch Name none - Correct Program: True
+
+**Program Name: Simply-Typed Lambda Calculus Deep Embedding and Sample Generation**
+- **Implementation**: The program defines a structural representation of types and terms using nested Python tuples and type aliases to model a simply-typed lambda calculus. It includes a placeholder for term generation logic intended to interface with an external `lc` execution module.
+- **Performance**: Combined score of 0.0; the program is currently non-functional and fails validation tests.
+- **Feedback**: The implementation is incomplete as it lacks the `generate_sample` function definition and contains an isolated expression block that does not contribute to the logic. To pass, the program must implement valid term generation and ensure all referenced functions are defined within the scope.
+**Program Identifier:** Generation 12 - Patch Name none - Correct Program: False
+
+**Program Name: Recursive Depth-Limited STLC Term Generator**
+- **Implementation**: The generator uses a recursive approach with a depth limit to produce typed terms, favoring base literal types (Bool, Int, String) and wrapping them in identity-like lambda abstractions when depth allows.
+- **Performance**: Achieved a combined score of 10.28 with a 1.00 good_ratio, though it produced very small average term and type sizes (1.31).
+- **Feedback**: While the program is perfectly correct, the implementation results in zero variable usage and no function applications, leading to low structural diversity in the generated terms.
+**Program Identifier:** Generation 14 - Patch Name none - Correct Program: True
+
+**Program Name: Simply-Typed Lambda Calculus Deep Embedding and Sample Generation**
+- **Implementation**: The program defines a structural representation of types and terms using nested Python tuples and type aliases to model a simply-typed lambda calculus. It includes a placeholder for term generation logic intended to interface with an external `lc` execution module.
+- **Performance**: Combined score of 0.0; the program is currently non-functional and fails validation tests.
+- **Feedback**: The implementation is incomplete as it lacks the `generate_sample` function definition and contains an isolated expression block that does not contribute to the logic. To pass, the program must implement valid term generation and ensure all referenced functions are defined within the scope.
+**Program Identifier:** Generation 13 - Patch Name none - Correct Program: False
+
+**Program Name: Recursive Random Generator for Simply-Typed Lambda Calculus**
+- **Implementation**: The generator uses a recursive approach with a depth limit to produce literals, identity-style lambda abstractions, and function applications. It utilizes a naming convention based on recursion depth (`f"x{depth}"`) to manage variable binding within lambda terms.
+- **Performance**: Achieved a combined score of 7.11, with a high `good_ratio` of 0.68 but relatively low average term and type sizes (1.21 and 1.29 respectively).
+- **Feedback**: While the program successfully generates valid typed terms, the implementation results in very small, shallow structures and low variable utilization (0.06), suggesting a need for better recursive branching and environment tracking to produce more complex terms.
+**Program Identifier:** Generation 15 - Patch Name none - Correct Program: True
+
+**Program Name: Deeply Embedded Simply-Typed Lambda Calculus Generator**
+- **Implementation**: The program defines a structural representation of types and terms using nested Python tuples and type aliases to model a simply-typed lambda calculus. It includes a placeholder for recursive term generation within a lambda abstraction, intended to interface with an external `lc` module.
+- **Performance**: Combined score of 0.0; the program is currently non-functional and fails validation.
+- **Feedback**: The implementation is incomplete, containing raw tuple structures and comments instead of a functional `generate_sample` logic. The failure stems from the lack of a defined term generation algorithm and the presence of unexecuted code blocks.
+**Program Identifier:** Generation 16 - Patch Name none - Correct Program: False
+
+**Program Name: Simply-Typed Lambda Calculus Deep Embedding and Sample Generation**
+- **Implementation**: The program defines a structural representation of types and terms using nested Python tuples and type aliases to model a simply-typed lambda calculus. It includes a placeholder for term generation logic intended to interface with an external `lc` execution module.
+- **Performance**: Combined score of 0.0; the program is currently non-functional and fails validation tests.
+- **Feedback**: The implementation is incomplete as it lacks the `generate_sample` function definition and contains an isolated expression block that does not contribute to the logic. To pass, the program must implement valid term generation and ensure all referenced functions are defined within the scope.
+**Program Identifier:** Generation 17 - Patch Name none - Correct Program: False
+
+**Program Name: Recursive Depth-Limited STLC Term Generator**
+- **Implementation**: The generator uses a recursive approach with a depth limit to produce typed terms, favoring base literal types (Bool, Int, String) and wrapping them in identity-like lambda abstractions when depth allows.
+- **Performance**: Achieved a combined score of 10.26 with a 1.00 good_ratio, though it produced very small average term and type sizes (1.29).
+- **Feedback**: While the program is perfectly correct and reliable, the generation logic is highly conservative, resulting in zero variable usage and no function applications. The recursive structure successfully avoids infinite loops but lacks the complexity needed to explore the full breadth of the lambda calculus space.
+**Program Identifier:** Generation 19 - Patch Name none - Correct Program: True
+
+**Program Name: Recursive Constant-Value Lambda Generator**
+- **Implementation**: The generator uses a depth-limited recursive approach to produce either primitive literals or identity-like lambda abstractions wrapping a constant body. It utilizes a fixed set of hardcoded values for `Bool`, `Int`, and `String` types and terms.
+- **Performance**: Combined score: 10.29; good_ratio: 1.00; average term/type size: 1.35; used_vars_proportions: 0.00.
+- **Feedback**: The implementation is highly reliable but produces very small, repetitive terms that fail to utilize bound variables. The failure to decrement the `depth` parameter in the recursive call risks stack overflows, though the small branching factor kept sizes manageable in this instance.
+**Program Identifier:** Generation 20 - Patch Name none - Correct Program: True
+
+**Program Name: Recursive Type-Safe Lambda Calculus Generator with Bound Variable Tracking**
+- **Implementation**: The generator uses a recursive approach with a `bound_vars` list to track scope, favoring base literal cases at low depths and occasionally injecting variable references. It constructs `Lam` terms by extending the scope and `App` terms by recursively generating function and argument components.
+- **Performance**: Achieved a combined score of 9.11 with a high `good_ratio` of 0.87, though it produced relatively small terms (average size ~1.9).
+- **Feedback**: While the program successfully maintains type correctness and scope, the logic for `App` and `Lam` often results in type mismatches or simplistic structures, as evidenced by the low `applied_lambdas_proportions_average` (0.03).
+**Program Identifier:** Generation 21 - Patch Name none - Correct Program: True
+
+**Program Name: Recursive Constant-Value Lambda Generator**
+- **Implementation**: The generator uses a depth-limited recursive approach to produce either primitive literals or identity-like lambda abstractions wrapping nested terms. It utilizes a fixed set of constants (e.g., `True`, `27`, `"hello world"`) and a hardcoded variable name `"x"` for all abstractions.
+- **Performance**: Combined score: 10.26; good_ratio: 1.00; tm_sizes_average: 1.29; used_vars_proportions_average: 0.00.
+- **Feedback**: While the program is perfectly valid, the implementation fails to utilize bound variables, resulting in a `used_vars_proportions_average` of 0.00. The recursive depth logic is flawed as the `depth` parameter is never decremented, though the random distribution naturally favors small terms.
+**Program Identifier:** Generation 22 - Patch Name none - Correct Program: True
+
+**Program Name: Recursive Constant-Value Lambda Generator**
+- **Implementation**: The generator uses a recursive approach to produce either primitive literals (Bool, Int, String) or a single-parameter lambda function that wraps a nested term. It utilizes a depth-controlled random selection to ensure termination, though it currently uses hardcoded values and a fixed "Int" parameter for all generated functions.
+- **Performance**: Achieved a combined score of 10.29 with a 1.00 good_ratio, but very low structural complexity (average term/type size of 1.36).
+- **Feedback**: While the program is perfectly valid, the implementation is highly repetitive and fails to utilize variables or application terms, resulting in zero scores for variable usage and applied lambdas. The reliance on a single "Int" input type for all functions limits the diversity of the generated ASTs.
+**Program Identifier:** Generation 23 - Patch Name none - Correct Program: True
+
+**Program Name: Recursive Depth-Limited Simply-Typed Lambda Calculus Generator**
+- **Implementation**: The generator uses a recursive approach with a depth limit to produce terms, favoring literal types (Bool, Int, String) and wrapping them in identity-like lambda abstractions when depth allows.
+- **Performance**: Achieved a combined score of 10.28 with a 1.00 good_ratio, but very low structural complexity (average term/type size of 1.33).
+- **Feedback**: While the program is perfectly correct and type-safe, the implementation produces highly repetitive, shallow structures that fail to utilize variables or application terms.
+**Program Identifier:** Generation 25 - Patch Name none - Correct Program: True
+
+**Program Name: Recursive Constant-Value Lambda Generator**
+- **Implementation**: The generator uses a recursive approach to produce either primitive literal terms (Bool, Int, String) or identity-like lambda abstractions that wrap a nested term. It employs a depth-limited random choice to ensure termination, though it currently uses hardcoded constants for literal values and variable names.
+- **Performance**: Achieved a combined score of 10.31 with a 1.00 good_ratio, but very low structural complexity (average term/type size of 1.41).
+- **Feedback**: While the program successfully generates valid typed terms, the reliance on a single variable name ("x") and constant literals results in zero variable usage and low subterm uniqueness. To improve, the generator should incorporate a context of available variables and a wider variety of application nodes.
+**Program Identifier:** Generation 24 - Patch Name none - Correct Program: True
+
+**Program Name: Recursive Deeply-Embedded Lambda Calculus Generator**
+- **Implementation**: The generator uses a recursive approach with a depth limit and a `bound_vars` list to track available variables, utilizing `random.Random` to branch between literals, variables, lambdas, and applications.
+- **Performance**: Achieved a combined score of 7.32, with a high `good_ratio` of 0.72 but zero scores for variable usage, lambda applications, and subterm uniqueness.
+- **Feedback**: While the program successfully generates syntactically and type-correct terms, the logic frequently fails to produce complex structures, resulting in minimal variable utilization and no successful function applications.
+**Program Identifier:** Generation 26 - Patch Name none - Correct Program: True
+
+**Program Name: Recursive Simply-Typed Lambda Calculus Generator with Variable Tracking**
+- **Implementation**: The generator uses a recursive approach with a `bound_vars` list to track available variables and their types, balancing literals, variable access, and lambda abstractions. It includes a fallback mechanism in the application case to ensure type consistency by returning the argument if the function term is not a `FunTy`.
+- **Performance**: Achieved a combined score of 10.55 with a high `good_ratio` of 0.99 and an average term size of 2.12.
+- **Feedback**: The implementation is highly reliable for generating valid terms, though the small average term and type sizes suggest the depth-reduction logic and fallback cases favor simpler structures. Increasing the probability of lambda creation or deeper recursion could further improve the complexity of the generated terms.
+**Program Identifier:** Generation 28 - Patch Name none - Correct Program: True
+
+**Program Name: Simply-Typed Lambda Calculus Random Term Generator**
+- **Implementation**: The program uses a recursive `generate_sample` function to produce pairs of types and terms represented as nested tuples, utilizing a depth-based termination strategy.
+- **Performance**: Combined score: 0.0; the program fails to execute due to syntax errors and logic inconsistencies.
+- **Feedback**: The implementation is broken by an `elif` block without a preceding `if`, a typo in the `AppTm` constructor (`"APP"` instead of `"App"`), and a failure to ensure the generated lambda body matches the declared return type.
+**Program Identifier:** Generation 29 - Patch Name none - Correct Program: False
+
+**Program Name: Depth-Limited Recursive Generator with Identity Lambda Patterns**
+- **Implementation**: The generator uses a recursive approach with a depth counter, producing basic literals at the base case and introducing a specific identity-style lambda pattern (`'Var', 'x'`) for function types.
+- **Performance**: Achieved a combined score of 5.49 with a `good_ratio` of 0.53, but suffered from very low term/type sizes (1.05) and minimal variable usage (0.02).
+- **Feedback**: The program is incorrect because it fails to generate diverse or validly nested applications, and the lambda implementation ignores the recursive body, leading to extremely shallow and repetitive structures.
+**Program Identifier:** Generation 31 - Patch Name none - Correct Program: False
+
+# GLOBAL INSIGHTS SCRATCHPAD
+
+The following are global insights about optimization approaches and their effectiveness:
+
+## Successful Algorithmic Patterns
+
+*   **Context-Aware Variable Injection**: The current best program (Gen 28, Score: 10.55) successfully broke the 0.00 variable usage plateau seen in previous generations (Best Program, Gen 23, Gen 25) by passing a `bound_vars` list through recursive calls. By using `rng.choice(bound_vars)` to return a `Var` term, it achieved a `used_vars_proportions_average` of 0.17, a significant improvement over the 0.00 of earlier 10.30-rated programs.
+*   **Type-Safe Application Fallbacks**: To maintain a high `good_ratio` (0.99) while attempting complex `App` terms, Gen 28 implemented a conditional check: if a generated function term is not actually a `FunTy`, it returns the argument term instead. This prevents the "ill-typed application" errors that previously lowered the scores of ambitious generators like Gen 21 (Score 9.11).
+*   **Dynamic Variable Naming**: Unlike the "Recursive Constant-Value" generator which used a hardcoded `"x"`, Gen 28 uses f-strings (`f"x{rng.randint(0, 100)}"`) to generate unique variable names. This contributed to a `unique_subterms_proportions_average` of 0.27, nearly double the 0.15 seen in programs with static naming.
+*   **Probabilistic Base-Case Termination**: Gen 28 uses a hybrid termination strategy: it forces a literal if `depth <= 0`, but also allows a 50% chance of a literal if no variables are bound. This ensures the generator doesn't get stuck in infinite lambda-abstraction loops while still allowing for deeper structures when context is available.
+
+## Ineffective Approaches
+
+*   **Broken Logic in Complex Branching**: Generation 29 (Score 0.0) failed entirely due to basic Python syntax errors (an `elif` without an `if`) and a typo in the constructor name (`"APP"` vs `"App"`). This highlights that as generators become more complex to handle `App` and `Var` logic, they become more prone to fatal execution errors.
+*   **Identity-Only Lambda Patterns**: The "Depth-Limited Recursive Generator" (Gen 31, Score 5.49) failed because its lambda implementation ignored the recursive body, simply returning a hardcoded `('Var', 'x')`. This resulted in a very low `good_ratio` (0.53) and minimal structural complexity (1.05), proving that "fake" recursion is less effective than the simple literal-only strategies of Gen 20-25.
+*   **Unchecked Function Application**: Generation 26 (Score 7.32) attempted applications but failed to ensure the left-hand side was a function type, resulting in zero successful `applied_lambdas_proportions`. Without the type-checking fallback used in Gen 28, the generator produces syntactically correct but semantically invalid lambda calculus.
+
+## Implementation Insights
+
+*   **The "Safe Complexity" Balance**: The current best program (Gen 28) is effective because it combines the "Correctness First" approach of earlier versions with a "Safe Complexity" layer. It uses a `bound_vars` list to ensure `Var` terms are always valid and a type-check on `App` terms to ensure applications are valid, resulting in a 0.99 `good_ratio` despite a much higher `tm_sizes_average` (2.12 vs 1.38).
+*   **Co-generation of Type and Term**: The most successful programs (Gen 28, Gen 23, and the previous Best Program) all return a `(type, term)` tuple from the recursive function. This allows the generator to immediately know the return type of a lambda or the required input type of an application, which is critical for maintaining the `good_ratio`.
+*   **Depth-Reduction Discipline**: Programs that successfully increased term size (Gen 28 at 2.12) strictly decrement the `depth` parameter in every recursive branch. Programs that failed to do this (Gen 20, 22) relied on random chance to terminate, which limited their ability to intentionally generate deep, valid trees.
+
+## Performance Analysis
+
+*   **Breaking the 10.30 Ceiling**: For several generations, the score was capped at 10.30-10.31 due to 0% variable usage and 0% applications. Gen 28 (Score 10.55) successfully broke this ceiling by introducing `bound_vars` and `App` logic, proving that even a small amount of variable usage (0.17) and application (0.06) is more valuable than a perfect 1.00 `good_ratio` with zero complexity.
+*   **Complexity vs. Reliability**: Gen 28 achieved a `tm_sizes_average` of 2.12, the highest among all "Correct" programs. This 50% increase in size over the previous best (1.41) directly correlates with its higher score, even though its `good_ratio` dropped slightly from 1.00 to 0.99.
+*   **The Cost of Failure**: The drop from 10.55 (Gen 28) to 0.0 (Gen 29) or 5.49 (Gen 31) demonstrates that the scoring metric is extremely punishing toward syntax errors and type-consistency failures. A simple literal generator (Score 10.31) is significantly better than a sophisticated but buggy application generator.
+
+# META RECOMMENDATIONS
+
+The following are actionable recommendations for the next program generations:
+
+1. **Implement Targeted Function Generation for Applications**: To increase the `applied_lambdas_proportions_average` (currently 0.06), modify the `App` branch to first generate a random `FunTy` and then pass that specific type requirement down to the recursive call for the function term. This ensures the left-hand side of an `App` is much more likely to be a `Lam` or a variable of function type, rather than relying on the current "fallback" mechanism which often discards the application.
+
+2. **Introduce Recursive Type Generation**: Currently, `var_type` is limited to base types like `Bool`, `Int`, or `String`. Create a `generate_type(rng, depth)` helper that can recursively produce `FunTy` (e.g., `Int -> Bool`). This will naturally increase `ty_sizes_average` and allow for higher-order functions, which are necessary to achieve more complex `App` structures and higher `unique_subterms_proportions_average`.
+
+3. **Refine Variable Selection via Type-Matching**: Instead of using `rng.choice(bound_vars)` and returning whatever type comes out, the generator should filter `bound_vars` to find variables that match a *desired* return type. By passing a `target_type` parameter through the recursion, the generator can specifically pick a `Var` that satisfies the current branch's type requirement, significantly increasing the density of valid, used variables.
+
+4. **Implement a "Warm-up" Phase for Lambda Abstractions**: To boost `tm_sizes_average` beyond 2.12, adjust the weighted selection to heavily favor `Lam` terms when `depth` is high (e.g., > 7) and `bound_vars` is empty. This forces the creation of a "context" early in the tree, ensuring that subsequent recursive calls have a rich pool of variables to draw from, preventing the generator from defaulting to simple literals too early.
+
+5. **Adopt Systematic Variable Shadowing and Naming**: Improve `unique_subterms_proportions_average` by replacing the wide `randint(0, 100)` naming with a more structured approach, such as `f"x{len(bound_vars)}"`. This ensures names are predictable yet unique within a scope, and occasionally allowing name reuse (shadowing) can test the robustness of the underlying representation while keeping the term structure compact and interesting.

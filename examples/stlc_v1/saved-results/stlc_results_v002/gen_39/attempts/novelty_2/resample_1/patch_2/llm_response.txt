@@ -1,0 +1,22 @@
+Let me analyze the task more carefully. I need to rewrite the program to improve its performance metrics. The current program has:
+
+- Score: 10.31
+- good_ratio: 1.00
+- tm_sizes_average: 1.41
+- ty_sizes_average: 1.41
+- used_vars_proportions_average: 0.00
+- applied_lambdas_proportions_average: 0.00
+- unique_subterms_proportions_average: 0.16
+
+The key issues are:
+1. No variable usage (used_vars_proportions_average: 0.00)
+2. No applications (applied_lambdas_proportions_average: 0.00)
+3. Low tm_sizes_average and ty_sizes_average
+
+I need to implement a more sophisticated generator that:
+1. Tracks bound variables with a `bound_vars` parameter
+2. Uses type-safe application with fallback
+3. Generates unique variable names with f-strings
+4. Uses probabilistic termination
+
+Let me write the complete new program:

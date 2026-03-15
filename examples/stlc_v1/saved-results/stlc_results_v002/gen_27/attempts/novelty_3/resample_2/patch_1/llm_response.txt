@@ -1,0 +1,75 @@
+Let me analyze the current program and prior programs to understand what's happening:
+
+Current program:
+- Combined score: 10.28
+- good_ratio: 1.00 (perfect type correctness)
+- tm_sizes_average: 1.34
+- ty_sizes_average: 1.34
+- used_vars_proportions_average: 0.00 (variables are NEVER used!)
+- applied_lambdas_proportions_average: 0.00 (lambdas are NEVER applied!)
+- unique_subterms_proportions_average: 0.13
+
+Looking at the best prior program (score 10.30):
+- good_ratio: 1.00
+- tm_sizes_average: 1.38
+- used_vars_proportions_average: 0.00
+- applied_lambdas_proportions_average: 0.00
+- unique_subterms_proportions_average: 0.15
+
+The key observation is that the programs with perfect good_ratio (1.00) achieve the highest scores, but they don't use variables or apply lambdas.
+
+The issue is that trying to use variables or apply lambdas in the prior attempt (first program with score 8.73) caused good_ratio to drop to 0.82.
+
+The current code:
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+The problem is that when it creates a lambda `("Lam", "x", ("Int",), tm)`, it never uses `Var` to reference "x". It just creates nested lambdas that ignore their parameter.
+
+To improve, I need to maintain perfect good_ratio while introducing variable usage and lambda application. The core issue is that simply inserting `Var` references breaks type consistency. I should instead vary the primitive literals (like using different int values) to increase unique_subterms_proportions_average while keeping the structure correct, rather than attempting more complex variable manipulations that currently cause type errors.
+
+Let me try a weighted approach that favors lambdas when depth is high, then transitions to base cases as depth decreases:
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    if depth <= 0:
+        # Base case - generate simple literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["hello", "world", "test", "foo", "bar"])))
+    
+    # At higher depths, favor creating lambda terms to increase term size
+    i = rng.randrange(0, 4)
+    
+    if i < 3:
+        # Create a function type with a lambda
+        arg_ty = ("Int",)
+        ret_ty, body = generate_sample(rng, depth - 1)
+        return (
+            ("Fun", arg_ty, ret_ty),
+            ("Lam", "x", arg_ty, body),
+        )
+    else:
+        # Occasionally generate a simple literal
+        return generate_sample(rng, 0)
+```
+
+The key insight is using depth to control complexity: when depth reaches zero, I generate varied literals; at higher depths, I create lambda abstractions that build up term size. This balances the need for larger terms with type correctness.

@@ -1,0 +1,32 @@
+Let me try again with a different approach. The issue might be that I need to actually make a valid edit. Let me provide a proper SEARCH/REPLACE block.
+
+Looking at the current code:
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+# EVOLVE-BLOCK-END
+```
+
+I need to modify this to improve the unique_subterms_proportions_average score. Let me try using unique variable names like "x0", "x1", etc. instead of just "x".
+
+Actually wait - I need to think about what exact text to search for. The indentation might matter. Let me look at the exact formatting.
+
+The current code has:
+- def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+- 4 spaces indent for the body
+
+Let me provide a working edit.

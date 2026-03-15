@@ -1,0 +1,28 @@
+
+I need to provide the actual SEARCH/REPLACE block. Let me look at the current code more carefully and provide the exact diff.
+
+The current code in the EVOLVE-BLOCK-START to EVOLVE-BLOCK-END is:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+I need to replace this with my new implementation.

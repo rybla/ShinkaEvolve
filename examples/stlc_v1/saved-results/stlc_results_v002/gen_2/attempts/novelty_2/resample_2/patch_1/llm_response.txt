@@ -1,0 +1,50 @@
+Let me analyze the current program and the performance metrics to understand what needs to be improved.
+
+Current metrics:
+- Combined score to maximize: 10.30
+- good_ratio: 1.00 (all samples are well-typed)
+- tm_sizes_average: 1.38 (very small terms)
+- ty_sizes_average: 1.38 (very small types)
+- used_vars_proportions_average: 0.00 (no variable usage)
+- applied_lambdas_proportions_average: 0.00 (no lambda applications)
+- unique_subterms_proportions_average: 0.15 (low uniqueness)
+
+The current generator is very simple and produces:
+1. Very small types (mostly Bool, Int, String)
+2. Very small terms (mostly literals)
+3. No variable usage (no `Var` terms that reference lambda-bound variables)
+4. No lambda applications
+5. Low uniqueness
+
+Looking at the requirements:
+- Max type size: 10 nodes
+- Max term size: 100 nodes
+- Better terms use variables more (apply them to arguments)
+- Better terms apply lambdas to arguments
+- Better terms have more unique subterms
+
+The current implementation only generates:
+- Literals (Bool, Int, String)
+- Simple lambdas with Int -> ty
+
+The main issues:
+1. No variable generation - we need to generate `Var` terms that reference bound variables
+2. No application generation - we need to generate `App` terms that apply lambdas to arguments
+3. The depth parameter is not being used properly
+4. No recursion to build larger terms
+
+Let me design a better generator that:
+1. Uses the depth parameter to control complexity
+2. Generates variables that reference bound variables
+3. Generates applications
+4. Builds larger types and terms
+
+Here's my plan:
+1. Track bound variables in a context
+2. Generate variables from the context
+
+
+3. Generate applications to combine terms
+4. Use depth to control the size of generated types and terms
+
+I need to modify the generate_sample function to track bound variables and use them when generating Var terms, then generate App terms that apply lambdas to arguments while using depth to control complexity.

@@ -1,0 +1,24 @@
+The user is asking me to improve the current program. Let me analyze the current state and the prior programs to understand what improvements can be made.
+
+Looking at the current program:
+- It generates simple literals (Bool, Int, String) and lambda terms
+- The lambda terms always have the same structure: `("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm)`
+- It doesn't use variables from context
+- It doesn't create App terms (applications)
+- The tm_sizes_average is 1.35, which is quite low
+
+The key issue is that the current program:
+1. Doesn't use any bound variables (used_vars_proportions_average: 0.00)
+2. Doesn't create any applications (applied_lambdas_proportions_average: 0.00)
+3. Uses a fixed variable name "x"
+
+Looking at the best prior programs from the analysis:
+- The best program (score 10.8819) uses `bound_vars` parameter, probabilistic variable selection with `rng.random() < 0.35`, unique variable names with `f"x{rng.randint(0, 100)}"`, and type-safe application.
+
+I need to make targeted improvements. Let me create a SEARCH/REPLACE block that modifies the generate_sample function to include:
+1. A bound_vars parameter to track variables in scope
+2. Probabilistic choice to use variables from context
+3. Application terms (App)
+4. Unique variable names
+
+Let me write the edit:

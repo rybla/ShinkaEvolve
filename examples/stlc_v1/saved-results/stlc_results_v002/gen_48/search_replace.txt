@@ -1,0 +1,46 @@
+The user is asking me to propose an improvement to the current program. Let me analyze the code and the metrics more carefully.
+
+Looking at the current code in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END section:
+
+1. The code generates lambda calculus terms
+2. It has a good_ratio of 0.99 (very high)
+3. But used_vars_proportions_average is only 0.18 (low)
+4. applied_lambdas_proportions_average is 0.18 (low)
+5. unique_subterms_proportions_average is 0.39
+
+The key insight from the analysis provided:
+- Program 1 (the best) uses type-safe application: checks `func_type[0] == "Fun"` before applying
+- It uses `bound_vars` to track bound variables
+- It uses unique variable names with `f"x{rng.randint(0, 100)}"`
+
+Looking at the current code more carefully:
+
+In the application branch:
+```python
+# Create an application - need type-correct function and argument
+# First generate a function type
+arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+func_type = ("Fun", arg_type, ret_type)
+
+# Generate function term - could be a lambda or variable
+if rng.random() < 0.5 and bound_vars:
+    # Use an existing variable of function type
+    for var_name, var_type in bound_vars:
+        if var_type[0] == "Fun":
+            func_term = ("Var", var_name)
+            break
+    else:
+        # No function variable available, create a lambda
+        func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+else:
+    # Create a lambda
+    func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+
+# Generate argument term matching the function's input type
+arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+```
+
+The problem is that when selecting a variable from bound_vars, I'm only checking if it's a function type but not whether it matches the specific `arg_type` and `ret_type` we need. Additionally, the argument term generation doesn't enforce that it produces a term of the correct `arg_type`. I need to filter bound_vars more precisely to find variables with the exact function signature we require, and ensure the argument generation respects the expected input type.
+
+Looking at the scoring breakdown, the combined score is 10.88 with good_ratio at 0.99, tm_sizes_average at 4.34, and used_vars_proportions_average at 0.18. The main opportunity is improving variable usage by being more selective about which bound variables to use and ensuring type consistency throughout the application construction.

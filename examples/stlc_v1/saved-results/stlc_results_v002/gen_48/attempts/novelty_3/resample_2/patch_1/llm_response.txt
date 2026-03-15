@@ -1,0 +1,35 @@
+
+Let me analyze the current program and its performance metrics to understand what improvements can be made.
+
+Current performance:
+- Combined score: 10.88
+- good_ratio: 0.99 (very high, nearly perfect)
+- tm_sizes_average: 4.34 (term size)
+- ty_sizes_average: 1.34 (type size)
+- used_vars_proportions_average: 0.18 (low - variables are rarely used)
+- applied_lambdas_proportions_average: 0.18 (low - lambdas are rarely applied)
+- unique_subterms_proportions_average: 0.39 (moderate)
+
+Looking at the code, the main issues I can see are:
+
+1. **Variable usage is still low (0.18)**: While there's a 35% chance to use a variable when bound_vars exists, the selection is random and doesn't consider type compatibility.
+
+2. **Lambda application is low (0.18)**: The current code tries to create applications, but there might be issues with type correctness or the logic isn't generating enough applications.
+
+3. **Unique subterms is moderate (0.39)**: Could be improved by varying the structure more.
+
+Looking at the code more carefully:
+
+1. In the base case, we return a type and a literal term - but note that the return format is `(type, term)` and when we call `generate_sample(rng, depth - 1, bound_vars)`, we only use `[1]` to get the term, ignoring the type. This means we're not properly propagating type information from recursive calls!
+
+2. When creating a lambda, we call `generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])` but we only use the term part `[1]`, ignoring the type. This could lead to type mismatches.
+
+3. The variable selection at line `if bound_vars and rng.random() < 0.35:` picks a random variable without checking if its type matches what might be expected.
+   
+The key problem is that we're discarding the type information from recursive calls. When generating function bodies or arguments, we need to ensure the types align properly. For instance, when creating an application, I should verify that the argument term's type matches what the function expects, and when selecting a variable, I should filter for type-compatible ones rather than picking randomly.
+
+Looking at the current implementation, the application logic attempts to find a function variable with a `Fun` type, but the approach is incomplete—it doesn't fully validate type consistency or ensure the argument matches the function's parameter type.
+
+The core problem is that while we're checking whether a variable has a function type, we're not ensuring the argument we're passing actually conforms to that function's input type. We need to extract the expected argument type from the function's signature and use it to constrain what argument we generate.
+
+Additionally, I should vary which branch executes more frequently—the current 50/50 split might be limiting diversity in the generated terms. I'll make both changes together to address these issues.

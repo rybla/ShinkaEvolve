@@ -1,0 +1,19 @@
+The user is asking me to provide a complete new program code that improves upon the current program. Let me analyze the situation:
+
+1. The current program has a score of 10.28
+2. The best prior programs reached around 10.31
+3. The key metrics to improve are:
+   - tm_sizes_average (currently 1.33)
+   - used_vars_proportions_average (currently 0.00)
+   - applied_lambdas_proportions_average (currently 0.00)
+   - unique_subterms_proportions_average (currently 0.14)
+
+The challenge is that adding variables and applications can break type safety and lower good_ratio. I need to be careful to maintain type correctness.
+
+Let me write a complete new program that:
+1. Tracks bound variables
+2. Uses variables in a type-safe way
+3. Has function applications with type checking
+4. Maintains good_ratio at 1.00
+
+I'll provide the full code in the required format.

@@ -1,0 +1,40 @@
+Let me analyze the current program and the prior programs to understand what's happening and how to improve.
+
+The current program has:
+- good_ratio: 1.00 (perfect - all samples are type-correct)
+- tm_sizes_average: 1.30 (term size)
+- ty_sizes_average: 1.30 (type size)
+- used_vars_proportions_average: 0.00 (no variables are used)
+- applied_lambdas_proportions_average: 0.00 (no function applications)
+- unique_subterms_proportions_average: 0.13
+
+The best prior program (score 10.30) has:
+- good_ratio: 1.00
+- tm_sizes_average: 1.38
+- ty_sizes_average: 1.38
+- used_vars_proportions_average: 0.00
+- applied_lambdas_proportions_average: 0.00
+- unique_subterms_proportions_average: 0.15
+
+Looking at the analysis from earlier:
+- Program 1 (Score: 10.8819) - The best one, uses `bound_vars`, `rng.random() < 0.35`, type-safe application, unique variable names with f"x{rng.randint(0, 100)}", hybrid termination
+- It achieves: good_ratio=0.9950, tm_sizes_average=4.3427, used_vars_proportions_average=0.1795, applied_lambdas_proportions_average=0.1821, unique_subterms_proportions_average=0.3927
+
+So the key improvements I need to make:
+1. Use `bound_vars` to track bound variables
+2. Use probabilistic variable selection
+3. Implement type-safe application with fallback
+4. Use unique variable names with f-strings
+5. Use probabilistic termination
+
+The current program just generates literals and wraps them in lambdas. It doesn't use variables or applications at all.
+
+Let me create a new implementation based on the best-performing Program 1 approach:
+
+Key features to implement:
+1. Context-aware variable injection via bound_vars
+
+
+2. Type-safe application with fallback to handle type mismatches
+3. Fresh variable generation using f-strings to ensure uniqueness
+4. Probabilistic termination that combines depth and random chance

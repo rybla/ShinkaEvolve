@@ -1,0 +1,52 @@
+Let me analyze the current program and the metrics we need to improve:
+
+Current metrics:
+- Combined score to maximize: 10.30
+- good_ratio: 1.00 (all samples are well-typed)
+- tm_sizes_average: 1.38 (very small terms)
+- ty_sizes_average: 1.38 (very small types)
+- used_vars_proportions_average: 0.00 (no variable usage)
+- applied_lambdas_proportions_average: 0.00 (no lambda applications)
+- unique_subterms_proportions_average: 0.15 (few unique subterms)
+
+The key issues:
+1. Terms are very small (max depth 10, but most are literals)
+2. No variable usage (the generated terms don't use variables introduced by lambdas)
+3. No lambda applications
+4. Few unique subterms
+
+The current implementation:
+- Only generates literals or simple lambdas wrapping other samples
+- Doesn't track variables properly
+- Doesn't create applications
+- Doesn't reuse variables
+
+I need to design a novel approach that:
+1. Generates larger types (up to 10 nodes)
+2. Generates larger terms (up to 100 nodes)
+3. Uses variables introduced by lambdas
+4. Applies lambdas to arguments
+5. Has more unique subterms
+
+Let me think about a new approach:
+
+1. First, generate a type of a certain size
+2. Then generate a term that has that type
+3. Track the type context (what variables are available)
+4. Use the context to generate variables and applications
+
+Key insight: I need to track the "context" - what variables are in scope with what types. When I generate a lambda, I add a new variable to the context. When I generate a variable, I can pick from the context. When I generate an application, I need a function type in the context.
+
+Let me design a more sophisticated generator:
+
+1. Generate a type with a target size (up to 10 nodes)
+2. Generate a term with a target size (up to 100 nodes)
+
+
+3. I'll implement a strategic approach to variable management and term construction. The generator will carefully track available variables, ensuring meaningful interactions between lambda abstractions and their potential applications. By systematically building complex terms, I can increase the diversity and complexity of generated lambda calculus expressions.
+
+The core strategy involves:
+- Maintaining a dynamic context of available variables
+- Intelligently selecting variables for usage
+- Creating lambda abstractions that can be meaningfully applied
+- Generating terms that demonstrate rich type-level interactions

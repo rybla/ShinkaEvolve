@@ -1,0 +1,69 @@
+The user is asking me to make changes to the program. Let me look at the current program and understand what modifications I can make to improve the performance.
+
+Looking at the program, I need to identify the exact code to modify. Let me focus on making a targeted improvement.
+
+The key areas to improve based on the analysis:
+1. Type-safe application - check if func_type[0] == "Fun" before applying
+2. Increase term sizes by reducing random base case probability
+
+Let me create the SEARCH/REPLACE blocks for these changes.
+
+Looking at the current code:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Base case: generate literals when depth is exhausted or randomly at top level
+    if depth <= 0 or (not bound_vars and rng.random() < 0.5):
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # When we have bound variables, use them with some probability
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create a lambda with a fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create an application - need type-correct function and argument
+        # First generate a function type
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+I'll focus on two key improvements: reducing the base case probability and implementing type-safe application. The current implementation has a high probability of terminating at the base case, which limits term complexity. By lowering the random base case probability, I can encourage more diverse and complex term generation.
+
+The type-safe application requires careful type checking. I'll ensure the function type is valid before creating an application, preventing potential type mismatches. This means verifying the function type's structure and handling cases where the type might not be a proper function type.

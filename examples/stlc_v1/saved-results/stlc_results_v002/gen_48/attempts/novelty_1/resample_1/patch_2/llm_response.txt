@@ -1,0 +1,41 @@
+The user is asking me to improve the program, but my previous attempt had no changes. Let me re-analyze the code and think about what specific improvements I can make.
+
+Looking at the current program:
+1. It has good performance (10.88 combined score)
+2. It already uses `bound_vars` for context
+3. It uses probabilistic selection with `rng.random() < 0.35`
+4. It uses f-strings for unique variable names
+
+The key insight from the analysis was about **type-safe application with fallback**. Let me look at the application generation code more carefully:
+
+```python
+else:
+    # Create an application - need type-correct function and argument
+    # First generate a function type
+    arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+    ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+    func_type = ("Fun", arg_type, ret_type)
+    
+    # Generate function term - could be a lambda or variable
+    if rng.random() < 0.5 and bound_vars:
+        # Use an existing variable of function type
+        for var_name, var_type in bound_vars:
+            if var_type[0] == "Fun":
+                func_term = ("Var", var_name)
+                break
+        else:
+            # No function variable available, create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+    else:
+        # Create a lambda
+        func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+    
+    # Generate argument term matching the function's input type
+    arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+    
+    return (ret_type, ("App", func_term, arg_term))
+```
+
+The critical flaw is that `generate_sample` returns a tuple containing both a type and a term, but the code discards the returned type and only uses the term. This means `arg_term` could have any type, not necessarily the `arg_type` that the function expects. Additionally, the lambda's body type isn't validated against `ret_type`. I need to capture the type from `generate_sample` and ensure the argument term's type matches what the function requires.
+
+A more robust approach would be to recursively generate the function itself, extract its return type, then use that to constrain the argument generation. This way the types stay consistent throughout the construction.

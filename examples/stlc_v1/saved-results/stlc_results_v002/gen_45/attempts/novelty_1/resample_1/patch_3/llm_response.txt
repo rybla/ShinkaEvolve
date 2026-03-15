@@ -1,0 +1,21 @@
+The user is asking me to provide a new program to improve the performance. Let me analyze the current program and create an improved version.
+
+Looking at the current program:
+- It uses `bound_vars` to track bound variables
+- Uses `rng.random() < 0.35` for variable selection
+- Has some lambda and application generation
+
+The metrics show:
+- good_ratio: 0.99 (already very high)
+- tm_sizes_average: 4.34
+- used_vars_proportions_average: 0.18
+- applied_lambdas_proportions_average: 0.18
+- unique_subterms_proportions_average: 0.39
+
+From the analysis provided, the key improvements are:
+1. Type-safe application with fallback - check if func_type[0] == "Fun" before applying
+2. Better variable usage - use bound_vars more effectively
+3. Fresh variable generation with f-strings
+4. Probabilistic termination
+
+Let me create an improved version that implements these techniques properly.

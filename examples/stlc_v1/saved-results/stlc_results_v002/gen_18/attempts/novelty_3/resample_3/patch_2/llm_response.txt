@@ -1,0 +1,52 @@
+
+The previous edit was not successful. Let me re-read the current program and make sure I'm proposing a valid change.
+
+Looking at the current program:
+
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)  # Note: depth is not decremented!
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+# EVOLVE-BLOCK-END
+```
+
+I need to make a change. Let me think about what modification would improve the score.
+
+The key metrics we want to improve:
+- used_vars_proportions_average: currently 0.00
+- applied_lambdas_proportions_average: currently 0.00
+- unique_subterms_proportions_average: currently 0.14
+
+While maintaining:
+- good_ratio: currently 1.00 (very important!)
+
+One approach: Add an App case that applies functions to arguments. But we need to ensure type safety.
+
+Actually, looking at the problem more carefully, I realize:
+1. The current code never decrements depth in the recursive call, so it generates infinite depth lambdas (until some random cutoff)
+2. It never uses Var to reference variables
+3. It never applies lambdas
+
+Let me propose a change that:
+1. Keeps the base cases (literals) to maintain good_ratio
+
+
+2. Adds a small chance to use Var when we have bound variables
+3. Adds a small chance to apply functions
+
+Wait, looking at the function signature, there's no `bound_vars` parameter being passed! That's why we can't use variables - we never track what variables are in scope.
+
+Let me propose adding a bound_vars parameter and using it.

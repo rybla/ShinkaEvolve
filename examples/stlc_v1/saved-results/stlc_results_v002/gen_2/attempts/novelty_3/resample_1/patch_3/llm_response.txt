@@ -1,0 +1,12 @@
+The user is asking me to provide a complete new program code. Let me think about this more carefully and provide the full code in the correct format.
+
+Looking at the requirements:
+1. Generate types up to 10 nodes
+2. Generate terms up to 100 nodes
+3. Use variables (from lambdas)
+4. Apply lambdas to arguments
+5. Have more unique subterms
+
+The current implementation is too simple. I need to create a completely different algorithm.
+
+Let me write the full code:

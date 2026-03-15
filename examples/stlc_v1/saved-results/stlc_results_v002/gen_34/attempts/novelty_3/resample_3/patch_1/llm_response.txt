@@ -1,0 +1,52 @@
+Let me analyze the current program and the prior programs to understand what improvements can be made.
+
+Looking at the current program:
+- It generates simple literals (Bool, Int, String) and lambda terms
+- The lambda terms always use "x" as the variable name
+- It doesn't use variables (Var terms) at all (used_vars_proportions_average: 0.00)
+- It doesn't have any App terms (applied_lambdas_proportions_average: 0.00)
+- The combined score is 10.29
+
+Looking at the best performing programs from the prior examples:
+- The best score was 10.5488 from Program 1 which used:
+  - `bound_vars` parameter to track bound variables
+  - `rng.random() < 0.4` to probabilistically choose variables
+  - `f"x{rng.randint(0, 100)}"` for unique variable names
+  - Type-safe application: checks `func_type[0] == "Fun"` before applying
+  - Hybrid termination: `depth <= 0 or (not bound_vars and rng.random() < 0.5)`
+
+Key metrics to improve:
+1. `used_vars_proportions_average` - currently 0.00, needs to be > 0
+2. `applied_lambdas_proportions_average` - currently 0.00, needs to be > 0
+3. `unique_subterms_proportions_average` - currently 0.14, could be improved
+
+The current program generates lambdas but never uses variables or applies functions. To improve:
+1. Add a context (bound_vars) to track lambda-bound variables
+2. Add a chance to return a Var term using a variable from context
+3. Add App terms to apply functions
+4. Use unique variable names to increase unique_subterms_proportions_average
+
+Let me craft an improved version:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars: list = None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Base case: when depth is 0, generate simple literals
+    if depth <= 0 or (not bound_vars and rng.random() < 0.5):
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", True))
+        elif i == 1:
+            return (("Int",), ("Int", 27))
+        else:
+            return (("String",), ("String", "hello world"))
+    
+    # Probabilistically choose to use a bound variable
+    if bound_vars and rng.random() < 0.4:
+        var_name = rng.choice(bound_vars)
+        return (("Int",), ("Var", var_name))
+```
+
+The key improvement is introducing a `bound_vars` parameter that tracks lambda-bound variables, then adding a 40% chance to return a Var term referencing one of these bound variables instead of always generating fresh literals. This directly addresses the zero `used_vars_proportions_average` and increases term diversity.

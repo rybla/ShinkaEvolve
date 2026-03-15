@@ -1,0 +1,33 @@
+Let me analyze the prior programs and their performance metrics to understand what techniques led to the best results.
+
+Looking at the programs:
+
+1. **Program 1** (score 9.11): Had used_vars_proportions_average=0.07 and applied_lambdas_proportions_average=0.03 - it tried to use variables and applications, but the good_ratio dropped to 0.87, which hurt the overall score.
+
+2. **Programs 2, 3, 4** (scores 10.26, 10.29, 10.30): All achieved perfect good_ratio=1.00 but failed on used_vars_proportions_average=0.00 and applied_lambdas_proportions_average=0.00.
+
+The current program has:
+- good_ratio: 1.00 (perfect)
+- tm_sizes_average: 1.36
+- used_vars_proportions_average: 0.00 (no variable usage!)
+- applied_lambdas_proportions_average: 0.00 (no lambda applications!)
+- unique_subterms_proportions_average: 0.14
+
+The current program creates:
+1. Literal values (Bool True, Int 27, String "hello world")
+2. Lambda that wraps itself recursively without using the variable
+
+The key issue is that while the program creates Lambdas, it never:
+1. Uses `Var` to reference the bound variable "x"
+2. Creates `App` terms to apply functions to arguments
+
+Looking at program 1, it tried to add complexity but the good_ratio dropped. The key challenge is adding Var and App usage while maintaining type correctness.
+
+The current program always creates the same pattern:
+- `("Lam", "x", ("Int",), tm)` where tm is the recursive call
+- This never references "x" via Var
+
+The problem is that to use a variable, we need type-correct terms. The lambda has type `Int -> ty`, so the body should have type `ty`. To reference the variable, we'd need to return a term of type `Int`.
+
+
+To improve while maintaining correctness, I should introduce App construction by generating a function type first, then recursively creating both a function term and an argument term of the appropriate source type, then combining them into an AppTm. For Var usage, when bound variables exist, I need to occasionally reference them instead of always creating new lambdas. I'll vary the base case literals by selecting from different primitive values, and when building recursive cases, ensure the lambda body actually uses the bound variable through App terms.

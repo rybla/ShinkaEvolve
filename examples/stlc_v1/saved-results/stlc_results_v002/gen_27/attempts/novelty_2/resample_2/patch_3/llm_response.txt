@@ -1,0 +1,43 @@
+I need to actually make an edit to the code. Let me look at the current code and propose a specific change.
+
+The current code in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END is:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+I need to make a targeted improvement. Let me think about what specific change would help.
+
+Looking at the metrics:
+- good_ratio: 1.00 (perfect - don't break this!)
+- used_vars_proportions_average: 0.00 (need to use variables)
+- applied_lambdas_proportions_average: 0.00 (need to apply lambdas)
+- unique_subterms_proportions_average: 0.14 (could improve)
+
+The key insight is that the current code:
+1. Creates lambdas but never uses the bound variable
+2. Never creates App terms
+3. Uses fixed literals
+
+One simple improvement: Instead of always using the same literal values, vary them to improve unique_subterms_proportions. This is a safe change that shouldn't break good_ratio.
+
+Let me make a simple change: vary the literal values while keeping the structure the same. This should improve unique_subterms_proportions without risking good_ratio.
+
+Actually, let me think more carefully. The issue is that we need to use variables and apply lambdas, but we need to do it in a type-safe way.
+
+
+I'll explore a nuanced approach to introduce controlled variability. By carefully selecting variable usage and application strategies, I can potentially enhance the generator's flexibility while maintaining type safety. The goal is to create a more dynamic generation process that doesn't compromise the core type constraints.

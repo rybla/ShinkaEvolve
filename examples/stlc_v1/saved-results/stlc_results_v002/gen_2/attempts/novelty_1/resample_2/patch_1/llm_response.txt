@@ -1,0 +1,47 @@
+
+Let me analyze the current program and its performance metrics to understand what needs to be improved.
+
+Current performance:
+- Combined score: 10.30
+- good_ratio: 1.00 (all generated samples are well-formed and well-typed)
+- tm_sizes_average: 1.38 (very small terms - max is 100)
+- ty_sizes_average: 1.38 (very small types - max is 10)
+- used_vars_proportions_average: 0.00 (variables are never used)
+- applied_lambdas_proportions_average: 0.00 (lambdas are never applied)
+- unique_subterms_proportions_average: 0.15 (low uniqueness)
+
+The current generator is very simple and produces:
+1. Only base types (Bool, Int, String) as leaf nodes
+2. Only creates functions with Int as domain
+3. Never creates terms that use variables or apply lambdas to arguments
+4. Very small sizes (only 1.38 nodes on average)
+
+Looking at the current `generate_sample` function:
+- It randomly selects between 4 options (or 3 if depth > 0)
+- It only creates literals (Bool, Int, String) or a simple lambda wrapping another term
+- The recursive call doesn't use the depth parameter properly
+- There's no tracking of free variables or available types
+
+To improve this, I need to:
+1. Track available variables (from lambda bindings) so they can be used
+2. Create more complex types with the full 10 node budget
+3. Create larger terms with the 100 node budget
+4. Apply variables to arguments
+5. Apply lambdas to arguments
+6. Use more varied base types and function types
+
+Let me design a better generator:
+
+1. Maintain a context of available types and variable names
+2. Generate types recursively with size control
+3. Generate terms with proper variable usage and application
+
+Here's my plan:
+
+
+- I'll use a context dictionary mapping variable names to their types
+- When generating types, I'll randomly choose between base types and function types, using recursion depth to control complexity
+- When generating terms, I'll track which variables are in scope and make sure they're used in applications
+- I'll need to balance creating new lambdas with applying existing ones to arguments to improve the used_vars_proportions and applied_lambdas_proportions metrics
+
+Let me write the improved generator:

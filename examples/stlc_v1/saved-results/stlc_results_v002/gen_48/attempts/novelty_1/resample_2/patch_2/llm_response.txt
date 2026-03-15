@@ -1,0 +1,38 @@
+The user is asking me to propose improvements to the current program. Let me analyze the code and the performance metrics more carefully.
+
+Looking at the current code in the EVOLVE-BLOCK-START section:
+
+1. The code already uses `bound_vars` parameter
+2. It uses `rng.random() < 0.35` for variable selection
+3. It uses `f"x{rng.randint(0, 100)}"` for unique variable names
+
+The performance metrics show:
+- Combined score: 10.88
+- good_ratio: 0.99 (very high - this is already good)
+- tm_sizes_average: 4.34 
+- used_vars_proportions_average: 0.18 (this could be improved)
+- applied_lambdas_proportions_average: 0.18
+- unique_subterms_proportions_average: 0.39
+
+Looking at the analysis from the system prompt, the key insight is:
+"**Type-Filtered Variable Selection**: Instead of randomly picking any variable from `bound_vars`, filter the list to only include variables that match the `target_type` requested by the current recursive branch."
+
+Currently, the code does:
+```python
+if bound_vars and rng.random() < 0.35:
+    var_name, var_type = rng.choice(bound_vars)
+    return (var_type, ("Var", var_name))
+```
+
+This randomly picks ANY variable from bound_vars, regardless of what type is needed. This is inefficient because:
+1. It might pick a variable of the wrong type
+2. It doesn't leverage the type information available
+
+The improvement would be to filter bound_vars by the target type first. But wait - at this point in the code, we don't have a specific target_type because we're just deciding what to generate next.
+
+Let me think about this differently. The issue is that when we need to generate a term of a specific type (which we do in the recursive calls), we should优先选择该类型的变量.
+
+Actually, looking more carefully at the code flow:
+
+
+When generating a lambda, we recursively call generate_sample without specifying a target type, so the recursive call doesn't know what type it should produce. Similarly, when generating an application, we create a function type but don't ensure the function term actually has that type. The key improvements would be to track the target type through recursive calls and filter bound_vars to only include variables matching that type, plus ensure type-safe application by verifying the function term's type matches what we expect.

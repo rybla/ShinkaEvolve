@@ -1,0 +1,32 @@
+The user is saying my previous edit was not successful. Let me look at the current program again and propose a targeted improvement.
+
+The current program:
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)  # Note: depth is not decremented!
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+Key issues:
+1. No variable usage (used_vars_proportions_average: 0.00)
+2. No application terms (applied_lambdas_proportions_average: 0.00)
+3. Depth is not decremented in recursion
+
+I need to add:
+1. Context/bound_vars tracking
+2. Variable selection from context
+3. Application terms with type safety
+
+Let me propose a specific edit that adds these features.

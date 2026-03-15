@@ -1,0 +1,33 @@
+The user is asking me to make an edit to improve the performance of the code. Let me look at the current program and propose a specific change.
+
+Looking at the current program in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+The key issues:
+1. It never uses variables (used_vars_proportions_average: 0.00)
+2. It never applies lambdas (applied_lambdas_proportions_average: 0.00)
+
+I need to add:
+1. A `bound_vars` parameter to track bound variables
+2. Probabilistic choice to return variables from bound_vars
+3. Add AppTm cases to apply functions
+4. Maintain type safety
+
+Let me create the edit properly. The SEARCH block should match exactly what's in the file.

@@ -1,0 +1,39 @@
+Let me re-analyze the problem. Looking at the current code more carefully:
+
+1. The function `generate_sample` generates both a type and a term
+2. In the application branch, it tries to create a type-correct application but fails to enforce that the argument term's type matches the function's argument type
+
+The key issue is that `generate_sample` returns both a type and a term, but when we need a term of a specific type (like the argument to an App), we don't have a way to ask for that specific type.
+
+Looking at the metrics:
+- used_vars_proportions_average: 0.18 - only 18% of variables are used (low!)
+- applied_lambdas_proportions_average: 0.18 - only 18% of lambdas are applied (low!)
+- unique_subterms_proportions_average: 0.39 - only 39% unique (could be better)
+
+The code already has a branch for using variables:
+```python
+# When we have bound variables, use them with some probability
+if bound_vars and rng.random() < 0.35:
+    var_name, var_type = rng.choice(bound_vars)
+    return (var_type, ("Var", var_name))
+```
+
+But it's only 35% probability and only when there are bound_vars.
+
+The main issue I see is in the application case:
+```python
+# Generate argument term matching the function's input type
+arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+```
+
+This generates ANY term, not specifically one with the type `arg_type`. So the type correctness fails sometimes.
+
+Let me think about what changes would improve the metrics:
+
+1. **used_vars_proportions_average**: Need to use Var more often - increase probability from 0.35 to something higher
+2. **applied_lambdas_proportions_average**: Need more App terms - the current code does create App but maybe not enough
+
+
+3. **unique_subterms_proportions_average**: Need more diversity - need to ensure we're not always creating the same patterns
+
+I'll focus on creating a more robust method for generating type-specific terms. The goal is to improve variable usage, application frequency, and term diversity by implementing a targeted type-matching approach. This will help ensure type correctness while increasing the variety of generated lambda calculus expressions.

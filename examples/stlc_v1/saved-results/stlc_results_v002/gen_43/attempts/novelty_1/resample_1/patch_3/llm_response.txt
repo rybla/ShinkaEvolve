@@ -1,0 +1,31 @@
+The user is asking me to propose an edit to the current program. Let me carefully examine the current program in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END section.
+
+The current program is:
+
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+# EVOLVE-BLOCK-END
+```
+
+Now let me propose an improved version based on the analysis insights. I need to:
+1. Add a `bound_vars` parameter to track variables in scope
+2. Use probabilistic selection to return variables from context  
+3. Create lambdas with unique variable names
+4. Add application capability with type checking
+
+Let me craft the edit properly. The issue might be that I need to include the exact indentation and match the code exactly.

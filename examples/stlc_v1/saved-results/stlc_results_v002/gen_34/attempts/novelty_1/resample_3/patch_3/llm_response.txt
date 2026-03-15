@@ -1,0 +1,24 @@
+Let me try again with the exact format. I need to provide a SEARCH/REPLACE block that exactly matches the current code in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END section.
+
+Looking at the current program:
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+# EVOLVE-BLOCK-END
+```
+
+I need to provide the exact text that appears between those markers. Let me try again.

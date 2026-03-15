@@ -1,0 +1,31 @@
+Let me look at the current code more carefully and provide a correct diff format.
+
+The current code is:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+I need to make a targeted change. Let me write a diff that replaces the entire function.
+
+Wait, the error says "No changes applied" - maybe I need to look more carefully at the format.
+
+Let me try again with a simpler approach - I'll just provide the search/replace for the function.

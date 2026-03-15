@@ -1,0 +1,10 @@
+The user is saying my previous edit was not successful. Let me provide a complete new program that improves on the current implementation.
+
+Looking at the analysis, the key improvements needed are:
+1. Use `bound_vars` to track bound variables
+2. Use probabilistic variable selection
+3. Implement type-safe application with fallback
+4. Use unique variable names with f-strings
+5. Use probabilistic termination
+
+Let me write a complete new program with these improvements.

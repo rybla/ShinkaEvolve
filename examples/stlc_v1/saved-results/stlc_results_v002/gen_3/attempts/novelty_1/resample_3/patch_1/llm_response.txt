@@ -1,0 +1,41 @@
+Let me analyze the current program and the performance metrics to understand what needs to be improved.
+
+Current metrics:
+- Combined score to maximize: 10.30
+- good_ratio: 1.00 (all samples are well-typed)
+- tm_sizes_average: 1.38 (very small terms)
+- ty_sizes_average: 1.38 (very small types)
+- used_vars_proportions_average: 0.00 (variables are never used!)
+- applied_lambdas_proportions_average: 0.00 (lambdas are never applied!)
+- unique_subterms_proportions_average: 0.15 (low uniqueness)
+
+The key issues I see:
+1. Terms are very small (only 1.38 nodes on average, max is 100)
+2. Types are very small (only 1.38 nodes on average, max is 10)
+3. Variables are never used (0.00 proportion)
+4. Lambdas are never applied (0.00 proportion)
+
+Looking at the current `generate_sample` function:
+- It has a `depth` parameter but it's never used properly
+- It only generates literals or simple lambdas wrapping recursive calls
+- There's no way to generate applications (which would use variables)
+- There's no way to generate variable references
+- There's no way to generate larger types
+
+The current implementation:
+1. Randomly picks between Bool, Int, String literals, or a Fun type
+2. For Fun types, it creates a lambda with Int domain and recursively generates the body
+3. This creates a chain of lambdas but never applies them or uses the variables
+
+To improve, I need to:
+1. Actually use the `depth` parameter to control size
+2. Generate larger types (up to 10 nodes)
+3. Generate larger terms (up to 100 nodes)
+4. Generate applications to use variables
+5. Generate variable references
+6. Make sure terms are well-typed
+
+
+7. Introduce a context to track available variables and their types so I can generate well-typed applications and variable references
+
+I'll need to modify the generator to track variable bindings as I create lambdas, then use those bindings when generating applications or variable references. This way I can ensure the terms remain well-typed while also increasing their size and complexity.

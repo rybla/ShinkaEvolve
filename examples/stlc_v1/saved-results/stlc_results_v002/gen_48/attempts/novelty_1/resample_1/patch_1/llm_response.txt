@@ -1,0 +1,42 @@
+Let me analyze the current program and the performance metrics to identify potential improvements.
+
+Current performance:
+- Combined score: 10.88
+- good_ratio: 0.99 (very high)
+- tm_sizes_average: 4.34
+- used_vars_proportions_average: 0.18
+- applied_lambdas_proportions_average: 0.18
+- unique_subterms_proportions_average: 0.39
+
+Looking at the analysis from the system prompt, the best programs used:
+1. Type-safe application with fallback - checking if `func_type[0] == "Fun"` before applying
+2. Context-aware variable injection via `bound_vars`
+3. Fresh variable naming with f-strings
+4. Probabilistic termination
+
+The current program already has some of these features. Let me look at what could be improved:
+
+1. **Type-safe application**: The current program doesn't check if the function type is actually "Fun" before applying. This could cause type errors in the generated terms.
+
+2. **Variable selection**: Currently it randomly selects any variable from bound_vars. It could filter to only select variables that match the target type.
+
+3. **Application generation**: The current code generates a function type first, then tries to find/create a function term. But it doesn't ensure type consistency between the generated function term and the expected function type.
+
+Let me think about what specific changes would help:
+
+1. **Type-safe application with fallback**: When creating an App term, check if the function term actually has a function type. If not, return the argument instead (or create a proper lambda).
+
+2. **Type-filtered variable selection**: When selecting a variable from bound_vars, filter to only include variables of the appropriate type for the current context.
+
+3. **Better type consistency**: Ensure that when generating an application, the function term's type matches the expected function type.
+
+Looking at the current code more carefully:
+
+In the application branch:
+- It generates `func_type = ("Fun", arg_type, ret_type)`
+
+
+- It then generates a function term, but doesn't verify the generated term actually has that type
+- The arg_term generation doesn't ensure type matching either
+
+The key issue is that the current code generates types and terms separately without ensuring consistency. I need to add type checking when applying functions - if the function term's type isn't actually a "Fun" type, I should fall back to returning the argument instead. This prevents type mismatches that could reduce the good_ratio. Additionally, when selecting variables, I should filter by the target type to increase the likelihood of selecting appropriate variables.

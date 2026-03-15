@@ -1,0 +1,17 @@
+The user wants me to rewrite the program to improve its performance on the specified metrics. Let me analyze the current program and design a better generator.
+
+The current implementation has these issues:
+1. Term sizes are too small (1.38 vs max 100)
+2. Type sizes are too small (1.38 vs max 10)
+3. No variables are being used (0%)
+4. No lambdas are being applied (0%)
+5. Few unique subterms (0.15)
+
+I need to design a new algorithm that:
+1. Generates larger types (up to 10 nodes)
+2. Generates larger terms (up to 100 nodes)
+3. Uses variables introduced by lambdas
+4. Applies lambdas to arguments
+5. Has more unique subterms
+
+Let me write a complete new implementation.

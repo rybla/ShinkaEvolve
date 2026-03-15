@@ -1,0 +1,62 @@
+Let me analyze the current program and the metrics to understand what needs to be improved.
+
+Current metrics:
+- Combined score to maximize: 10.30
+- good_ratio: 1.00 (all samples are well-typed)
+- tm_sizes_average: 1.38 (term sizes are very small, max is 100)
+- ty_sizes_average: 1.38 (type sizes are very small, max is 10)
+- used_vars_proportions_average: 0.00 (variables are not being used)
+- applied_lambdas_proportions_average: 0.00 (lambdas are not being applied)
+- unique_subterms_proportions_average: 0.15 (very few unique subterms)
+
+Looking at the current `generate_sample` function:
+1. It only generates base types (Bool, Int, String) or simple functions (Int -> ty)
+2. It only creates simple literals or trivial lambdas that don't use variables
+3. It doesn't generate applications at all
+4. It doesn't maintain a context of variables to use
+5. It doesn't recursively build larger types
+
+The key issues are:
+1. Types are too small (need to reach size up to 10)
+2. Terms are too small (need to reach size up to 100)
+3. Variables introduced by lambdas are never used
+4. Lambdas are never applied
+5. No applications are generated at all
+
+I need to create a more sophisticated generator that:
+1. Builds larger types (up to 10 nodes)
+2. Builds larger terms (up to 100 nodes)
+3. Tracks variables in scope
+4. Can generate applications
+5. Can use variables from scope
+6. Can apply lambdas to arguments
+
+Let me design a better generator:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    # First generate a type
+    ty = generate_type(rng, depth)
+    
+    # Then generate a term with that type
+    tm = generate_term(rng, ty, {}, depth)
+    
+    return (ty, tm)
+
+def generate_type(rng: random.Random, depth) -> Ty:
+    if depth <= 0 or rng.random() < 0.3:
+        # Base types
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return ("Bool",)
+        elif i == 1:
+            return ("Int",)
+        else:
+            return ("String",)
+    else:
+        # Function type
+        arg_ty = generate_type(rng, depth - 1)
+        ret_ty = generate_type(rng, depth - 1)
+        return ("Fun", arg_ty, ret_ty)
+
+The generator builds types recursively, choosing between base types and function types based on depth and randomness. For terms, it needs to match the target type: literals work for base types, variables can be used if available in scope, lambdas create function types when wrapped around body terms, and applications combine two terms when the target is a function type.

@@ -1,0 +1,73 @@
+I need to actually provide a SEARCH/REPLACE block to modify the code. Let me look at the current code in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END section and propose changes.
+
+The current implementation is:
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+I need to replace this with a better implementation. Let me write a proper generator that:
+1. Generates larger types (up to 10 nodes)
+2. Generates larger terms (up to 100 nodes)
+3. Uses variables from the context
+4. Applies lambdas to arguments
+5. Ensures well-typedness
+
+The key insight is that we need to track a type context (list of variable names and their types) when generating terms.
+
+Let me write the new implementation:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+    
+    def gen_type(max_nodes: int) -> Ty:
+        """Generate a random type with at most max_nodes nodes."""
+        if max_nodes <= 1:
+            # Base types
+            return rng.choice([("Bool",), ("Int",), ("String",)])
+        
+        # Decide between base type or function type
+        if rng.random() < 0.3 or max_nodes < 3:
+            return rng.choice([("Bool",), ("Int",), ("String",)])
+        
+        # Generate function type: Fun(a, b) where a -> b
+        # Use roughly half the nodes for each side
+        left_nodes = rng.randint(1, max_nodes // 2)
+        right_nodes = max_nodes - 1 - left_nodes  # 1 for "Fun"
+        
+        a = gen_type(left_nodes)
+        b = gen_type(right_nodes)
+        
+        return ("Fun", a, b)
+
+I'll continue generating the type context and term generation strategies, focusing on creating more complex and interesting type structures.
+
+When generating lambda terms, I want to introduce variables with specific types. I'll randomly choose between creating a new lambda or using an existing variable from the context. This approach allows for more nuanced term generation.
+
+The key is balancing variable introduction with variable usage, ensuring a mix of new bindings and references to previously defined variables. I'll track the type context carefully to maintain type consistency while expanding the term's complexity.
+
+My goal is to create a generator that can produce more sophisticated and varied lambda calculus terms, exploring different ways of introducing and using variables within the type system. I'll generate terms more systematically, focusing on constructing lambda calculus expressions with careful type management. The approach involves creating a robust type generation method that builds complex function types while maintaining predictable node budgets. By recursively constructing types with left and right components, I can ensure structured type generation that supports the evaluation strategy.
+
+The term generation will leverage a context-based approach, allowing dynamic introduction of new variables with type annotations. I'll track available variables and strategically generate different term constructions like literals, variables, lambda abstractions, and function applications.
+
+The key improvements involve creating a more deterministic type generation mechanism that allocates nodes precisely, enabling more controlled term complexity while preserving type safety and computational expressiveness.

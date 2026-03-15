@@ -1,0 +1,44 @@
+Let me analyze the current situation carefully.
+
+Looking at the current program and the prior programs, I can see the key issues:
+
+1. **used_vars_proportions_average = 0.00** - No variables are being used (no `Var` terms)
+2. **applied_lambdas_proportions_average = 0.00** - No function applications (no `App` terms)
+3. **unique_subterms_proportions_average ≈ 0.14** - Repetitive structures
+
+The current program creates lambda terms but never uses `Var` to reference the bound variable. It just creates nested lambdas like:
+```
+("Lam", "x", ("Int",), ("Lam", "y", ("Int",), ...))
+```
+
+But the body never references "x" or "y" with `("Var", "x")`.
+
+The best performing programs have:
+- good_ratio = 1.00 (perfect type correctness)
+- But they fail on used_vars and applied_lambdas
+
+I need to create a program that:
+1. Maintains good_ratio = 1.00 (type correctness)
+2. Increases used_vars_proportions (use Var to reference bound variables)
+3. Increases applied_lambdas_proportions (create App terms for function application)
+4. Increases unique_subterms_proportions (more diverse structures)
+
+Key insight: To use a variable, I need to track what's in scope. To apply a function, I need to create proper function types.
+
+Let me design a new algorithm:
+
+1. **Use a context/stack** to track bound variables
+2. **When creating a Lambda**, add the variable to the context
+3. **When generating the body**, sometimes use a variable from context (Var)
+4. **For App terms**: Create a function term and apply it to an argument
+
+Here's my approach:
+- Generate base types (Bool, Int, String) at low depth
+- At higher depth, create functions (FunTy)
+
+
+- When building lambda bodies, I'll occasionally reference bound variables using the context stack
+- For function application, I'll construct well-typed terms by ensuring the function type matches the argument type
+- I'll use depth to control recursion and maintain type correctness throughout
+
+The key is balancing variable usage with proper type checking—ensuring that when I reference a variable or apply a function, the types align correctly.

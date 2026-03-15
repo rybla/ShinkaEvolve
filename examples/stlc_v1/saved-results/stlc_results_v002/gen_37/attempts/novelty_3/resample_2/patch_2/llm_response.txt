@@ -1,0 +1,14 @@
+The user is asking me to create a crossover between the current program and some inspiration programs. Let me analyze what I need to do.
+
+Looking at the current program:
+- Score: 10.28
+- good_ratio: 1.00; used_vars_proportions_average: 0.00; applied_lambdas_proportions_average: 0.00
+
+The prior programs show that the best approach involves:
+1. Using bound_vars to track variables
+2. Probabilistically returning Var terms
+3. Type-safe application checking
+
+I need to provide the complete new program code in a specific format with NAME, DESCRIPTION, and CODE sections.
+
+Let me craft the response properly this time.

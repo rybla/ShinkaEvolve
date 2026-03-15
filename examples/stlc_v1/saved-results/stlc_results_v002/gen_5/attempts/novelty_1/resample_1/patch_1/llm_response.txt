@@ -1,0 +1,49 @@
+Let me analyze the current program and the metrics to understand what needs to be improved.
+
+Current metrics:
+- Combined score to maximize: 10.30
+- good_ratio: 1.00 (all samples are well-typed)
+- tm_sizes_average: 1.38 (term sizes are very small)
+- ty_sizes_average: 1.38 (type sizes are very small)
+- used_vars_proportions_average: 0.00 (no variables are being used)
+- applied_lambdas_proportions_average: 0.00 (no lambdas are being applied)
+- unique_subterms_proportions_average: 0.15 (few unique subterms)
+
+The key issues:
+1. Term sizes are too small (max is 100, current is 1.38)
+2. Type sizes are too small (max is 10, current is 1.38)
+3. No variables are being used (0%)
+4. No lambdas are being applied (0%)
+5. Few unique subterms (0.15)
+
+The current implementation:
+- Only generates literals (Bool, Int, String) or simple lambdas with Int type
+- Doesn't generate variables at all
+- Doesn't generate applications
+- Doesn't use the depth parameter properly
+
+I need to design a new algorithm that:
+1. Generates larger types (up to 10 nodes)
+2. Generates larger terms (up to 100 nodes)
+3. Uses variables introduced by lambdas
+4. Applies lambdas to arguments
+5. Has more unique subterms
+
+Let me design a better generator:
+
+Key parameters to adjust:
+- Use depth to control size
+- Track the type context (what variables are in scope with their types)
+- Generate variables, lambdas, and applications
+- Use the depth to limit recursion and ensure we don't exceed size limits
+
+I'll implement a more sophisticated generator that:
+1. Maintains a context of bound variables
+2. Randomly chooses between different term constructions
+3. Properly uses variables in scope
+4. Creates applications
+
+
+5. Generates more complex types
+
+I'll focus on expanding type complexity by introducing more sophisticated type constructions. This means moving beyond simple primitive types and creating more intricate type structures that can capture more nuanced type relationships. The goal is to increase type size while maintaining type safety and generating meaningful type annotations for lambda terms.

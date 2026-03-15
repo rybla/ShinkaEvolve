@@ -1,0 +1,17 @@
+Let me analyze the problem and design a new algorithm approach.
+
+Looking at the current implementation:
+1. It only generates small types and terms (average size 1.38)
+2. Variables are never used (0.00)
+3. Lambdas are never applied (0.00)
+4. Low unique subterms (0.15)
+
+The current approach is too simple - it just randomly picks between literals and simple lambdas, without tracking variables or context.
+
+My new approach will be fundamentally different:
+- Use a context-based generation with explicit tracking of bound variables
+- Generate larger types by composing function types
+- Generate applications that actually use bound variables
+- Use a size budget system to grow terms to the target size
+
+Let me implement this:

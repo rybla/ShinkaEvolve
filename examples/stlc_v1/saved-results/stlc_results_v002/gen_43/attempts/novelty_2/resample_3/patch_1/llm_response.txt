@@ -1,0 +1,35 @@
+Looking at the prior programs and their performance metrics, I can see several key insights:
+
+1. The best scores (10.26-10.30) come from programs that generate simple lambda terms with no variables being used
+2. The first program with score 8.73 had the highest `used_vars_proportions_average: 0.16` but lower good_ratio
+3. Current program has `used_vars_proportions_average: 0.00` - no variables are being used at all
+
+Looking at the system prompt insights:
+- **Type-Consistent Application Synthesis**: Gen 33 (Program 1) significantly improved by ensuring App terms have matching types
+- **Context-Aware Variable Injection**: Uses `bound_vars` list containing `(name, type)` tuples
+- **Recursive Depth-Limited Branching**: Strict `depth - 1` decrement
+- **Fresh Variable Generation with F-Strings**: `f"x{rng.randint(0, 100)}"` prevents structural repetition
+- **Function-First Application Strategy**: Pre-calculates required types for an application
+
+The current program:
+- Uses depth but doesn't decrement it (infinite recursion risk, but somehow works)
+- Doesn't use any variables in the lambda body
+- Only generates literals and simple lambdas that return literals
+
+To improve, I should:
+1. Add context tracking (bound_vars) to enable variable usage
+2. Add App terms with type-safe application
+3. Use unique variable names with f-strings
+4. Add probabilistic termination
+
+Let me look at what made the best programs work:
+- Program 1 (Score: 10.8819): Uses `bound_vars`, `rng.random() < 0.35` for variable selection, unique variable names with `f"x{rng.randint(0, 100)}"`, type-safe application with fallback
+
+The key missing piece in the current program is:
+1. No variable usage (used_vars_proportions_average: 0.00)
+
+
+2. No App terms (applied_lambdas_proportions_average: 0.00)
+3. No type-safe application
+
+I'll implement a sophisticated approach to generate more complex lambda calculus structures. By tracking bound variables and creating type-safe applications, I can potentially increase the program's expressiveness and score. The strategy involves generating unique variable names, implementing probabilistic selection, and ensuring type-consistent term generation.

@@ -1,0 +1,31 @@
+Let me analyze the current program and the performance metrics more carefully to understand what needs to be improved.
+
+Current performance metrics:
+- Combined score: 10.28
+- good_ratio: 1.00 (all generated samples are well-typed)
+- tm_sizes_average: 1.34 (term sizes are very small, max is 100)
+- ty_sizes_average: 1.34 (type sizes are very small, max is 10)
+- used_vars_proportions_average: 0.00 (no variables are being used!)
+- applied_lambdas_proportions_average: 0.00 (no lambdas are being applied!)
+- unique_subterms_proportions_average: 0.13 (low variety of subterms)
+
+Looking at the current code:
+1. It only generates literals (Bool, Int, String) or simple lambdas with Int as domain
+2. The lambda always takes an Int and returns something, but never uses the variable
+3. There's no application of lambdas
+4. There's no use of variables (the "x" in the lambda body is never used)
+5. The types and terms are very small
+
+The key issues are:
+1. **No variable usage**: The lambda creates `("Lam", "x", ("Int",), tm)` but `tm` is just the recursive result which is a literal, not using "x"
+2. **No applications**: There's no `App` constructor being generated
+3. **Types are too simple**: Always `("Int",) -> ty` where ty is from recursive call
+4. **No unique variable names**: Always uses "x" which could cause issues with scoping
+
+I need to:
+1. Add application generation
+2. Use variables in lambda bodies
+3. Generate different types (not just Int -> ...)
+4. Use unique variable names
+
+Let me write a better generator that addresses all these issues.

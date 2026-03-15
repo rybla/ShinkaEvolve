@@ -1,0 +1,104 @@
+
+Looking at the current code and the performance metrics, I need to understand what's happening:
+
+1. Combined score to maximize: 10.30
+2. good_ratio: 1.00 (all generated terms are well-typed)
+3. tm_sizes_average: 1.38 (very small terms, max is 100)
+4. ty_sizes_average: 1.38 (very small types, max is 10)
+5. used_vars_proportions_average: 0.00 (no variables are being used!)
+6. applied_lambdas_proportions_average: 0.00 (no lambdas are being applied!)
+7. unique_subterms_proportions_average: 0.15
+
+The current generator is very basic - it just generates literals or very simple lambdas that don't use variables or apply lambdas.
+
+The key issues I need to fix:
+1. Types are too small (1.38 vs max 10)
+2. Terms are too small (1.38 vs max 100)
+3. No variable usage (0% vs should be high)
+4. No lambda applications (0% vs should be high)
+
+Looking at the generate_sample function:
+- It randomly chooses between Bool, Int, String literals or a simple lambda
+- The lambda case creates a lambda that takes Int and returns whatever generate_sample returns recursively
+- But the problem is it never creates variables or applications!
+
+I need to redesign the generator to:
+1. Generate larger types by using the Fun constructor more often
+2. Generate larger terms by using App and Lam constructors more often
+3. Track bound variables so we can generate Var terms
+4. Make sure we generate applications that use the bound variables
+
+Let me think about the structure:
+- I need a context to track bound variables (their names and types)
+- I need to generate types with a certain target size
+- I need to generate terms with a certain target size
+- The term generation should use variables from the context
+
+Let me design a better generator:
+
+```python
+
+
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+    # Generate a type first
+    ty = generate_type(rng, depth)
+    
+    # Generate a term with that type
+    tm = generate_term(rng, depth, ty, {})
+    
+    return (ty, tm)
+
+def generate_type(rng: random.Random, depth: int) -> Ty:
+    """Generate a type with roughly the given depth."""
+    if depth <= 0 or rng.random() < 0.3:
+        # Base case: choose a base type
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return ("Bool",)
+        elif i == 1:
+            return ("Int",)
+        else:
+            return ("String",)
+    else:
+        # Recursive case: function type
+        arg_ty = generate_type(rng, depth - 1)
+        ret_ty = generate_type(rng, depth - 1)
+        return ("Fun", arg_ty, ret_ty)
+
+def generate_term(rng: random.Random, depth: int, ty: Ty, context: dict) -> Tm:
+    """Generate a term with the given type."""
+    if depth <= 0 or (ty[0] == "Bool" and rng.random() < 0.3):
+        # Base case: literal or variable
+        if rng.random() < 0.3 and context:
+            # Use a variable from context
+            var_name = rng.choice(list(context.keys()))
+            return ("Var", var_name)
+        else:
+            # Generate a literal based on type
+            if ty == ("Bool",):
+                return ("Bool", rng.choice([True, False]))
+            elif ty == ("Int",):
+                return ("Int", rng.randint(0, 100))
+            else:
+                return ("String", rng.choice(["a", "b", "c"]))
+    else:
+        # Recursive case: lambda or application
+        if rng.random() < 0.5:
+            # Lambda
+            var_name = "x" + str(depth)
+            arg_ty = generate_type(rng, depth - 1)
+            body_ty = ty[2]  # Get return type
+            body = generate_term(rng, depth - 1, body_ty, {**context, var_name: arg_ty})
+            return ("Lam", var_name, arg_ty, body)
+        else:
+            # Application
+            func_ty = ("Fun", generate_type(rng, depth - 1), ty)
+            func = generate_term(rng, depth - 1, func_ty, context)
+            arg = generate_term(rng, depth - 1, func_ty[1], context)
+            return ("App", func, arg)
+```
+
+I'm building a recursive type generator that creates function types by combining smaller types, then a term generator that uses variables from context when available. The approach alternates between lambdas and applications to create larger terms while respecting the type constraints.

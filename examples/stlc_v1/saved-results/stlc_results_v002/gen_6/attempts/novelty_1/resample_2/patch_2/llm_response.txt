@@ -1,0 +1,16 @@
+The user is asking me to improve the performance of the lambda-calculus generator. Looking at the metrics:
+
+- tm_sizes_average: 1.38 (very small, max is 100)
+- ty_sizes_average: 1.38 (very small, max is 10)
+- used_vars_proportions_average: 0.00 (no variables used)
+- applied_lambdas_proportions_average: 0.00 (no lambdas applied)
+- unique_subterms_proportions_average: 0.15 (low diversity)
+
+The current generator is very simple and doesn't properly use the depth parameter. I need to create a more sophisticated generator that:
+1. Generates larger types (up to 10 nodes)
+2. Generates larger terms (up to 100 nodes)
+3. Uses variables introduced by lambdas
+4. Applies lambdas to arguments
+5. Has more unique subterms
+
+Let me write a better generator that tracks type context and uses the depth parameter properly.

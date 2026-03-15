@@ -1,0 +1,8 @@
+The user is saying my previous edit failed because there was an issue extracting code from a "patch string". This seems like a system error. Let me try providing a cleaner response with the proper format.
+
+I need to provide:
+1. <NAME> - A short name
+2. <DESCRIPTION> - Description of what I'm doing
+3. <CODE> - The complete new program code
+
+Let me write this properly.

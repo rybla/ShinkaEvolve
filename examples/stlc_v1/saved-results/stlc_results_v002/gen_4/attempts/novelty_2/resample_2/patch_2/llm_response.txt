@@ -1,0 +1,17 @@
+Let me analyze the problem and provide a complete solution.
+
+Looking at the current implementation:
+1. The `generate_sample` function doesn't use the `depth` parameter effectively
+2. It rarely generates function types/lambdas (only 25% chance)
+3. It never uses variables or applies lambdas
+4. The terms and types are very small
+
+I need to rewrite the generator to:
+1. Use depth to control the size of generated types and terms
+2. Generate larger types (up to 10 nodes)
+3. Generate larger terms (up to 100 nodes)
+4. Use variables that are introduced by lambdas
+5. Apply lambdas to arguments
+6. Have more unique subterms
+
+Let me write a complete new implementation:

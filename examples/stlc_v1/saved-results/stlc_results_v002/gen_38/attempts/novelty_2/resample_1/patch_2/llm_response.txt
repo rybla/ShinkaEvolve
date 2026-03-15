@@ -1,0 +1,21 @@
+The user is asking me to suggest improvements to the code. Let me analyze the current state and propose targeted changes.
+
+Looking at the current program:
+- It generates simple lambda calculus terms
+- It has good_ratio: 1.00 (all terms are type-correct)
+- But used_vars_proportions_average: 0.00 - it never uses variables!
+- applied_lambdas_proportions_average: 0.00 - it never applies lambdas
+
+The key insight from the meta-review is that the best program (score 10.5488) used:
+1. `bound_vars` parameter to track bound variables
+2. Probabilistically choose to use variables from bound_vars
+3. Type-safe application
+4. Unique variable naming
+
+To improve, I need to modify the generate_sample function to:
+1. Add a `bound_vars` parameter to track bound variables
+2. Add probabilistic choice to return variables from bound_vars
+3. Add AppTm cases to apply functions
+4. Maintain type safety
+
+Let me propose a targeted edit that adds variable tracking and usage.

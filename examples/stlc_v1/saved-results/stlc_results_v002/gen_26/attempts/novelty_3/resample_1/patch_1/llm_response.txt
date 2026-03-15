@@ -1,0 +1,54 @@
+Let me analyze the current program and the prior programs to understand what's happening.
+
+The current program generates simple lambda calculus terms. Looking at the metrics:
+
+1. **good_ratio: 1.00** - Perfect type correctness
+2. **tm_sizes_average: 1.36** - Small term sizes
+3. **used_vars_proportions_average: 0.00** - Variables are NEVER used
+4. **applied_lambdas_proportions_average: 0.00** - Lambdas are NEVER applied
+5. **unique_subterms_proportions_average: 0.14** - Low uniqueness
+
+The current program:
+- Returns fixed literals (True, 27, "hello world")
+- Creates lambdas but never uses the bound variable "x"
+- Never creates App terms (applications)
+
+Looking at the best prior programs:
+- The program with score 10.30 has the same structure - perfect good_ratio but zero usage of variables and lambdas
+
+The problem is clear: the algorithm creates lambdas like `("Lam", "x", ("Int",), tm)` but never uses `Var` to reference "x", and never creates `App` terms.
+
+However, looking at the first prior program (score 9.11), it tried to use variables but:
+- good_ratio dropped to 0.87 (from 1.00)
+- used_vars_proportions_average: 0.07 (still very low)
+- applied_lambdas_proportions_average: 0.03 (still very low)
+
+So the trade-off is clear: trying to use variables and applications hurts type correctness (good_ratio), which leads to a lower overall score.
+
+The key insight is that we need to maintain good_ratio at 1.0 while introducing some controlled use of variables and applications.
+
+Let me think about how to do this:
+
+1. **For using variables**: When we create a lambda, we need to sometimes use the bound variable in the body. But we need to ensure type correctness.
+
+
+2. **For applications**: We need to create function types and apply them to arguments of the correct type.
+
+The current code always creates lambdas with type ("Int",) and returns a function type ("Fun", ("Int",), ty). To use the variable, we'd need to create a Var("x") term. But the issue is that the current code doesn't track bound variables, so it can't reference them properly.
+
+Actually, looking more carefully at the current code:
+```python
+ty, tm = generate_sample(rng)
+return (
+    ("Fun", ("Int",), ty),
+    ("Lam", "x", ("Int",), tm),
+)
+```
+
+It creates a lambda with parameter "x" of type ("Int",), but the body `tm` is generated fresh without any bound variables in scope. So even if we wanted to use "x", we couldn't because it's not passed to the recursive call.
+
+The fix is to pass the bound variable "x" to the recursive call when generating the body, so we can reference it. Then we can occasionally use the variable in the body to improve the metrics while maintaining type correctness.
+
+For applications, I need to generate a function type first, then create both a function term and an argument term of the appropriate type, and combine them with App. The key is ensuring the argument type matches what the function expects.
+
+To improve uniqueness, I should vary the primitive values instead of using fixed ones, and ensure recursive calls produce different structures rather than repeating the same pattern.

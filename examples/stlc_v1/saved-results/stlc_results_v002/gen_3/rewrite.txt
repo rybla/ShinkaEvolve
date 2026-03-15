@@ -1,0 +1,6 @@
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    # Generate a type first
+    ty = generate_type(rng, depth)
+    # Generate a term with that type
+    tm = generate_term(rng, depth, ty, context={})
+    return (ty, tm)

@@ -1,0 +1,51 @@
+Let me analyze what's happening here. The user wants me to propose an edit to improve the code's performance metrics. Looking at the current code in the EVOLVE-BLOCK-START section, I need to modify it to improve the metrics.
+
+The current metrics show:
+- good_ratio: 1.00 (perfect - all terms are type-correct)
+- used_vars_proportions_average: 0.00 (variables are NEVER used)
+- applied_lambdas_proportions_average: 0.00 (lambdas are NEVER applied)
+- unique_subterms_proportions_average: 0.14 (very low uniqueness)
+
+The problem with the current code is:
+1. It creates lambdas like `("Lam", "x", ("Int",), tm)` but the body `tm` never references the variable "x"
+2. No `App` terms are created
+3. The same nested structure is repeated
+
+I need to propose a SEARCH/REPLACE block. Let me look at the exact format required.
+
+The SEARCH block must match the current code exactly, including indentation. Let me look at the current code:
+
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+# EVOLVE-BLOCK-END
+
+
+```
+
+I need to replace this with improved code. Let me think about the approach:
+
+The key insight is that to improve `used_vars_proportions_average`, I need to actually use the variable in the lambda body. Instead of always recursively calling generate_sample, I should sometimes use `Var("x")` to reference the bound variable.
+
+To improve `applied_lambdas_proportions_average`, I need to create `App` terms that apply lambdas to arguments.
+
+But I also need to maintain type correctness (good_ratio = 1.00).
+
+Looking at the types:
+- `LamTm = Tuple[Literal["Lam"]` - I need to see the full type definition to understand how to construct valid lambda terms
+
+The lambda type is `Tuple[Literal["Lam"], str, Ty, Tm]` where the components are the variable name, parameter type, and body term. For an application to be type-correct, I need to apply a function to an argument of the appropriate type. I'll construct a lambda that returns its input variable, then apply it to a literal value. This gives me a valid `App` term while using the bound variable and increasing uniqueness.

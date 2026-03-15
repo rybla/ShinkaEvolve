@@ -1,0 +1,25 @@
+The edit wasn't applied. Let me check the format more carefully. I need to use the exact SEARCH/REPLACE format with the markers.
+
+Looking at the current code in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END:
+
+```python
+
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+
+```
+
+Let me try the edit again with the exact format.

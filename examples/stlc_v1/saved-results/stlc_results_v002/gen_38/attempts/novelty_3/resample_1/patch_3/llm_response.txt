@@ -1,0 +1,35 @@
+The user is saying the previous edit was not successful and there was no changes applied. This is confusing because I haven't actually made an edit yet - I was just providing analysis. Let me re-read the task and provide a concrete SEARCH/REPLACE block.
+
+Looking at the current program in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END:
+
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)  # Note: depth is not decremented!
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+# EVOLVE-BLOCK-END
+```
+
+I need to propose a change that improves the combined score. Let me think about what would work:
+
+1. The current code has good_ratio = 1.00 but used_vars_proportions_average = 0.00
+2. The best programs from the meta-review achieved higher scores by:
+   - Using bound_vars to track variables in scope
+   - Probabilistically returning variables from bound context
+   - Type-safe application (App terms)
+
+I'll try adding a bound_vars parameter and probabilistically using variables from context. This should increase used_vars_proportions_average while maintaining a high good_ratio.
+
+Let me write a concrete edit:

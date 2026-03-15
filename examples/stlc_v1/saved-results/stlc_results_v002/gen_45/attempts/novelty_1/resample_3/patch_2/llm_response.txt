@@ -1,0 +1,57 @@
+The user is asking me to improve the program. Let me analyze the current code and identify what can be improved.
+
+Looking at the current code:
+1. The good_ratio is already very high (0.99)
+2. The used_vars_proportions_average is 0.18 - this could be improved
+3. The applied_lambdas_proportions_average is 0.18 - this could be improved
+
+The current code has some issues:
+1. In the application generation, it creates a function type but doesn't ensure the generated function term actually has that type
+2. When selecting variables, it doesn't check if the variable's type matches what's needed
+
+Let me look at the key improvements from the analysis:
+1. Type-safe application with fallback - check if func_type[0] == "Fun" before applying
+2. Context-aware variable injection - use bound_vars properly
+3. Fresh variable generation with f-strings
+
+Looking at the current code more carefully:
+
+```python
+# Create an application - need type-correct function and argument
+# First generate a function type
+arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+func_type = ("Fun", arg_type, ret_type)
+
+# Generate function term - could be a lambda or variable
+if rng.random() < 0.5 and bound_vars:
+    # Use an existing variable of function type
+    for var_name, var_type in bound_vars:
+        if var_type[0] == "Fun":
+            func_term = ("Var", var_name)
+            break
+    else:
+        # No function variable available, create a lambda
+        func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+
+
+else:
+    # Create a lambda
+    func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+
+# Generate argument term matching the function's input type
+arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+
+return (ret_type, ("App", func_term, arg_term))
+```
+
+The main problem is that we're generating a random function type but not ensuring the function term actually has that type. When we create a lambda, we need to track what type it actually returns so we can verify it matches ret_type. Also, the argument term generation doesn't respect the arg_type constraint - we need to generate an argument that matches the function's input type.
+
+A better approach would be to first generate the function term, then derive its type, and only proceed with application if it's a proper function type. If it's not, we can return the argument instead as a fallback. This ensures type safety throughout.
+
+The key improvements are:
+1. Generate the function term first, then extract its actual type
+2. Only apply if the function has the right function type
+3. Otherwise return the argument directly
+
+This mirrors the pattern from the top-performing program that checks `func_type[0] == "Fun"` before applying.

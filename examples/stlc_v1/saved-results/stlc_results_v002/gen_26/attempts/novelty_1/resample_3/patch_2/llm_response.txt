@@ -1,0 +1,24 @@
+The user is saying the previous edit was not successful. Let me re-read the current program and propose a targeted improvement.
+
+Looking at the current program:
+- It generates fixed literals (Bool True, Int 27, String "hello world")
+- It creates lambdas but never uses the bound variable (no Var)
+- It never creates App terms
+
+The key metrics to improve:
+- used_vars_proportions_average: 0.00 → need to use variables
+- applied_lambdas_proportions_average: 0.00 → need to apply lambdas  
+- unique_subterms_proportions_average: 0.15 → could be improved
+
+But we must maintain good_ratio=1.00.
+
+Let me propose a change that:
+1. Sometimes uses the bound variable in lambda bodies (type-correct!)
+2. Sometimes creates applications with type-correct function-argument pairs
+3. Varies the primitive values
+
+The key insight is that when we create `("Lam", "x", ("Int",), tm)`, we can make `tm` be `("Var", "x")` which is type-correct (Var "x" has type Int).
+
+For applications, we need to generate a function of type Fun a b and an argument of type a.
+
+Let me write a more sophisticated generator that maintains type correctness while improving the metrics.

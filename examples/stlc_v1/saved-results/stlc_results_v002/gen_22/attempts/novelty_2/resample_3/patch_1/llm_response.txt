@@ -1,0 +1,50 @@
+Let me analyze the current situation:
+
+Current program metrics:
+- Combined score: 10.29
+- good_ratio: 1.00 (perfect type correctness!)
+- tm_sizes_average: 1.35
+- ty_sizes_average: 1.35
+- used_vars_proportions_average: 0.00 (NO variable usage!)
+- applied_lambdas_proportions_average: 0.00 (NO lambda application!)
+- unique_subterms_proportions_average: 0.14
+
+Looking at the prior programs:
+- Program 1: score 9.11, good_ratio 0.87, used_vars_proportions 0.07, applied_lambdas_proportions 0.03
+- Program 2: score 10.30, good_ratio 1.00, used_vars_proportions 0.00, applied_lambdas_proportions 0.00
+
+The current program is very similar to Program 2, but slightly worse (10.29 vs 10.30).
+
+The key insight from the problem description is:
+- "A generated term is better the more it uses its variables"
+- "A generated term is better the more it applies its lambdas to arguments"
+- "A generated term is better the more unique sub-terms it has"
+
+But there's a tension: when the previous program (Program 1) tried to use variables and apply lambdas, its good_ratio dropped to 0.87 (from 1.00), and the combined score went down to 9.11.
+
+So the challenge is: how can we increase variable usage and lambda application while MAINTAINING a good_ratio of 1.00?
+
+Looking at the current code:
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)  # Note: depth is not decremented!
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+The problem is that the recursive call doesn't pass depth - 1, and there's no mechanism for the lambda body to reference bound variables or for lambdas to be applied to arguments. This produces nested identity functions like `Lam("x", Int, Lam("y", Int, ...))` but never actually uses the variables or applies the lambdas. To improve the score while keeping type correctness, I need to introduce controlled variable usage and lambda application that maintains the 1.00 good_ratio.
+
+The key is that current lambdas always have type `("Int",)` as the parameter type, and the body is always some other type. To use a variable, I need to track what types are in scope and return the right type when referencing a bound variable. Let me build a system that maintains a mapping of variable names to their types, so when I generate a lambda, I add its parameter to the scope, and when I choose to use a variable, I can return it with the correct type.
+
+The recursive calls need to decrement depth properly to avoid infinite recursion. I'll create a type table with Bool, Int, and String options, then handle the depth case where I pick a random type and generate a literal value for it. For lambdas, I'll generate the body with the new variable in scope, and for applications, I'll recursively generate both the function and argument while maintaining the type context.

@@ -1,0 +1,64 @@
+The user is asking me to make an edit to improve the performance of the code. Looking at the current program, I need to implement a more sophisticated generator that:
+
+1. Uses context/bound_vars to track variables in scope
+2. Uses unique variable names with f-strings
+3. Implements type-safe application with fallback
+4. Uses probabilistic termination
+
+Let me craft the edit properly. I need to use the SEARCH/REPLACE format to replace the current generate_sample function.
+
+Looking at the current code:
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+# EVOLVE-BLOCK-END
+```
+
+I need to replace this with a more sophisticated version. Let me write the new version:
+
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic base case termination - return a literal
+    if depth <= 0 or (not bound_vars and rng.random() < 0.5):
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["hello", "world", "test"])))
+    
+    # Choose an action based on probability
+    i = rng.randrange(0, 5)
+    
+    if i == 0:
+        # Generate a literal - continue exploring this path
+        j = rng.rand
+
+I'll continue the probability-based selection for generating literals and variables. The function now includes context-aware variable generation, ensuring unique variable names and tracking bound variables. This approach allows for more dynamic and complex lambda calculus term generation.
+
+When selecting between 0-2, I'll create random literals of different types - boolean, integer, or string. The selection provides variety in the generated terms, supporting a flexible generation strategy.
+
+For the third case, I'll leverage the bound variables context. This allows me to randomly choose an existing variable from the available set, introducing variable references into the generated terms.
+
+In the fourth case, I'm focusing on creating lambda abstractions. I'll generate a new type and create a lambda term with a fresh variable name. The generation process tracks the new bound variable, incrementing the depth and expanding the context for subsequent term generation.
+
+The final case involves function application, which requires careful type handling. I'll generate a function term, ensuring type compatibility before constructing an application term. If the types don't match, I'll default to returning the argument term to maintain type safety.

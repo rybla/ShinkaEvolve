@@ -1,0 +1,43 @@
+The user is asking me to improve the current program. Let me analyze the current program and the prior programs to understand what changes need to be made.
+
+Current program:
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)  # Note: depth is not decremented!
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+The current program has:
+- good_ratio: 1.00
+- tm_sizes_average: 1.35
+- used_vars_proportions_average: 0.00
+- applied_lambdas_proportions_average: 0.00
+
+The key issues are:
+1. No variables are ever used (used_vars_proportions_average: 0.00)
+2. No applications (applied_lambdas_proportions_average: 0.00)
+3. The depth parameter is not being used properly
+
+Looking at the best programs from the system prompt:
+- Program 1 (Score: 10.8819) uses `bound_vars`, probabilistic variable selection, unique variable names, type-safe application
+- Program 2 (Score: 10.5488) uses similar patterns
+
+I need to add:
+1. Context tracking with bound_vars
+2. Variable usage from context
+3. Application terms with type checking
+4. Proper depth decrementing
+
+Let me write the improved version:

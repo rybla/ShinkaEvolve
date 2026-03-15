@@ -1,0 +1,72 @@
+The user wants me to rewrite the program to improve its performance. Let me analyze the current program and the metrics to understand what improvements can be made.
+
+Current metrics:
+- Combined score: 10.88
+- good_ratio: 0.99 (very high)
+- tm_sizes_average: 4.34 (term size)
+- ty_sizes_average: 1.34 (type size)
+- used_vars_proportions_average: 0.18 (proportion of variables used)
+- applied_lambdas_proportions_average: 0.18 (proportion of applied lambdas)
+- unique_subterms_proportions_average: 0.39 (uniqueness of subterms)
+
+Looking at the current program, it already uses many of the techniques from the best-performing programs. However, I notice a few potential issues:
+
+1. The application case doesn't properly ensure type consistency between the function's expected argument type and the generated argument
+2. The variable selection probability could be tuned
+3. The generation could be more balanced
+
+Let me think about a fundamentally different approach:
+
+1. **Type-directed generation**: Instead of randomly choosing between Lambda and Application, we could generate types first and then generate terms that match those types. This would ensure type correctness.
+
+2. **Weighted choice based on depth**: Use different probabilities at different depths to build more complex terms early.
+
+3. **Better variable naming**: Use more unique variable names to improve uniqueness.
+
+4. **Pre-calculate types for applications**: Ensure type safety by calculating the required argument type before generating the argument.
+
+Let me implement a version that:
+1. Uses type-directed generation for applications (pre-calculate types)
+2. Has better variable selection probabilities
+3. Uses a more sophisticated approach to building complex terms
+
+Here's my proposal:
+
+```python
+from typing import Literal, Tuple
+import random
+import tqdm
+
+type Ty = BoolTy | IntTy | StringTy | FunTy
+
+
+```
+
+I'll define the type system for Boolean, Integer, and String types, establishing the foundational type representations for the lambda calculus implementation.
+
+type BoolTy = Tuple[Literal["Bool"]]
+type IntTy = Tuple[Literal["Int"]]
+type StringTy = Tuple[Literal["String"]]
+type FunTy = Tuple[Literal["Fun"], Ty, Ty]
+
+I'll continue defining the term types, including literals, variables, lambda abstractions, and function applications.
+
+type Tm = LitTm | VarTm | LamTm | AppTm
+type LitTm = (
+    Tuple[Literal["Bool"], bool]
+    | Tuple[Literal["Int"], int]
+    | Tuple[Literal["String"], str]
+)
+type VarTm = Tuple[Literal["Var"], str]
+type LamTm = Tuple[Literal["Lam"], str, Ty, Tm]
+type AppTm = Tuple[Literal["App"], Tm, Tm]
+
+I'll generate a type-safe term using a recursive approach with controlled depth and bound variables. The method ensures proper type generation and term construction, selecting types and constructing lambda terms strategically.
+
+The function manages term generation by carefully choosing types, creating lambda abstractions, and ensuring type-consistent variable handling. It uses probabilistic selection to balance between different term construction strategies.
+
+When generating application terms, I'll ensure precise type matching between function and argument, leveraging the type information to maintain semantic correctness. The approach allows flexible yet type-safe term generation, with depth and randomness guiding the construction process.
+
+The implementation supports multiple primitive types like Boolean, Integer, and String, providing a robust mechanism for generating well-typed lambda calculus terms with controlled complexity.
+
+By pre-calculating function types and carefully selecting argument types, I can create type-consistent applications that explore different term structures while maintaining type safety. This strategy allows generating diverse and semantically valid lambda expressions.

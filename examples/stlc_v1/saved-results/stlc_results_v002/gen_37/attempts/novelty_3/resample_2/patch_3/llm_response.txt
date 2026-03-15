@@ -1,0 +1,17 @@
+The user is asking me to create a crossover between code scripts. I need to provide a complete new program with improved implementation. Let me analyze what improvements can be made based on the performance metrics.
+
+Looking at the current program:
+- Score: 10.28
+- used_vars_proportions_average: 0.00
+- applied_lambdas_proportions_average: 0.00
+
+The best prior programs achieved around 10.30-10.31, but the system prompt mentions a program with score 10.5488 that used:
+1. bound_vars parameter to track bound variables
+2. Probabilistically choosing variables with rng.random() < 0.4
+3. Unique variable names with f"x{rng.randint(0, 100)}"
+4. Type-safe application checking func_type[0] == "Fun"
+5. Hybrid termination: depth <= 0 or (not bound_vars and rng.random() < 0.5)
+
+The key metrics to improve are used_vars_proportions_average and applied_lambdas_proportions_average, which are both 0.00 in the current program.
+
+Let me create an improved version that incorporates these techniques.

@@ -1,0 +1,47 @@
+Let me analyze the current implementation and the requirements:
+
+1. **Current Implementation Issues:**
+   - Uses simple random selection from 4 options (Bool, Int, String, Fun)
+   - Only generates literals or simple lambdas with Int type annotation
+   - Very small term sizes (1.38 average, max 100)
+   - Zero usage of variables (used_vars_proportions_average: 0.00)
+   - Zero applied lambdas (applied_lambdas_proportions_average: 0.00)
+   - Low unique subterms (0.15)
+
+2. **Requirements:**
+   - Generate types with max 10 nodes
+   - Generate terms with max 100 nodes
+   - Maximize usage of variables (from lambdas)
+   - Maximize lambda applications
+   - Maximize unique subterms
+
+3. **Algorithm Changes Needed:**
+   - Need to track available variables (from enclosing lambdas)
+   - Need to generate larger, more complex types
+   - Need to generate terms that actually use the variables they bind
+   - Need to apply lambdas to arguments
+   - Need more sophisticated term generation that builds up from smaller pieces
+
+Let me design a new approach:
+
+**New Algorithm: Context-Based Recursive Generation with Type-Directed Term Building**
+
+Instead of generating type and term separately, I'll:
+1. Generate a type first, then generate a term that has that type
+2. Track a context (list of available variables with their types)
+3. Use a "sized" generation approach where we specify target sizes
+4. Generate applications by combining available variables
+5. Generate lambdas that use their bound variables
+
+The key insight is:
+- When generating a term of type T, we need to consider what variables are in scope
+- Variables can be used directly (Var) or applied to arguments
+- Lambdas introduce new variables into scope
+- Applications combine terms
+
+Let me implement this:
+
+
+I'll set up a structured generation process with type definitions and helpers. First, I'll create a context system to track available variables during generation. The context will store variable names and their corresponding types, allowing me to reference and use variables dynamically during term creation. This approach ensures I can generate more complex, context-aware lambda terms that meaningfully use bound variables.
+
+The generation will involve carefully selecting type constructors, building complex function types, and systematically creating lambda terms that leverage the available context. I'll focus on increasing term complexity while maintaining type consistency and maximizing variable usage.

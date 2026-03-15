@@ -1,0 +1,45 @@
+Let me analyze the current program and the prior programs to understand what's happening:
+
+1. The current program generates lambda calculus terms with:
+   - Base cases: Bool, Int, String literals
+   - Recursive case: Lambda with Int type that wraps another term
+
+2. The performance metrics show:
+   - good_ratio: 1.00 (perfect - all terms are type-correct)
+   - used_vars_proportions_average: 0.00 (no variables are used)
+   - applied_lambdas_proportions_average: 0.00 (no lambda applications)
+   - unique_subterms_proportions_average: 0.14 (low uniqueness)
+
+3. Looking at the best performing programs (score ~10.30), they all have:
+   - good_ratio: 1.00
+   - But they fail on used_vars, applied_lambdas, and unique_subterms
+
+The issue is clear: the current algorithm creates lambdas but never uses the bound variable in the body. It creates terms like:
+- `Lam "x" ("Int",) (Lam "x" ("Int",) (Lam "x" ("Int",) ("Bool", True)))`
+
+This is an "identity-like lambda wrapping" pattern that guarantees type correctness but doesn't actually use the variables.
+
+Looking at the first program that had lower good_ratio (0.68) but higher used_vars (0.06) and applied_lambdas (0.03), it seems like there was an attempt to:
+1. Create lambdas that reference their bound variables
+2. Apply lambdas to arguments
+
+But that program had lower combined score (7.11) because it had lower good_ratio.
+
+The key insight is: we need to maintain type correctness (good_ratio = 1.00) while also improving the other metrics.
+
+Let me think about how to improve:
+1. **used_vars_proportions_average**: We need to use `Var` to reference bound variables. But we need to be careful about type correctness.
+
+
+2. **applied_lambdas_proportions_average**: We need to create `App` terms to apply functions to arguments.
+3. **unique_subterms_proportions_average**: We need to generate different branches rather than always nesting the same structure.
+
+The challenge is that type-safe term generation is complex. When we create a lambda, we need to ensure the body has the correct type. For a lambda `Lam x A body`, the body must have type B if the overall type is `Fun A B`. The current approach recursively generates terms, but we need to track the expected type and generate a body that matches it.
+
+Looking at the first prior program (score 7.11), it attempted to generate more complex terms by creating lambdas that reference their bound variables and applying functions to arguments. However, this approach suffered from type mismatches—generating a term with one expected type but producing a term with a different type causes good_ratio to drop. The best-scoring programs maintain type correctness by using a simpler generation strategy that always produces type-correct terms, even if they're less diverse.
+
+To improve while preserving type correctness, I should generate lambdas that actually use their bound variables. For instance, when creating `Lam "x" ("Int",) body`, the body could be `("Var", "x")` to return the variable itself, giving type `Fun ("Int",) ("Int",)`. More complex cases could apply the bound variable to another argument, like `("App", ("Var", "x"), arg_tm)`, where the argument has the appropriate type.
+
+The key insight is that the current implementation ignores the depth parameter entirely—it calls `generate_sample(rng)` without passing depth at all, so it never actually uses depth control to limit recursion. I need to ensure depth gets decremented properly with each recursive call, and generate lambdas that meaningfully use their bound variables rather than just wrapping them.
+
+To improve variable usage and term uniqueness, I should track which variables are in scope and occasionally reference them in the lambda body, while also varying the generated terms more rather than always producing the same structure.

@@ -1,0 +1,88 @@
+The user is saying my previous edit was not successful. Let me try again with a proper SEARCH/REPLACE block.
+
+Looking at the current program in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END:
+
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+# EVOLVE-BLOCK-END
+```
+
+I need to replace this with an improved version that:
+1. Tracks bound variables in context
+2. Uses variables from context
+3. Creates application terms
+4. Uses type-safe application with fallback
+
+Let me write the improved code:
+
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10, bound_vars: list = None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Base case: when depth is 0, generate simple literals
+    if depth <= 0:
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", True))
+        elif i == 1:
+            return (("Int",), ("Int", 27))
+        else:
+            return (("String",), ("String", "hello world"))
+    
+    # Probabilistically choose to use a bound variable if available
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_ty = rng.choice(bound_vars)
+        return (var_ty, ("Var", var_name))
+    
+    # Choose what to generate
+    i = rng.randrange(0, 5)
+    
+    if i == 0:
+        # Generate a Bool literal
+        return (("Bool",), ("Bool", rng.choice([True, False])))
+    elif i == 1:
+        # Generate an Int literal
+        return (("Int",), rng.randint(0, 100))
+    elif i == 2:
+        # Generate a String literal
+        return (("String",), rng.choice(["hello", "world", "test"]))
+    elif i == 3:
+        # Create a lambda with a fresh variable
+        arg_ty = ("Int",)
+        var_name = f"x{rng.randint(0, 100)}"
+        ret_ty, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, arg_ty)])
+        return (
+            ("Fun", arg_ty, ret_ty),
+            ("Lam", var_name, arg_ty, body)
+        )
+    else:
+        # Create an application (type-safe)
+        func_ty, func_tm = generate_sample(rng, depth - 1, bound_vars)
+        arg_ty, arg_tm = generate_sample(rng, depth - 1, bound_vars)
+        
+        # Check if function type is actually a function
+        if func_ty[0] == "Fun":
+            return (func_ty[2], ("App", func_tm, arg_tm))
+        else:
+            # Fallback: return the argument if func is not a function
+            return (arg_ty, arg_tm)
+```
+
+I'll focus on key improvements: generating variables with unique names, creating function applications, and ensuring type safety. The code now tracks bound variables, uses them probabilistically, and handles function applications carefully.

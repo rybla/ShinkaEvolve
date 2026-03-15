@@ -1,0 +1,30 @@
+The user is saying the previous edit wasn't applied. Let me try again with a proper SEARCH/REPLACE block. I need to make sure I'm targeting the exact text in the EVOLVE-BLOCK-START section.
+
+Looking at the current program:
+
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+# EVOLVE-BLOCK-END
+```
+
+I need to replace this with an improved version. Let me write a clean edit that addresses the issues:
+- used_vars_proportions_average: 0.00 - need to use Var("x") in lambda bodies
+- applied_lambdas_proportions_average: 0.00 - need to create App terms
+- unique_subterms_proportions_average: 0.13 - need more diversity
+
+The key change is to make the lambda body actually use the bound variable sometimes, and to create App terms.

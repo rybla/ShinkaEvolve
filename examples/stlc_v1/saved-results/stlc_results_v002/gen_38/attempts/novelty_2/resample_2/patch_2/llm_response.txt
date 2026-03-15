@@ -1,0 +1,20 @@
+Let me analyze the problem more carefully. I need to create a crossover between the current program and the inspiration program that improves the score.
+
+Looking at the metrics:
+- Current: 10.27 (good_ratio: 1.00, tm_sizes: 1.30, used_vars: 0.00, applied_lambdas: 0.00, unique_subterms: 0.13)
+- Best prior: 10.30 (good_ratio: 1.00, tm_sizes: 1.38, used_vars: 0.00, applied_lambdas: 0.00, unique_subterms: 0.15)
+
+The key insight from the first prior program (which had used_vars_proportions_average: 0.16) is that it uses a context to track variables. However, it had lower good_ratio (0.82).
+
+I need to combine:
+1. The simple structure that gives good_ratio = 1.00
+2. The context mechanism to use variables
+3. Application of lambdas to arguments
+
+Let me write a clean implementation that:
+1. Uses context to track variables in scope
+2. Can use variables from context (with some probability)
+3. Can apply lambdas to arguments
+4. Maintains good_ratio = 1.00
+
+The key is to ensure all generated terms are well-typed.

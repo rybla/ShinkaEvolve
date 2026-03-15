@@ -1,0 +1,16 @@
+Let me analyze the problem more carefully and create a new program that improves the metrics while maintaining good_ratio=1.00.
+
+Looking at the current program:
+- It creates lambdas but never uses Var to reference the bound variable
+- It never creates App terms
+- It uses fixed primitive values
+
+The key is to add variable usage and applications while maintaining type correctness. Let me design a new algorithm that:
+
+1. Properly decrements depth to control recursion
+2. Uses bound_vars to track variables that can be referenced
+3. Has a chance to use Var when we have bound variables
+4. Has a chance to create App terms
+5. Varies the primitive values for more uniqueness
+
+Let me write a new program:

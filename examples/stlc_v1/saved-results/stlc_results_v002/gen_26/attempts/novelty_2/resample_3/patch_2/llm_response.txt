@@ -1,0 +1,27 @@
+The previous edit wasn't applied because I didn't actually provide a SEARCH/REPLACE block. Let me look at the current program and propose a concrete change.
+
+The current program is:
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+I need to add a new case that:
+1. Generates type-safe applications
+2. Uses variables in lambda bodies
+3. Maintains good_ratio close to 1.0
+
+Let me write a concrete edit. I'll add a new branch after the lambda case that generates type-safe applications.

@@ -1,0 +1,20 @@
+Let me try again with a proper approach. I need to write a complete new program that improves the metrics while maintaining the same inputs and outputs.
+
+Let me analyze what needs to be improved:
+1. tm_sizes_average: 1.38 -> needs to be much higher (target ~50+)
+2. ty_sizes_average: 1.38 -> needs to be higher (target ~5-10)
+3. used_vars_proportions_average: 0.00 -> needs to be > 0
+4. applied_lambdas_proportions_average: 0.00 -> needs to be > 0
+5. unique_subterms_proportions_average: 0.15 -> needs to be higher
+
+The current implementation only generates literals or simple lambdas. It doesn't:
+- Use variables from the context
+- Apply lambdas to arguments
+- Create complex types
+
+I'll design a new approach:
+1. First generate a type with target size (up to 10 nodes)
+2. Then generate a term that has that type, tracking the context
+3. Use the context to generate variables and applications
+
+Let me write the code:

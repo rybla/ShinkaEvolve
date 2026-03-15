@@ -1,0 +1,39 @@
+Let me analyze the current program and the metrics to understand what needs to be improved.
+
+Current metrics:
+- Combined score to maximize: 10.30
+- good_ratio: 1.00 (all samples are well-typed)
+- tm_sizes_average: 1.38 (very small terms)
+- ty_sizes_average: 1.38 (very small types)
+- used_vars_proportions_average: 0.00 (no variable usage)
+- applied_lambdas_proportions_average: 0.00 (no lambda applications)
+- unique_subterms_proportions_average: 0.15 (few unique subterms)
+
+The main issues are:
+1. Terms are very small (average 1.38 nodes, max is 100)
+2. Types are very small (average 1.38 nodes, max is 10)
+3. No variable usage (used_vars_proportions_average: 0.00)
+4. No lambda applications (applied_lambdas_proportions_average: 0.00)
+5. Few unique subterms (unique_subterms_proportions_average: 0.15)
+
+Looking at the current `generate_sample` function:
+- It only generates literals (Bool, Int, String) or a simple lambda wrapping another sample
+- It doesn't track variables or use them
+- It doesn't create applications
+- It doesn't generate complex types
+
+The key insight is that to improve these metrics, I need to:
+1. Generate larger types (more Fun nodes)
+2. Generate larger terms (more Lam and App nodes)
+3. Track variables introduced by lambdas and use them
+4. Apply lambdas to arguments
+
+Let me design a novel approach:
+
+1. First, I'll generate a type with a certain complexity (using a size budget)
+2. Then, I'll generate a term that matches that type, also using a size budget
+3. I'll maintain a context of available variables (from enclosing lambdas)
+4. When generating terms, I'll randomly choose to use variables from the context, apply lambdas to arguments, and create more complex applications
+
+
+I'll create a recursive generation strategy that systematically expands both type and term complexity. The approach will involve carefully tracking variable contexts and strategically building more intricate lambda abstractions and applications.

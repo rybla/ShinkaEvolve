@@ -1,0 +1,48 @@
+The user is asking me to rewrite a program that generates types and terms of simply-typed lambda calculus. The current program has low scores:
+- Combined score: 10.30
+- tm_sizes_average: 1.38 (very small, max allowed 100)
+- ty_sizes_average: 1.38 (very small, max allowed 10)
+- used_vars_proportions_average: 0.00 (wants high)
+- applied_lambdas_proportions_average: 0.00 (wants high)
+- unique_subterms_proportions_average: 0.15 (wants high)
+
+The current `generate_sample` function just randomly picks between 4 options:
+1. Bool literal
+2. Int literal
+3. String literal
+4. A function type wrapping another sample (Int -> ty) and a lambda
+
+The algorithm is too simple and doesn't generate complex enough types and terms. I need to create a more sophisticated generator that:
+1. Generates larger types (up to 10 nodes)
+2. Generates larger terms (up to 100 nodes)
+3. Uses variables (they should be used after being introduced)
+4. Applies lambdas to arguments
+5. Has many unique subterms
+
+Let me think about the approach:
+
+1. First, I'll generate a random type using a recursive approach that builds function types.
+2. Then, I'll generate a term that matches that type using a context-based approach.
+
+For generating types:
+- Base types: Bool, Int, String
+- Function type: Fun(domain, codomain)
+- Use recursion with depth control to build up to 10 nodes
+
+For generating terms:
+- Use a context that maps variable names to types
+- Generate literals, variables, lambdas, and applications
+- To ensure variables are used, I'll track which variables should be used
+- To ensure lambdas are applied, I'll sometimes create applications
+- To ensure unique subterms, I'll generate fresh variable names and combine terms in different ways
+
+Let me implement this step by step:
+
+
+I'll start by creating a robust type generation method that recursively builds more complex type structures. This will involve carefully controlling the depth and complexity of the generated types to meet the size requirements.
+
+The type generation will use a recursive approach, randomly selecting between base types and function types while maintaining a maximum node count. This ensures I can create increasingly sophisticated type representations that stay within the specified size limits.
+
+When generating terms, I'll implement a context-aware method that carefully tracks variable types and ensures type-safe term construction. The key strategy involves generating terms that match the previously created complex types, using a recursive depth-controlled approach that builds increasingly intricate lambda calculus expressions.
+
+The goal is to create a term that precisely matches the generated type, using systematic variable tracking and type-preserving transformations. This means carefully constructing lambda abstractions and applications that respect the type structure, ensuring each generated term is both syntactically valid and type-consistent.

@@ -1,0 +1,31 @@
+The user is saying the previous edit was not successful. Let me look at the current program again and make sure my changes are correct.
+
+The current program is:
+
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+# EVOLVE-BLOCK-END
+```
+
+I need to make changes that:
+1. Track bound variables so we can reference them with Var
+2. Occasionally use the bound variable in lambda bodies
+3. Add App constructor for applying functions
+4. Vary the primitive values for more uniqueness
+
+Let me write a proper SEARCH/REPLACE block.

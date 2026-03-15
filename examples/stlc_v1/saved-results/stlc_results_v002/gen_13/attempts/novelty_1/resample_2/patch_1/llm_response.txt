@@ -1,0 +1,49 @@
+Looking at the analysis, I can see the key issues:
+
+1. `used_vars_proportions_average: 0.00` - Variables are never used
+2. `applied_lambdas_proportions_average: 0.00` - Lambdas are never applied
+3. `unique_subterms_proportions_average: 0.14` - Low uniqueness
+
+The current algorithm always creates lambdas with a fixed body and never:
+1. Uses `Var` to reference the bound variable
+2. Creates `App` terms to apply functions to arguments
+
+Looking at the current code:
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+The problem is that when it creates a `Lam`, it:
+1. Always uses the same variable name "x"
+2. Always uses ("Int",) as the type annotation
+3. Never uses `Var` to reference the bound variable
+4. Never creates `App` terms
+
+To improve, I need to:
+1. Add `Var` usage - when creating a lambda, sometimes use `Var` to reference the bound variable
+2. Add `App` - create application terms
+3. Add more variety to avoid repetitive structures
+
+Let me think about how to do this while maintaining type correctness and good_ratio.
+
+The key insight is that when we create a lambda like `("Lam", "x", ("Int",), tm)`, we need to ensure:
+
+
+- The body `tm` has type `Int` if we want to use `Var` to reference it
+- Or we need to apply the lambda to an argument
+
+I could introduce a `Var` case that randomly chooses a variable name and returns it as a variable reference, which would let the algorithm use bound variables. For `App`, I'd need to generate two subterms where the first has a function type and the second matches its input type. The challenge is maintaining type correctness while increasing variety—I need to ensure that when I create a lambda body, it either uses the bound variable correctly or generates a properly typed application.

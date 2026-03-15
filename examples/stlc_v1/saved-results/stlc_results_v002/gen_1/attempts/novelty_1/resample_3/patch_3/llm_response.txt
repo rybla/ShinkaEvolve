@@ -1,0 +1,49 @@
+
+Let me analyze what's happening. I need to make a valid edit to the generate_sample function in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END section.
+
+Looking at the current code in the block:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+The function signature is `generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]`
+
+The issues:
+1. Terms are too small (1.38 vs max 100)
+2. Types are too small (1.38 vs max 10) 
+3. No variables being used (0.00)
+4. No lambdas being applied (0.00)
+
+I need to rewrite this to:
+1. Generate larger types (up to 10 nodes)
+2. Generate larger terms (up to 100 nodes)
+3. Use variables from enclosing lambdas
+4. Apply lambdas to arguments
+
+The key insight is that I need to generate a type first, then generate a term that has that type. For lambda calculus, this means:
+- For a base type (Bool, Int, String), generate a literal
+- For a function type (A -> B), generate a lambda that takes a variable of type A and returns a term of type B
+
+
+- To actually use a lambda, I need to apply it to an argument of the appropriate type
+
+I'll create a more sophisticated approach that builds types and terms with proper complexity control and variable usage.

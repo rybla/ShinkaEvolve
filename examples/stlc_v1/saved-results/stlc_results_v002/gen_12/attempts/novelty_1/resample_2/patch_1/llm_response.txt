@@ -1,0 +1,81 @@
+Let me analyze the current program and the metrics to understand what needs to be improved.
+
+Current metrics:
+- Combined score to maximize: 10.30
+- good_ratio: 1.00 (perfect!)
+- tm_sizes_average: 1.38
+- ty_sizes_average: 1.38
+- used_vars_proportions_average: 0.00 (needs improvement!)
+- applied_lambdas_proportions_average: 0.00 (needs improvement!)
+- unique_subterms_proportions_average: 0.15 (needs improvement!)
+
+The key issue is that the current implementation:
+1. Never uses variables (used_vars_proportions_average: 0.00)
+2. Never applies lambdas (applied_lambdas_proportions_average: 0.00)
+3. Has low unique subterms (unique_subterms_proportions_average: 0.15)
+
+Looking at the current code:
+- It generates literals (Bool, Int, String) with fixed values
+- It generates lambda wrappers but never uses Var to reference the bound variable
+- It never creates App (application) terms
+
+The current approach always creates:
+```python
+("Lam", "x", ("Int",), tm)
+```
+where `tm` is a newly generated term, NOT using `Var` to reference "x".
+
+To improve, I need to:
+1. Make lambdas that actually USE the bound variable via `Var`
+2. Create `App` terms that apply functions to arguments
+3. Create more diverse/unique subterms
+
+Let me design a new algorithm that addresses these issues:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    # At depth 0, only generate literals
+    if depth == 0:
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", True))
+        elif i == 1:
+            return (("Int",), ("Int", 27))
+        else:
+            return (("String",), ("String", "hello world"))
+    
+    # At deeper depths, have more options
+    i = rng.randrange(0, 6)  # Increased range for more options
+    
+    if i == 0:
+        # Generate a Bool literal
+        return (("Bool",), ("Bool", rng.choice([True, False])))
+    elif i == 1:
+        # Generate an Int literal
+        return (("Int",), ("Int", rng.randint(0, 100)))
+    elif i == 2:
+        # Generate a String literal
+        return (("String",), ("String", rng.choice(["hello", "world", "test"])))
+    elif i == 3:
+        # Generate a lambda that uses its bound variable
+        var_type = ("Int",)
+        return (
+            ("Fun", var_type, var_type),
+            ("Lam", "x", var_type, ("Var", "x"))
+        )
+    elif i == 4:
+        # Generate an application
+        func_type = ("Fun", ("Int",), ("Int",))
+        func = ("Lam", "f", func_type, ("Var", "f"))
+        arg = ("Int", 5)
+        return (("Int",), ("App", func, arg))
+    else:
+        # Generate a more complex term
+        return generate_sample(rng, depth - 1)
+```
+
+This new approach introduces:
+1. Variable usage through `Var` references
+2. Function application with `App` terms
+3. More diverse term generation at different depths
+4. Random value generation for literals instead of fixed values

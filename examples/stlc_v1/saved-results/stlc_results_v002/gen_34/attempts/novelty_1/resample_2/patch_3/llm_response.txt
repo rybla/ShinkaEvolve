@@ -1,0 +1,29 @@
+I need to actually provide a SEARCH/REPLACE block in my response. Let me carefully craft the edit.
+
+Looking at the current code in the EVOLVE-BLOCK-START/END:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+The issue is that when we create a lambda, we never use the bound variable. We need to modify the code so that sometimes the lambda body is the bound variable itself.
+
+I'll modify the code to:
+1. When creating a lambda, randomly decide whether to use the bound variable or generate a recursive term
+2. If using the bound variable, return `("Var", "x")` as the body
+
+Let me write the edit properly:

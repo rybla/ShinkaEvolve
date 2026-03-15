@@ -1,0 +1,2841 @@
+Let me analyze the current program and the metrics to understand what improvements can be made.
+
+Current metrics:
+- Combined score: 10.88
+- good_ratio: 0.99 (very high)
+- tm_sizes_average: 4.34 (term size)
+- ty_sizes_average: 1.34 (type size)
+- used_vars_proportions_average: 0.18 (variable usage)
+- applied_lambdas_proportions_average: 0.18 (application usage)
+- unique_subterms_proportions_average: 0.39 (uniqueness)
+
+Looking at the insights from the top programs:
+1. Program 1 (Score: 10.8819) - The best one uses `bound_vars` parameter, probabilistic variable selection with `rng.random() < 0.35`, unique variable names with `f"x{rng.randint(0, 100)}"`, type-safe application with fallback
+2. The current program already uses some of these techniques
+
+Key areas for improvement:
+1. **Type-safe application**: The current program doesn't check if the function type is actually "Fun" before applying. This could cause type errors.
+2. **Better variable selection**: Currently it just picks a random variable from bound_vars, but we could filter for type-matching variables
+3. **Better application generation**: Need to ensure the argument matches the expected input type of the function
+
+Let me think about what novel approach to take:
+
+1. **Type-matching variable selection**: Instead of randomly picking from bound_vars, filter for variables that match the expected type
+2. **Type-safe application with proper type checking**: When generating an application, ensure the argument type matches the function's input type
+3. **Hybrid termination**: Use both depth and random chance for base case selection
+4. **Better lambda generation**: Ensure the lambda body respects the return type
+
+Let me design a new algorithm:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination - more aggressive at deeper levels
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Type-matching variable selection - pick variables that could be useful
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Decide between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application with type-safe argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term
+        if rng.random() < 0.5 and bound_vars:
+            # Use existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument matching function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    # Choose between lambda and application
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create lambda with fresh variable
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+    else:
+        # Create application - need type-correct function and argument
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+
+The key improvements I'm making:
+1. **Type-safe application**: When generating an application, I need to ensure the argument type matches the function's input type. Currently, the code generates a random argument without checking if it matches the expected type.
+
+2. **Better variable selection**: Instead of just picking any variable, I should filter for variables that match the expected type.
+
+3. **Unique variable naming**: Using `f"x{rng.randint(0, 100)}"` ensures unique variable names.
+
+4. **Probabilistic termination**: Using both depth and random chance for base case selection.
+
+Let me refine the approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Probabilistic termination with depth consideration
+    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
+        # Generate literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # Variable selection with type consideration

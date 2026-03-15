@@ -1,0 +1,9 @@
+The user is saying the previous edit was not successful. Let me look at what happened - it seems like I didn't actually provide a valid edit in my response. Let me provide the actual SEARCH/REPLACE block now.
+
+Looking at the current program, I need to modify the `generate_sample` function to:
+1. Add bound variable tracking
+2. Use variables in the generated terms  
+3. Add application (App) terms
+4. Use unique variable names
+
+Let me craft a proper edit.

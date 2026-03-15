@@ -1,0 +1,10 @@
+The user is asking me to make an edit to improve the program, but my previous edit was not successful. Let me try again with a more targeted approach.
+
+Looking at the current program, I need to modify the `generate_sample` function to:
+1. Add a `bound_vars` parameter to track bound variables
+2. Add variable usage (Var terms)
+3. Add application (App terms)
+4. Use unique variable names
+5. Implement type-safe application
+
+Let me create the edit properly.

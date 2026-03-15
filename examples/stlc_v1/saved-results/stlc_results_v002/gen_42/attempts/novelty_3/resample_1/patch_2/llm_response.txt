@@ -1,0 +1,31 @@
+Let me analyze the programs more carefully and create a proper crossover.
+
+Looking at the current program (score 10.28):
+- Simple literals (Bool, Int, String)
+- Lambda terms with fixed "x" variable name
+- No depth decrement in recursive calls
+- No context/bound_vars tracking
+- No App term generation
+
+The best prior programs (score 10.26-10.30) have:
+- good_ratio: 1.00
+- Simple generation without depth decrement
+- No variables, no applications
+
+The key insight from the system prompt analysis was that the best programs (score 10.88) use:
+1. bound_vars parameter to track bound variables
+2. Probabilistic variable selection with rng.random() < 0.35
+3. Unique variable names with f"x{rng.randint(0, 100)}"
+4. Type-safe application with fallback
+5. Hybrid termination: depth <= 0 or (not bound_vars and rng.random() < 0.5)
+
+Let me create a program that combines these techniques while maintaining good_ratio=1.00.
+
+The key is to:
+1. Add bound_vars context tracking
+2. Add variable usage from context
+3. Add App term generation with type-safe application
+4. Use fresh variable names
+5. Keep the simple generation that works (no depth decrement, or probabilistic depth)
+
+Let me write a clean version:

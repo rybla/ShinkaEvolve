@@ -1,0 +1,38 @@
+Let me analyze the current program and the prior programs to understand what's happening:
+
+1. The current program has a score of 10.28 with:
+   - good_ratio: 1.00
+   - tm_sizes_average: 1.33
+   - ty_sizes_average: 1.33
+   - used_vars_proportions_average: 0.00
+   - applied_lambdas_proportions_average: 0.00
+   - unique_subterms_proportions_average: 0.14
+
+2. Looking at the prior programs, I see that the best one (from the system prompt analysis) achieved a score of 10.5488 with:
+   - good_ratio: 0.9870
+   - used_vars_proportions_average: 0.1694
+   - applied_lambdas_proportions_average: 0.0565
+
+The key insight from the analysis is that the best program:
+1. Uses `bound_vars` parameter to track bound variables
+2. Uses `rng.random() < 0.4` to probabilistically choose variables
+3. Uses `f"x{rng.randint(0, 100)}"` for unique variable names
+4. Has type-safe application: checks `func_type[0] == "Fun"` before applying
+5. Uses hybrid termination: `depth <= 0 or (not bound_vars and rng.random() < 0.5)`
+
+The current program:
+- Only generates literals or lambda abstractions
+- Never generates App (application) terms
+- Never generates Var (variable) terms
+- Has used_vars_proportions_average: 0.00
+
+The main issue is that the current program doesn't generate any variable usages (Var terms) or applications (App terms). This is why the used_vars_proportions_average and applied_lambdas_proportions_average are both 0.00.
+
+I should modify the generate_sample function to:
+1. Add bound variable tracking
+
+
+2. Include Var term generation when bound variables exist
+3. Implement App term generation with proper type checking
+
+Let me write the improved version:

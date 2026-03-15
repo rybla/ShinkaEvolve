@@ -1,0 +1,30 @@
+The user says the previous edit was not successful and no changes were applied. Let me try again with a proper edit.
+
+Looking at the current code in the EVOLVE-BLOCK-START section:
+
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+# EVOLVE-BLOCK-END
+```
+
+I need to modify this to:
+1. Actually use the bound variable in lambdas (to increase used_vars_proportions_average)
+2. Create App terms (to increase applied_lambdas_proportions_average)
+3. Increase term diversity
+
+Let me propose a change that keeps the structure but adds these improvements.

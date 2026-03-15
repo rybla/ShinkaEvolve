@@ -1,0 +1,41 @@
+Looking at the current program and the prior programs, I can see that:
+
+1. The current program achieves a good_ratio of 1.00 (perfect type correctness)
+2. But it has 0.00 for used_vars_proportions_average and applied_lambdas_proportions_average
+3. The unique_subterms_proportions_average is 0.14 (low)
+
+The key issue is that the current algorithm:
+1. Creates lambdas but never uses `Var` to reference the bound variable
+2. Never creates `App` terms (applications)
+3. Creates repetitive nested structures
+
+The prompt mentions:
+- "A generated term is better the more it uses its variables"
+- "A generated term is better the more it applies its lambdas to arguments"
+- "A generated term is better the more unique sub-terms it has"
+
+Looking at the best performing programs (score ~10.30), they all achieve 100% good_ratio but fail on the other metrics. The current program is at 10.29.
+
+To improve, I need to:
+1. Use variables (Var) to reference bound variables
+2. Create App (application) terms
+3. Create more unique subterms
+
+The challenge is maintaining type correctness while doing this. Let me think about how to do this:
+
+1. **Using variables**: When creating a lambda, I can sometimes return a `Var` that references the bound variable instead of recursing further.
+
+2. **Creating applications**: I can create `App` terms that apply a function to an argument. This requires type compatibility (the function type must match the argument type).
+
+3. **Unique subterms**: I can vary the literals and structures more.
+
+Let me think about the type system:
+- If I have a lambda `Lam "x" ("Int",) body`, the body must have type `Int`
+- If I want to use the variable, I need `Var "x"` which has type `Int`
+
+
+- For applications, if I have `App func arg`, the func must have type `A -> B` and arg must have type `A`, resulting in type `B`
+
+I could try a hybrid approach: when depth > 0, randomly choose between literals, variables, lambdas, or applications. For lambdas, I need to ensure the body type matches the annotation. For applications, I need to ensure type compatibility between the function and argument. This way I can maintain type correctness while introducing the missing metrics.
+
+The challenge is that generating well-typed applications requires tracking what types are available. A simpler path might be using the bound variable directly—since I know its type from the lambda annotation, I can reference it without worrying about type inference. For applications, I could generate a lambda that returns another lambda, then apply it to an argument. This keeps things manageable while still introducing the structure I need.

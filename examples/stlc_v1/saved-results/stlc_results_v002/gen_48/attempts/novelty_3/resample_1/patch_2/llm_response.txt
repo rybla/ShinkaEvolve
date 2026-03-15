@@ -1,0 +1,30 @@
+The user is asking me to rewrite the program to improve its performance. Let me analyze the current implementation and think about what improvements can be made.
+
+Looking at the current program and the metrics:
+- good_ratio: 0.99 (very high)
+- tm_sizes_average: 4.34
+- used_vars_proportions_average: 0.18
+- applied_lambdas_proportions_average: 0.18
+- unique_subterms_proportions_average: 0.39
+
+The current program already uses some of the best techniques:
+- bound_vars parameter
+- Probabilistic variable selection
+- Unique variable names with f-strings
+- Type-safe-ish application
+
+But there's room for improvement in:
+1. Type-filtered variable selection - currently it picks any variable, not filtering by target type
+2. Better type-safe application - ensuring the function type matches before applying
+3. More balanced generation between lambdas and applications
+
+Let me create a new algorithm that focuses on:
+1. Explicit type tracking - pass target_type through the recursion
+2. Type-filtered variable selection - only pick variables that match the target type
+3. Better application synthesis - ensure type consistency
+
+Here's my approach:
+- Add a target_type parameter to guide the generation
+- When selecting variables, filter by target_type
+- When creating applications, ensure the function type matches the expected argument type
+- Use a more sophisticated type-checking mechanism

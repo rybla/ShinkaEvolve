@@ -1,0 +1,30 @@
+The user is asking me to rewrite the program to improve its performance. Let me analyze the current program and its metrics more carefully.
+
+Current metrics:
+- Combined score: 10.88
+- good_ratio: 0.99 (very high - this is already excellent)
+- tm_sizes_average: 4.34 (term size - relatively small)
+- ty_sizes_average: 1.34 (type size)
+- used_vars_proportions_average: 0.18 (variable usage - could be improved)
+- applied_lambdas_proportions_average: 0.18 (lambda application - could be improved)
+- unique_subterms_proportions_average: 0.39 (unique subterms)
+
+Looking at the code, I can see several potential improvements:
+
+1. **Type-safe argument generation**: In the App case, the current code generates `arg_term = generate_sample(rng, depth - 1, bound_vars)[1]` without ensuring it matches `arg_type`. This could cause type errors.
+
+2. **Better variable usage**: The probability of using variables is 0.35. Could be tuned.
+
+3. **Lambda vs Application balance**: The code chooses between lambda and application with equal probability when depth > 1.
+
+Let me think about what parameters to tune:
+- Variable usage probability: currently 0.35, could try 0.4 or higher
+- Lambda/application split: currently equal, could bias towards applications
+- Base case probability: currently 0.5 when no bound_vars, could tune
+- Depth thresholds: could adjust when to stop recursing
+
+I'll create a version that:
+1. Ensures type-correct argument generation by passing target type
+2. Increases variable usage probability
+3. Adjusts the lambda/application balance
+4. Uses more unique variable names

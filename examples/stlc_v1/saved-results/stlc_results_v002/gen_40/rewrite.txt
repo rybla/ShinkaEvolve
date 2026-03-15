@@ -1,0 +1,13 @@
+def generate_sample(rng: random.Random, depth=10, bound_vars: list = None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Base case with probabilistic termination
+    if depth <= 0 or (not bound_vars and rng.random() < 0.3):
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", True))
+        elif i == 1:
+            return (("Int",), ("Int", 27))
+        else:
+            return (("String",), ("String", "hello world"))

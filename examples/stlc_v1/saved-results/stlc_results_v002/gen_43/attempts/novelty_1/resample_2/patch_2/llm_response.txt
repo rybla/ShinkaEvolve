@@ -1,0 +1,54 @@
+Let me analyze the problem more carefully. The current program creates lambdas but never uses the bound variable. The meta-review indicates that to improve beyond the 10.30 ceiling, we need to:
+
+1. Use variables (Var terms)
+2. Apply lambdas (App terms)
+3. Have more unique subterms
+
+But there's a tension: when Gen 15 tried to add complexity (including variable usage), its good_ratio dropped from 1.0 to 0.82, resulting in a lower score.
+
+The key insight is that the current algorithm creates lambdas like:
+```python
+("Lam", "x", ("Int",), tm)
+```
+where `tm` is some term, but `tm` never references "x" via `Var`.
+
+To improve while maintaining good_ratio = 1.0, I need to:
+1. Create lambdas that DO use their bound variables (identity functions)
+2. Possibly apply those lambdas to arguments
+
+But the challenge is that to apply a lambda, we need a function term AND an argument term. The types must match.
+
+Let me think about what changes would help:
+
+Option 1: Make the lambda body reference the variable (identity function)
+- This would increase `used_vars_proportions_average`
+- But we need to ensure type correctness
+
+Option 2: Apply lambdas to arguments
+- This would increase `applied_lambdas_proportions_average`
+- But we need type-safe function application
+
+Option 3: Vary the primitive values
+- This would increase `unique_subterms_proportions_average`
+- Use different bool/int/string values
+
+Looking at the current code:
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)  # Note: depth is not decremented!
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+The else branch creates a lambda but the body `tm` doesn't reference "x". I should modify the else branch to make the lambda body reference the variable, which would create an identity function and improve the used_vars_proportions_average.

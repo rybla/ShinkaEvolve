@@ -1,0 +1,16 @@
+The user is asking me to improve the program. Let me analyze what's happening here. The previous attempts to edit were not successful because I didn't provide the edit in the correct format.
+
+Let me re-read the instructions:
+- I need to use the SEARCH/REPLACE block format
+- The changes should be below "EVOLVE-BLOCK-START" and above "EVOLVE-BLOCK-END"
+- I need to provide a proper diff
+
+Let me look at the current code again and make a targeted improvement. The main area for improvement is in the application generation section.
+
+Looking at the code:
+1. The application generation creates a random function type but doesn't ensure type safety
+2. The argument term is generated without respecting the function's input type
+
+The key insight from the analysis is that the best program uses type-safe application with fallback - checking if the func_term actually has the right type before applying.
+
+Let me propose an edit that improves type safety in the application generation.

@@ -1,0 +1,50 @@
+
+The user says the previous edit wasn't applied. Let me look at the current code more carefully and understand what needs to be changed.
+
+Looking at the code in the EVOLVE-BLOCK-START section:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Base case: generate literals when depth is exhausted or randomly at top level
+    if depth <= 0 or (not bound_vars and rng.random() < 0.5):
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # When we have bound variables, use them with some probability
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+```
+
+The issue is that when we pick a variable randomly with `rng.choice(bound_vars)`, we might be picking a variable that doesn't match any useful purpose. But more importantly, I notice that we're returning `var_type` as the type - but there's no guarantee that this is what the caller expects!
+
+Actually wait, the function is supposed to generate a sample of ANY type. So it's fine to return any type.
+
+But the real issue is that the probability of using a variable is only 35%. Let me increase that to improve the `used_vars_proportions_average` metric.
+
+Also, looking at the application branch:
+
+
+```python
+    else:
+        # Create an application - need type-correct function and argument
+        # First generate a function type
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+```
+
+When creating an application, I need to ensure the function and argument types are compatible. The code generates arbitrary argument and return types, then tries to find a matching variable from the environment. This could fail if no suitable variable exists, so I should handle that case by falling back to generating a lambda instead.

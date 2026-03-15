@@ -1,0 +1,32 @@
+The previous edit was not successful. Let me try again with the correct format. I need to provide a SEARCH/REPLACE block that exactly matches the current code in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END section.
+
+Let me look at the current program again:
+
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+# EVOLVE-BLOCK-END
+```
+
+I need to replace this with an improved version that:
+1. Adds bound_vars parameter
+2. Uses variables from bound_vars
+3. Creates App terms
+4. Uses unique variable names
+5. Has probabilistic termination
+
+Let me write the exact SEARCH block first, then the REPLACE block.

@@ -1,0 +1,45 @@
+The user is asking me to rewrite a program that generates types and terms of simply-typed lambda calculus. The current program has very low scores on all metrics that matter for complexity (term size, type size, used variables, applied lambdas, unique subterms).
+
+Let me analyze what's needed:
+
+1. The current `generate_sample` function is extremely simple - it just randomly picks between 4 options (literal Bool, Int, String, or a simple function type wrapping another sample).
+
+2. The goal is to generate:
+   - Larger types (up to 10 nodes in the AST)
+   - Larger terms (up to 100 nodes in the AST)
+   - Terms that use variables (variables introduced by lambdas should be used)
+   - Lambdas that are applied to arguments
+   - Many unique subterms (application and lambda subterms)
+
+3. The key insight from the requirements is that the generator should produce terms that are "better" when they are bigger and use their variables.
+
+Let me design a new algorithm:
+
+## Type Generation
+- Generate base types: Bool, Int, String
+- Generate function types: Fun(ty1, ty2) where ty1 and ty2 are types
+- Use recursion to build up to 10 nodes
+
+## Term Generation
+The key challenge is generating well-typed terms. I'll use a type-directed approach:
+
+1. First generate a random type (up to 10 nodes)
+2. Then generate a term that has that type
+
+To generate a term of a given type:
+- For base types (Bool, Int, String): generate a literal
+- For function types: generate a lambda, where:
+  - The parameter has the domain type
+  - The body has the codomain type
+  - We need to track the variable in the context
+
+To ensure variables are used:
+- When we create a lambda, we should use the variable in the body (either directly or through applications)
+
+To ensure lambdas are applied:
+- We can create application terms that apply lambdas to arguments
+
+To ensure unique subterms:
+
+
+I'll generate distinct variables for each lambda and create unique applications by varying argument types and combinations. This approach ensures a rich set of unique subterms, avoiding repetition and increasing the complexity of the generated terms.

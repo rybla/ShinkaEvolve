@@ -1,0 +1,30 @@
+Let me analyze the current program and design a new one that generates larger, more complex types and terms while maintaining well-formedness and well-typedness.
+
+The key issues with the current implementation:
+1. Type size is very small (1.38 average, max is 10)
+2. Term size is very small (1.38 average, max is 100)
+3. No variable usage (0% average)
+4. No lambda applications (0% average)
+5. Low uniqueness (0.15 average)
+
+I need to create a generator that:
+1. Generates larger types (up to 10 nodes)
+2. Generates larger terms (up to 100 nodes)
+3. Uses variables introduced by lambdas
+4. Applies lambdas to arguments
+5. Has more unique subterms
+
+Let me design a new algorithm:
+
+1. First, generate a type with a target size
+2. Then generate a term that has that type
+3. Use a context to track available variables
+4. Build up terms with lambdas, applications, and use variables
+
+The key insight is that I need to:
+- Generate types with more Fun nodes
+- Generate terms with more lambdas and applications
+- Use the variables in scope
+- Apply lambdas to create larger terms
+
+I'll implement this with separate functions for type generation and term generation, with proper size tracking and variable scoping.

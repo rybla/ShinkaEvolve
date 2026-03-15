@@ -1,0 +1,40 @@
+Let me analyze the programs more carefully and create a proper crossover.
+
+Looking at the current program:
+- It tries to use variables and apply lambdas
+- It has some bugs (using `_` in the Fun type, not handling non-Fun types properly in App)
+- Score: 10.55 with good_ratio: 0.99
+
+The crossover inspiration:
+- Uses fixed literals (True, 27, "hello world")
+- Creates lambdas without decrementing depth (infinite recursion until base case)
+- Has perfect good_ratio: 1.00
+- Doesn't use variables or apply lambdas
+- Score: 10.29
+
+The current program has better metrics except for good_ratio. The crossover inspiration has perfect good_ratio but poor other metrics.
+
+The key is to:
+1. Fix the bugs in the current program that cause type errors
+2. Maintain the variable usage and lambda application features
+3. Try to get closer to good_ratio = 1.00
+
+Let me look at the current program bugs more carefully:
+
+1. In the lambda case:
+```python
+_, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+```
+This uses `_` which is the type returned by generate_sample, but it's in the wrong position. The function type should be `("Fun", var_type, body_type)` where body_type is the type of the body.
+
+2. In the application case:
+```python
+if func_type[0] == "Fun":
+    return (func_type[2], ("App", func_term, arg_term))
+else:
+    return (arg_type, arg_term)
+```
+This returns arg_type when func_type is not a Fun, which could cause type errors.
+
+Let me create a fixed version that maintains the good features of both programs.

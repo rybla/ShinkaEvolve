@@ -1,0 +1,44 @@
+Let me analyze the current program and the performance metrics to understand what needs to be improved.
+
+Current metrics:
+- Combined score to maximize: 10.30
+- good_ratio: 1.00 (all samples are well-formed and well-typed)
+- tm_sizes_average: 1.38 (very small terms - max is 100)
+- ty_sizes_average: 1.38 (very small types - max is 10)
+- used_vars_proportions_average: 0.00 (no variables are being used!)
+- applied_lambdas_proportions_average: 0.00 (no lambdas are being applied!)
+- unique_subterms_proportions_average: 0.15 (low uniqueness)
+
+Looking at the current `generate_sample` function:
+1. It only has 3 base cases (Bool, Int, String literals)
+2. The recursive case only creates lambda terms with Int type annotation
+3. The depth parameter isn't being used properly to limit recursion
+4. There's no mechanism to use variables (no App terms with the variable being applied)
+5. There's no mechanism to apply lambdas to arguments
+
+The main issues are:
+1. Terms are too small (1.38 avg vs max 100)
+2. No use of variables (0.00 vs should be higher)
+3. No application of lambdas (0.00 vs should be higher)
+4. Types are too small (1.38 vs max 10)
+
+To improve:
+1. Use the depth parameter properly to control recursion depth
+2. Create more complex types using FunTy
+3. Create application terms that use variables
+4. Make sure lambdas are applied to arguments
+
+Let me design a better generator that:
+- Uses depth to control size
+- Has proper base cases for types
+- Has proper recursive cases for both types and terms
+- Creates applications that use variables from enclosing lambdas
+- Creates lambdas that are applied to arguments
+
+I need to track:
+- Available variables (from enclosing lambdas)
+
+
+- The target type we're generating for
+
+The key insight is that I need to generate terms that match a given type, and I should track variables so they can be used in applications. Let me create a more sophisticated generator.

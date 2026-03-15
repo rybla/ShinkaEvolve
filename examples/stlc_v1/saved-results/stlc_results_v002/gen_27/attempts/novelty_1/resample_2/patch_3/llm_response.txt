@@ -1,0 +1,5 @@
+I need to actually provide a SEARCH/REPLACE block. Let me do that now.
+
+Looking at the current program, I want to improve the unique_subterms_proportions_average by varying the literal values, and potentially add some variable usage in a type-safe way.
+
+Let me make a targeted change to improve the score.

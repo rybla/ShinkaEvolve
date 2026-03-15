@@ -1,0 +1,47 @@
+Looking at the task again, I need to propose a modification to the current program to improve its performance. The key issues are:
+
+1. `used_vars_proportions_average: 0.00` - No variables are used
+2. `applied_lambdas_proportions_average: 0.00` - No lambdas are applied
+3. `unique_subterms_proportions_average: 0.14` - Very low uniqueness
+
+The current code generates lambdas but never uses the bound variable. It also never generates App terms.
+
+Let me create a proper SEARCH/REPLACE block. I need to find the exact code from the "Current program" section and replace it.
+
+Looking at the current program:
+
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+# EVOLVE-BLOCK-END
+```
+
+I need to modify this to:
+1. Use variables (Var terms)
+2. Apply lambdas (App terms)
+3. Increase unique subterms
+
+Let me write a modified version that addresses these issues.
+
+The key insight is:
+- When we create a lambda with bound variable "x", the body should sometimes be a Var("x") - this uses the variable
+- We can create App terms by applying a lambda to an argument
+
+
+- For uniqueness, I'll use different base types and values
+
+Let me propose a change:

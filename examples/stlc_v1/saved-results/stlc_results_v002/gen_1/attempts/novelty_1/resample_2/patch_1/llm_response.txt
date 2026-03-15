@@ -1,0 +1,1025 @@
+We need to rewrite the generator to improve performance on the metrics: combined score to maximize: 10.30 (currently). The metrics: good_ratio: 1.00; tm_sizes_average: 1.38; ty_sizes_average: 1.38; used_vars_proportions_average: 0.00; applied_lambdas_proportions_average: 0.00; unique_subterms_proportions_average: 0.15.
+
+We need to increase tm_sizes_average (currently 1.38), ty_sizes_average (currently 1.38), used_vars_proportions_average (currently 0.00), applied_lambdas_proportions_average (0.00), unique_subterms_proportions_average (0.15). The combined score is presumably some weighted sum of these metrics. The goal is to maximize combined score. The current combined score is 10.30. We need to improve it.
+
+We need to rewrite generate_sample to produce larger types (size up to 10 nodes) and larger terms (size up to 100 nodes). Also we need to use variables more (used_vars_proportions_average). Also apply lambdas more (applied_lambdas_proportions_average). Also unique subterms (unique_subterms_proportions_average). The current generator only returns small terms: either literals or a lambda that wraps a term generated recursively with depth parameter? Actually the current generate_sample uses depth parameter but not used properly: it calls generate_sample(rng) without passing depth, causing default depth=10. But the recursion is not limited; it always picks i from 0 to 3 if depth>0 else 0 to 2. But it always returns either a literal or a lambda with type ("Int",) and term generated recursively. That yields small terms. It also never uses variables (Var). It never applies lambdas (App). So used_vars_proportions_average is 0.0, applied_lambdas_proportions_average is 0.0.
+
+We need to generate well-typed terms that use variables introduced by lambdas, apply them, etc. Also generate larger types (Fun types). Also generate unique subterms.
+
+We need to maintain the same input-output signature: generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]. The code is used by lc.run(...). The lc module likely expects a function that takes rng and depth and returns a type and term. The run function passes size (number of samples) and rng. It likely calls generate_sample many times. The depth parameter may be used to limit recursion. The original code uses depth but not correctly. We need to fix it.
+
+We need to produce bigger terms: up to 100 nodes. The depth parameter can be used to control size. But we also need to ensure well-typedness: the term's type must match the generated type.
+
+We need to generate types: base types: Bool, Int, String. Function types: FunTy (Ty -> Ty). The type size is measured by number of nodes in its AST. Max 10 nodes. So we can generate function types up to depth 10.
+
+We need to generate terms: literals (Bool, Int, String), variables (Var), lambda abstractions (Lam), applications (App). The term must be well-typed: the type of the lambda must match the type annotation, and the application must be well-typed: the left term must be a function type from A to B, and the right term must have type A, and the result type is B.
+
+We need to generate terms that use variables introduced by lambdas. That means we need to keep track of the typing context (mapping variable names to types). We need to generate variables that refer to those types. Also we need to apply lambdas to arguments: we need to generate applications where the function is a lambda or a variable that has a function type, and the argument matches the domain type.
+
+We also need to generate unique subterms: unique application and lambda subterms. That means we need to avoid repeated subterms. But we can generate many distinct subterms.
+
+We need to maximize used_vars_proportdas: proportion of variables used relative to number of variables introduced? The metric is used_vars_proportions_average: the proportion of introduced variables that are used somewhere. So we need to ensure that we introduce variables (via lambda) and then use them in the body (as variable references) or as arguments in applications. The current generator never uses variables, so it's 0. We need to generate terms that use variables.
+
+We also need to maximize applied_lambdas_proportions_average: proportion of lambdas that are applied to some argument. So we need to generate lambda terms and then apply them somewhere. Possibly we can generate a term that is a lambda and then apply it to an argument. Or we can generate a term that is an application of a lambda to an argument.
+
+We also need to increase unique_subterms_proportions_average: proportion of unique subterms relative to total subterms? The metric is unique_subterms_proportions_average: maybe the proportion of unique subterms among all subterms? The current is 0.15, low. We need to generate more unique subterms.
+
+We need to produce bigger terms: up to 100 nodes. The depth parameter can be used to limit recursion. But we also need to ensure we don't exceed the maximum allowed nodes for types (10) and terms (100). The generator should produce terms of size up to 100 nodes. The depth parameter can be used to control the recursion depth, but we also need to count nodes.
+
+We need to design a generator that can produce large well-typed terms. This is a typical approach: we can generate a type first, then generate a term of that type. Or we can generate a term and infer its type, but we need to produce a type annotation for lambdas. So we can generate a type first, then generate a term of that type.
+
+We need to keep track of a context (list of variable names and their types). When generating a term of a given type, we can either generate a literal of that type (if it's a base type), or a variable referencing a variable in the context of that type, or a lambda abstraction if the type is a function type, or an application if we can decompose the type.
+
+We need to generate terms that are well-typed and use variables. The typical approach: generate a type, then generate a term of that type using a "gen_term(ty, context)" function. The context is a list of (name, type) pairs. For base types, we can generate a literal. For function types, we can generate a lambda or an application. But we need to ensure we use variables and apply lambdas.
+
+We also need to generate unique subterms: we can generate many distinct subterms by using different variable names, different literals, etc.
+
+We need to incorporate depth parameter to limit recursion. The depth can be used to limit the size of the generated type and term. The depth can be decremented each recursion. The maximum depth for types is 10, for terms is 100. But we can use depth to control recursion.
+
+We need to produce terms of size up to 100 nodes. The depth parameter can be used to limit recursion, but we also need to count nodes. The node count for a type is the number of constructors (including nested). For a term, node count is number of constructors (including literals, variables, lambdas, applications). The depth parameter can be used to limit recursion, but we also need to ensure we don't exceed the max node count. We can use a "size" parameter to limit the number of nodes. But the original code uses depth parameter. We can adapt it: we can use depth to limit recursion, but also we can use random decisions to stop recursion early to keep size small. But we want larger terms, so we need to increase depth.
+
+The original generate_sample uses depth=10 but doesn't use it properly. We can rewrite it to use depth to limit recursion and also produce larger terms.
+
+We need to maintain the same signature: generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]. The run function passes size and rng, but not depth. So the depth is default 10. But we can also pass depth from run? The run function likely calls generate_sample with default depth. The original code uses depth parameter but not passed. So we can keep default depth=10. But we can also use depth to limit recursion. However, we want to generate bigger terms, maybe depth=10 is not enough to reach size 100. But we can also use recursion to generate bigger terms: each lambda adds a node, each application adds a node. With depth 10, we can generate at most 10 lambdas or applications, but each lambda can contain many nodes. Actually we can generate nested lambdas and applications, each adding nodes. The depth controls the nesting depth, not the number of nodes. But we can generate many nodes within each level by generating many applications within a lambda body. For example, we can generate a lambda that applies a variable to many arguments. That can produce many nodes without increasing depth. So we can generate large terms with small depth.
+
+Thus we can use depth to limit recursion of lambda abstractions and function types, but we can generate many applications within a lambda body.
+
+We need to generate types with up to 10 nodes. The depth can be used to limit the depth of function types. For example, we can generate a function type with domain type and codomain type, each possibly nested up to depth. The number of nodes in a function type is 1 (Fun) plus nodes of domain and codomain. So with depth 10, we can generate up to 10 nodes.
+
+We need to generate terms with up to 100 nodes. We can use depth to limit recursion, but also we can generate many nodes within each lambda body.
+
+We need to ensure well-typedness: we need to generate a term of a given type. We can generate a type first, then generate a term of that type. The type can be generated using a function gen_type(depth). Then we can generate a term of that type using gen_term(ty, context, size). We need to track size (node count) to not exceed 100.
+
+We also need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate variables in the context and use them. The context can be a list of variable names and types. When generating a term of a function type, we can either generate a lambda or an application. But we also need to use variables. For example, we can generate a lambda that returns a variable. That uses the variable. Also we can generate an application where the function is a variable (that is a function) and argument is a term of the domain type.
+
+We also need to apply lambdas: we need to generate applications where the function is a lambda. That will increase applied_lambdas_proportions_average.
+
+We also need to generate unique subterms: we can generate many distinct subterms by using different variable names, different literals, and different combinations.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to maintain the same output: a tuple (Ty, Tm). The type must be the type of the term. So we need to generate a type and a term of that type.
+
+We need to ensure the term is well-typed: we need to check that the term's type matches the type annotation. But we can rely on the generation process to ensure well-typedness.
+
+We need to incorporate the depth parameter: we can use depth to limit recursion for type generation and term generation. The depth can be decremented each time we go under a function type or lambda.
+
+We need to incorporate size limit: we can track the number of nodes generated and stop when we reach the limit. But we also want to maximize size. The metrics want larger sizes. So we should aim for near maximum size (100 nodes for terms, 10 nodes for types). But we also need to ensure well-typedness and use variables.
+
+We need to produce terms that are not too small. The current tm_sizes_average is 1.38, which is tiny. We need to increase it to maybe around 50 or more. The ty_sizes_average is also 1.38, we need to increase to maybe around 5-10.
+
+We need to produce used_vars_proportions_average > 0, ideally near 1.0. That means we need to use most of the variables we introduce. So we need to introduce variables and then use them in the term. We can generate a lambda that uses the variable in its body, or we can generate an application that uses the variable as function or argument.
+
+We need to produce applied_lambdas_proportions_average > 0, ideally near 1.0. That means we need to apply most of the lambdas we generate. So we need to generate lambdas and then apply them. We can generate a term that is a lambda and then apply it to an argument. Or we can generate a lambda that returns a lambda and then apply it.
+
+We need to produce unique_subterms_proportions_average > 0.15, ideally near 1.0. That means we need to have many unique subterms. We can generate many distinct subterms by using different variable names, different literals, and different combinations.
+
+We need to produce good_ratio: currently 1.00, which is good. We need to maintain that. So we need to always produce well-typed terms. So we need to ensure the generation process always yields well-typed terms.
+
+Thus we need to design a generator that always yields well-typed terms. The typical approach is to generate a type first, then generate a term of that type using a context.
+
+We need to incorporate randomness: we need to use rng to make random choices among possible term constructions.
+
+We need to incorporate depth and size limits: we can use depth to limit recursion, and we can use a size budget to limit the number of nodes. We can also use randomness to decide when to stop generating more nodes.
+
+We need to maintain the same signature: generate_sample(rng, depth). The depth parameter is used to limit recursion. We can also incorporate a size budget: we can use depth as a proxy for size, but we also need to track node count. However, the original code uses depth only. We can adapt: we can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to a larger value to allow bigger terms. But the default depth is 10. We can change the default depth to maybe 20 or 50, but the run function passes depth=10? Actually the run function does not pass depth, so default depth=10. But we can ignore depth and use a fixed size limit. However, the signature expects depth parameter. We can use depth to limit recursion but also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to generate types with up to 10 nodes. With depth=10, we can generate function types with depth up to 10, which yields up to maybe 10 nodes. That is fine.
+
+Thus we can keep depth=10 as default, but we need to generate bigger terms. We can generate many nodes within each lambda body. For example, we can generate a sequence of applications: e.g., we can generate a term like (\x -> x x x x ...) which is many applications. That can produce many nodes. But we need to ensure well-typedness. If we have a variable x of type A -> B, we can apply it to an argument of type A, resulting in type B. But we need to ensure the types match. So we need to generate a variable of function type, then apply it to an argument of the appropriate type. That can be repeated.
+
+We can also generate a lambda that returns a lambda, and then apply it. That can produce many nodes.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we can generate a lambda that uses its parameter in its body. That will use the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations.
+
+Thus we can design a generator that does the following:
+
+- Generate a type using gen_type(depth). This yields a type Ty.
+
+- Generate a term of that type using gen_term(ty, context, size_budget). The context is a list of (name, type) pairs. The size_budget is the maximum number of nodes we can generate. We can use depth as size_budget? Actually we need to limit to 100 nodes. We can use a global limit: max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can use randomness to decide when to stop generating more nodes, but we want to generate large terms. So we can generate until we reach the limit.
+
+But we also need to incorporate depth parameter. The depth parameter can be used to limit recursion in type generation and term generation. For term generation, we can use depth to limit the number of nested lambdas and applications. But we also want to generate many nodes within each lambda body. So we can use depth to limit the nesting depth, but we can generate many applications within each lambda body.
+
+Thus we can define a function gen_type(depth) that returns a type. It picks a random base type with probability based on depth, else picks a function type if depth > 0. The probability of picking a function type can be higher when depth is high. We can also limit the size to 10 nodes. We can track the number of nodes in the type and stop when we reach 10.
+
+Similarly, we can define gen_term(ty, context, depth, size). The depth parameter can be used to limit recursion. The size parameter can be used to limit the number of nodes. We can also use depth to decide whether to generate a lambda or an application. For a function type, we can either generate a lambda or an application. For a base type, we can generate a literal or a variable.
+
+We need to ensure we use variables: we can generate a variable from the context if its type matches the target type. That uses a variable. We can also generate a lambda that uses its parameter. That uses the variable.
+
+We need to ensure we apply lambdas: we can generate an application where the function is a lambda. That applies the lambda.
+
+We need to ensure we generate unique subterms: we can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term is well-typed: we need to generate a term that has the given type. The generation process ensures that.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate the depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach the limit, but we also need to ensure we don't exceed the limit for types (10). We can generate types until we reach the limit.
+
+Thus we can design a generator that uses depth to limit recursion, but uses a size budget to limit the number of nodes. However, the original code uses depth only. We can adapt: we can use depth as a proxy for size, but we also need to track node count. But we can also ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit for types: we can generate types until we reach 10 nodes. We can track the node count for types.
+
+We need to incorporate the size limit for terms: we can generate terms until we reach 100 nodes. We can track the node count for terms.
+
+We need to incorporate used_vars_proportions_average: we need to use variables introduced by lambdas. So we need to generate lambdas that use their parameters. We can generate a lambda that returns a variable of the same type as the parameter. That uses the variable. We can also generate a lambda that returns an application that uses the variable.
+
+We need to incorporate applied_lambdas_proportions_average: we need to apply lambdas. So we need to generate applications where the function is a lambda. We can generate a lambda and then apply it to an argument. That will apply the lambda.
+
+We need to incorporate unique_subterms_proportions_average: we need to generate many unique subterms. We can generate many distinct variables, literals, and combinations. We can use a counter to generate unique variable names.
+
+We need to ensure the term's type matches the generated type. So we need to generate a term of the given type.
+
+We need to incorporate randomness: we need to use rng to make random choices.
+
+We need to incorporate depth parameter: we can use depth to limit recursion, but we also want to generate large terms. We can set depth to a larger value, but the default is 10. However, we can ignore depth and use a fixed size limit. But the signature includes depth, so we should use it. We can use depth to limit recursion, but we can also generate many nodes within each recursion. So we can set depth to something like 10, but we can generate many nodes within each lambda body. That may be enough to reach size 100.
+
+But we also need to incorporate the size limit: we can use a global variable max_term_size = 100. We can track the number of nodes generated so far and stop when we reach the limit. But we also want to maximize size, so we want to generate near the limit. We can generate until we reach the limit, but we also need to ensure we don't exceed the limit. So we can generate until we reach

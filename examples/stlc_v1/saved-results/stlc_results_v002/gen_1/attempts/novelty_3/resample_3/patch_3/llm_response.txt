@@ -1,0 +1,23 @@
+Let me analyze the problem more carefully. The user wants me to improve the generator. Looking at the metrics:
+
+- tm_sizes_average: 1.38 (very small, max is 100)
+- ty_sizes_average: 1.38 (very small, max is 10)
+- used_vars_proportions_average: 0.00 (no variables used!)
+- applied_lambdas_proportions_average: 0.00 (no lambdas applied)
+- unique_subterms_proportions_average: 0.15 (low)
+
+The current generate_sample function:
+1. Has a depth parameter but doesn't use it properly
+2. Only generates literals or trivial lambdas
+3. Never generates applications
+4. Never uses variables from context
+5. Doesn't track bound variables
+
+I need to rewrite the generate_sample function to:
+1. Actually use depth to build larger structures
+2. Generate complex types using Fun
+3. Generate applications
+4. Track bound variables in a context
+5. Use those variables in terms
+
+Let me write a complete new program.

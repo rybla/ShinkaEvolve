@@ -1,0 +1,41 @@
+Let me analyze the current program and the prior programs to understand what's happening and how to improve it.
+
+Looking at the metrics:
+- Current program: Combined score 10.31, good_ratio: 1.00, used_vars_proportions_average: 0.00, applied_lambdas_proportions_average: 0.00
+
+The key issue is that:
+1. `used_vars_proportions_average: 0.00` - No variables are being used in the lambda terms
+2. `applied_lambdas_proportions_average: 0.00` - No applications of lambda terms
+
+Looking at the prior programs, the best one was the first one with score 7.11 which had:
+- `used_vars_proportions_average: 0.06`
+- `applied_lambdas_proportions_average: 0.03`
+
+But it had lower good_ratio (0.68).
+
+The current program has:
+- good_ratio: 1.00 (all terms are well-typed)
+- used_vars_proportions_average: 0.00 (no Var terms)
+- applied_lambdas_proportions_average: 0.00 (no App terms)
+
+The problem is clear: The current program only generates:
+1. Literals (Bool, Int, String)
+2. Lambda abstractions (but the body doesn't use the bound variable!)
+
+To improve, we need to:
+1. Generate Var terms that reference bound variables
+2. Generate App terms (function applications)
+
+But we need to be careful about type safety - we can't just randomly generate these.
+
+Let me look at the system prompt analysis from earlier:
+
+The best program (score 10.5488) used:
+- `bound_vars` parameter to track bound variables
+- `rng.random() < 0.4` to probabilistically choose variables
+- Uses `f"x{rng.randint(0, 100)}"` for unique variable names
+
+
+- Type-safe application with proper type checking before applying functions
+
+I need to add a `bound_vars` parameter to track available variables, and when generating the body of a lambda, I should sometimes reference one of these bound variables using a Var term. For applications, I need to check if the function type is actually `Fun` before applying it to an argument - if it's not, I should return the argument instead of creating an invalid application. I should also vary the type annotations (Bool, Int, String) instead of always using Int.

@@ -1,0 +1,44 @@
+Let me analyze the current program and the prior programs to understand what improvements can be made.
+
+Looking at the current program:
+- It generates simple literals (Bool, Int, String) and lambda terms
+- It doesn't use variables at all (used_vars_proportions_average: 0.00)
+- It doesn't have any App terms (applied_lambdas_proportions_average: 0.00)
+- The combined score is 10.27
+
+Looking at the prior programs that performed better:
+1. The first program (score 8.73) had some variable usage but lower good_ratio
+2. Programs 2-6 all have good_ratio=1.00 but low used_vars_proportions and applied_lambdas_proportions
+
+The key insight from the system prompt analysis is that the best programs:
+1. Use `bound_vars` parameter to track bound variables
+2. Use `rng.random() < 0.35` to probabilistically choose variables
+3. Use `f"x{rng.randint(0, 100)}"` for unique variable names
+4. Have type-safe application: checks `func_type[0] == "Fun"` before applying
+5. Use hybrid termination: `depth <= 0 or (not bound_vars and rng.random() < 0.5)`
+
+The current program has:
+- No variable usage (used_vars_proportions_average: 0.00)
+- No application terms (applied_lambdas_proportions_average: 0.00)
+
+To improve, I should:
+1. Add context tracking for bound variables
+2. Add variable usage from context
+3. Add application terms (App)
+4. Use type-safe application
+
+Let me create an improved version that:
+1. Tracks bound variables in context
+2. Uses variables from context
+3. Creates application terms
+4. Uses type-safe application with fallback
+
+Here's my plan:
+- Add a `bound_vars` parameter to track variables in scope
+
+
+- When generating a lambda, add the variable to the context
+- With some probability, use a variable from context instead of generating a new term
+- Add application: apply a function to an argument with type checking
+
+I'll implement a sophisticated approach that incorporates context tracking, variable usage, and type-safe application. The goal is to increase the complexity of generated terms while maintaining type safety and improving the overall score.

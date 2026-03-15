@@ -1,0 +1,41 @@
+Let me analyze the performance metrics and the current program to identify what improvements can be made.
+
+Looking at the current program:
+- Combined score: 10.29
+- good_ratio: 1.00 (perfect - all samples are well-typed)
+- tm_sizes_average: 1.35
+- ty_sizes_average: 1.35
+- used_vars_proportions_average: 0.00 (no variables are used!)
+- applied_lambdas_proportions_average: 0.00 (no applications!)
+- unique_subterms_proportions_average: 0.14
+
+Looking at the prior programs:
+1. The best one (10.5488) used `bound_vars` to track bound variables and had:
+   - good_ratio=0.9870
+   - used_vars_proportions_average=0.1694
+   - applied_lambdas_proportions_average=0.0565
+
+2. Programs 2 and 3 (around 10.30) had similar structure to current - simple literals and lambdas
+
+The key insight is that the current program has:
+- 0.00 used_vars_proportions_average - no variables are being used
+- 0.00 applied_lambdas_proportions_average - no applications
+
+The best program (10.5488) had:
+- 0.1694 used_vars_proportions_average
+- 0.0565 applied_lambdas_proportions_average
+
+So the main improvement is to:
+1. Add variable usage (Var terms)
+2. Add application (App terms)
+
+Looking at the best program from the meta-review, it:
+1. Used `bound_vars` parameter to track bound variables
+2. Used `rng.random() < 0.4` to probabilistically choose variables
+3. Used `f"x{rng.randint(0, 100)}"` for unique variable names
+4. Had type-safe application: checks `func_type[0] == "Fun"` before applying
+
+
+5. Used hybrid termination: `depth <= 0 or (not bound_vars and rng.random() < 0.5)`
+
+I need to implement these improvements. The current program generates literals and lambdas but never uses variables or applies functions. I'll add a context parameter to track bound variables, introduce variable selection with probability, implement type-safe application, and use probabilistic termination to increase term complexity.

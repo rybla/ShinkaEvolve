@@ -1,0 +1,21 @@
+I need to provide actual code changes. Let me analyze the current situation and provide a targeted improvement.
+
+Looking at the metrics:
+- used_vars_proportions_average: 0.18 (only 18% of terms use variables - should be higher)
+- applied_lambdas_proportions_average: 0.18 (only 18% of terms are applications - should be higher)
+- tm_sizes_average: 4.34 (relatively small)
+
+The issue is that the current code doesn't properly ensure type-correct applications and doesn't encourage using variables within lambda bodies.
+
+Let me make targeted changes to improve these metrics:
+
+1. Fix the application generation to ensure type-correct arguments
+2. Increase the probability of using variables when available
+3. Add logic to ensure lambda bodies can reference their bound variables
+
+Here's my plan:
+- In the App case, I need to generate an argument that matches the expected type
+- When creating a Lambda, I should sometimes use the bound variable in the body (to increase used_vars_proportions)
+- Increase the probability of App to improve applied_lambdas_proportions_average
+
+Let me write the edit:

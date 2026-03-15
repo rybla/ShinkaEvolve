@@ -1,0 +1,31 @@
+The user is saying my previous edit was not successful and no changes were applied. Let me try again with a proper SEARCH/REPLACE block.
+
+Looking at the current program in the EVOLVE-BLOCK:
+
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)  # Note: depth is not decremented!
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+# EVOLVE-BLOCK-END
+```
+
+I need to propose an improvement that adds:
+1. bound_vars parameter to track variables in scope
+2. Probabilistic variable selection
+3. Type-safe application
+4. Better termination
+
+Let me write the edit properly.

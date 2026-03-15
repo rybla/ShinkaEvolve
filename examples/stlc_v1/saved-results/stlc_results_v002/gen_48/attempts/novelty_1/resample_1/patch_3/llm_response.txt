@@ -1,0 +1,49 @@
+The user is saying my previous edit wasn't applied. Let me think about what I need to do.
+
+I need to provide a SEARCH/REPLACE block to modify the code. Let me look at the current code again and think about what specific improvements would help.
+
+Looking at the current code in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END:
+
+The key issue I identified is in the application generation:
+1. It generates `arg_type` and `ret_type` separately
+2. It generates a function term (lambda or variable) but doesn't ensure its return type matches `ret_type`
+3. It generates an argument term but doesn't ensure its type matches `arg_type`
+
+The fix should be:
+1. First generate a function term and get its type
+2. If the function type is "Fun", extract the arg_type and ret_type from it
+3. Then generate an argument term that matches the expected arg_type
+4. Return the ret_type along with the App term
+
+Let me write the specific change:
+
+The current code in the else branch (application) is:
+```python
+    else:
+        # Create an application - need type-correct function and argument
+        # First generate a function type
+        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
+        func_type = ("Fun", arg_type, ret_type)
+        
+        # Generate function term - could be a lambda or variable
+        if rng.random() < 0.5 and bound_vars:
+            # Use an existing variable of function type
+            for var_name, var_type in bound_vars:
+                if var_type[0] == "Fun":
+                    func_term = ("Var", var_name)
+                    break
+            else:
+                # No function variable available, create a lambda
+                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        else:
+            # Create a lambda
+            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
+        
+        # Generate argument term matching the function's input type
+        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+        
+        return (ret_type, ("App", func_term, arg_term))
+```
+
+The fix should be to first generate the function term and extract its actual type, then use that type's argument type to generate a properly typed argument term. This ensures type consistency throughout the application.

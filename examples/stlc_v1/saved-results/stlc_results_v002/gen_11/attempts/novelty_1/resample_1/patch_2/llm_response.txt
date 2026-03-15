@@ -1,0 +1,8 @@
+The user wants me to provide a complete new program that improves upon the current implementation. Let me create the improved version that:
+
+1. Uses depth properly to control the size of generated types/terms
+2. Generates more varied types and terms including variables and applications
+3. Improves the metrics that are currently at 0 (used_vars_proportions_average, applied_lambdas_proportions_average)
+4. Increases unique_subterms_proportions_average
+
+Let me write the complete new program.

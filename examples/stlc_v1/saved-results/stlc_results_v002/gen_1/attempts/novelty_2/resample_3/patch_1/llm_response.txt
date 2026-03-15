@@ -1,0 +1,43 @@
+
+Looking at the current program, I need to understand what's happening:
+
+1. The current `generate_sample` function is very simple and produces very small types and terms
+2. The metrics show:
+   - tm_sizes_average: 1.38 (very small, max is 100)
+   - ty_sizes_average: 1.38 (very small, max is 10)
+   - used_vars_proportions_average: 0.00 (variables are never used!)
+   - applied_lambdas_proportions_average: 0.00 (lambdas are never applied!)
+   - unique_subterms_proportions_average: 0.15 (very low)
+
+The current implementation only generates literals or simple lambdas wrapping other samples. It doesn't:
+- Use variables in the body of lambdas
+- Apply variables to arguments
+- Create complex type structures
+
+Looking at the score: 10.30
+- good_ratio: 1.00 is good (all samples are well-typed)
+- But the sizes and usage metrics are terrible
+
+I need to improve the generator to:
+1. Generate larger types (up to 10 nodes)
+2. Generate larger terms (up to 100 nodes)
+3. Use variables that are introduced by lambdas
+4. Apply lambdas to arguments
+5. Have more unique subterms
+
+Let me think about how to properly implement this. I need to track:
+- A context of available variables with their types
+- Generate types that can use variables from context
+
+The key insight is that I need to:
+1. Keep track of bound variables (from lambda abstractions) and their types
+2. When generating a term, choose whether to:
+   - Generate a literal
+   - Generate a variable (use one from context)
+   - Generate a lambda (add a new variable to context)
+   - Generate an application (apply a term to another term)
+
+3. For type generation, I need to keep track of the "size budget"
+
+
+4. For term generation, I need to manage both a size budget and the available variables in scope. The algorithm should decide at each step whether to introduce a new variable through a lambda, use an existing variable, or apply terms to each other - with preference for using variables that are already bound and applying lambdas to arguments.

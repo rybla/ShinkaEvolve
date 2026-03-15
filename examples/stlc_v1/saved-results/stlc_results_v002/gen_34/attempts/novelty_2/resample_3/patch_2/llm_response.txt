@@ -1,0 +1,21 @@
+Let me analyze the current program and the prior programs to understand what improvements can be made.
+
+Looking at the current program:
+- It generates simple literals (Bool, Int, String) and lambda terms
+- The lambda always takes an Int and returns something
+- It doesn't use variables from context (used_vars_proportions_average: 0.00)
+- It doesn't have any App terms (applied_lambdas_proportions_average: 0.00)
+
+The key metrics to improve:
+- `used_vars_proportions_average`: Currently 0.00 - need to use variables from context
+- `applied_lambdas_proportions_average`: Currently 0.00 - need to create App terms
+- `unique_subterms_proportions_average`: Currently 0.14 - could be improved
+- `tm_sizes_average` and `ty_sizes_average`: Could be increased
+
+I need to:
+1. Add context tracking for bound variables
+2. Use variables from context (increase used_vars_proportions_average)
+3. Create App terms (increase applied_lambdas_proportions_average)
+4. Use unique variable names to increase unique_subterms_proportions_average
+
+Let me write a new program that implements these improvements.

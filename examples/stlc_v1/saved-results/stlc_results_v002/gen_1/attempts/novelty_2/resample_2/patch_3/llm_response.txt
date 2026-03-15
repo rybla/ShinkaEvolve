@@ -1,0 +1,40 @@
+
+Let me look at the current code in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END section to understand what I need to modify.
+
+The current code is:
+
+```python
+# EVOLVE-BLOCK-START
+
+
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+
+
+# EVOLVE-BLOCK-END
+```
+
+I need to replace this with a better generator. Let me create a more sophisticated generator that:
+1. Tracks bound variables (context)
+2. Generates larger types using Fun constructor
+3. Generates larger terms with App and Lam
+4. Uses variables from context
+
+Let me write the SEARCH and REPLACE blocks carefully.

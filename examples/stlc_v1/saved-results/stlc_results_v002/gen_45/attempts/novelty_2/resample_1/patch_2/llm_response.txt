@@ -1,0 +1,22 @@
+The previous edit was not successful. Let me think about what changes I should make.
+
+Looking at the current program, I need to identify a targeted improvement. Let me analyze the key issues:
+
+1. **Type-safe application**: The current code generates an application but doesn't properly ensure type consistency between the function and argument. When generating an App term, the argument term's type should match the function's input type.
+
+2. Looking at the application generation:
+```python
+# Generate argument term matching the function's input type
+arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+```
+
+The issue is that `arg_term` is generated without considering that it should match `arg_type`. This could lead to type mismatches.
+
+Let me propose a change that adds a `target_type` parameter to guide the generation towards producing terms of a specific type. This is a common technique in type-directed program synthesis.
+
+The change should:
+1. Add an optional `target_type` parameter to `generate_sample`
+2. When generating an argument for an application, pass the expected `arg_type` as the target
+3. Use the target_type to guide decisions (e.g., when choosing between lambda/application)
+
+Let me write the diff properly this time.

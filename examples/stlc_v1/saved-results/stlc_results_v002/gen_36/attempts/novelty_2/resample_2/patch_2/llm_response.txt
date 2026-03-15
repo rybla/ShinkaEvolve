@@ -1,0 +1,60 @@
+The user is asking me to improve the performance of the program. Let me analyze the current state and propose an improved version.
+
+Looking at the current program:
+- Combined score: 10.28
+- good_ratio: 1.00 (perfect - all generated terms are well-typed)
+- used_vars_proportions_average: 0.00 (no variables used!)
+- applied_lambdas_proportions_average: 0.00 (no applications!)
+
+The issue is clear: the current implementation only generates literals and lambdas, but never uses variables within lambda bodies or applies functions to arguments.
+
+According to the meta-prompt insights, the best program (score 10.5488) achieved:
+- used_vars_proportions_average: 0.1694
+- applied_lambdas_proportions_average: 0.0565
+
+I need to design a new algorithm that:
+1. Tracks bound variables
+2. Uses those variables in the lambda body (to increase used_vars_proportions_average)
+3. Creates applications (to increase applied_lambdas_proportions_average)
+4. Maintains good_type ratio at 1.00
+
+Let me design a new algorithm:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Base case: when depth is 0, return literals
+    if depth <= 0:
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", True))
+        elif i == 1:
+            return (("Int",), ("Int", 27))
+        else:
+            return (("String",), ("String", "hello world"))
+    
+    # Decide what to generate based on depth and bound_vars
+    # Key: We want to use bound_vars sometimes to get variable usage
+    # and create applications sometimes
+    
+    options = 4
+    if len(bound_vars) == 0:
+        # No bound variables - can't use vars or create well-typed apps
+        options = 3
+    
+    i = rng.randrange(0, options)
+    
+    if i == 0:
+        # Boolean literal
+        return (("Bool",), ("Bool", rng.choice([True, False])))
+```
+
+When depth reaches zero, I'm returning simple literals. The branching logic checks if we have any bound variables available—if not, I reduce the options since we can't reference variables or form valid applications. For boolean literals, I'm picking randomly between True and False.
+
+For integers and strings, I generate random values within small ranges. The key improvement comes with lambdas: I need to create a fresh variable name, generate a recursive sample that includes this new variable in the bound set, then wrap it as a function from that parameter type to its return type. This ensures the lambda body actually uses the parameter.
+
+If bound variables exist, I have additional options—I can either reference one of them directly as a variable, or apply a function to an argument. The variable case simply picks a random bound variable and returns its type paired with a Var term. For applications, I need to be more careful: I generate a function term and its argument term separately, checking that the function's input type matches the argument's type to maintain well-typedness.
+
+The approach is to first generate the argument to determine what input type the function needs, then construct a function with that specific input type, ensuring type compatibility in the application.

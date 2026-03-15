@@ -1,0 +1,363 @@
+We need to read the task. There's an existing program that generates types and terms of simply typed lambda calculus. The goal is to improve its performance on certain metrics. The metrics are:
+
+- Combined score to maximize: 10.30 (should be higher)
+- good_ratio: 1.00; tm_sizes_average: 1.38; ty_sizes_average: 1.38; used_vars_proportions_average: 0.00; applied_lambdas_proportions_average: 0.00; unique_subterms_proportions_average: 0.15
+
+We need to rewrite generate_sample function to increase term sizes, type sizes, used_vars_proportions, applied_lambdas_proportions, unique_subterms_proportions, while keeping well-typed terms.
+
+The program is using random generation from a depth=10 param but apparently it's generating minimal sizes (average 1.38). They want a bigger type (size up to 10 nodes) and term up to 100 nodes. So we need a more sophisticated generator that builds larger types and terms while ensuring type correctness.
+
+We need to preserve the interface: generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm] (the depth param is not used). The function signature: generate_sample takes rng and depth (unused?). But original code's generate_sample ignores depth, just uses random to pick from 4 constructors when depth>0 else 3. And returns simple literals or simple lambda wrapping a term.
+
+We need to write a new algorithm that builds larger, well-typed terms.
+
+We need to ensure type correctness: generated term's type matches type annotation.
+
+Simplify: Represent types: Bool, Int, String, Fun (function type with domain and codomain). Terms: literals (Bool, Int, String), variables (Var name), lambda (Lam varName typeAnnotation body), application (App func arg). We'll generate random well-typed terms using a grammar that ensures type correctness.
+
+We must avoid generating ill-typed terms like applying non-function.
+
+We can use a context for typed variables: mapping from variable names to their types.
+
+Define a function that generates a random type of size up to maxTypeSize (10). Then generate a random term of type equal to that type, ensuring we can produce term of that type.
+
+We'll also need to keep track of size of term (count nodes). The goal is to generate large terms (up to 100 nodes). Also want to use variables multiple times (used_vars_proportion). And apply lambdas many times (applied_lambdas_proportion). And have many unique subterms (unique_subterms_proportion). These metrics are likely measured by the test harness.
+
+We need to produce variety and complexity. For generating term size, we need to allow lambda abstractions and applications. However we must ensure final term is well-typed.
+
+We can adopt a method that first generate a type skeleton (like random function types). Then generate term that has that type using a "generation with type-directed approach": given a target type, we can generate a term that evaluates to that type.
+
+We can also produce "typeable" terms that may contain free variables. But they want the term to be closed? Not necessarily. The used_vars_proportion is proportion of variables introduced in lambdas that are used later. That means we need to have lambdas that bind variable names and then use those variable names in the body, possibly multiple times. To maximize used_vars_proportion, we need to generate lambda terms where the bound variable is used in the body at least once. Also the lambda should be applied at some point. That yields applied_lambdas proportion.
+
+The unique_subterms proportion measures the proportion of unique subterms among all subterms that are applications or lambdas. So we want many distinct lambda or application subterms. We can generate many lambda abstractions and applications.
+
+We also need to keep term size manageable: up to 100 nodes.
+
+Our design: generate random types with at most 10 nodes (like nested function types). Then generate a term of that type using a grammar that builds up lambda and application nodes.
+
+Option 1: Use a "normalization by evaluation" approach? Not needed.
+
+Simpler approach: generate random term by recursion on depth (like generating term AST) but ensure type correctness.
+
+One way: generate a term by building a lambda calculus expression using de Bruijn indices or named variables, ensure type consistency via checking.
+
+Simplify: Let's generate type first: pick random type from base types (Bool, Int, String) and optionally create function types by combining domain and codomain types recursively up to max size. Keep track of size (# nodes). Then generate a term of that type using a generic term generator that can produce any type. Use algorithm that builds term by pattern matching on type:
+
+- For base type (Bool, Int, String): generate a literal value of that type (random bool, integer, string). Could also generate a variable reference if variable of that type exists in context.
+
+- For function type (Fun domain codomain): we can generate a lambda abstraction: create a fresh variable name (like x, y, ...) of domain type, then generate body term of codomain type using extended context that includes variable mapping for that variable. Also we can generate an application term: we can generate a function term of function type and an argument term of domain type.
+
+But we must ensure we generate term of exactly target type, not just any. This is similar to "type-directed generation". There are two main routes: either produce lambda abstractions or combine subterms with application.
+
+We can also generate terms that are simply variables (if we have a variable in context with matching type). That's needed for used_vars proportion.
+
+Goal: maximize used_vars proportion - we need to use bound variables in body, so lambda abstractions should have body that references bound variable (or uses it in deeper contexts). Also we need to apply lambda at some point. That's achieved via generating application nodes where the function is a lambda.
+
+We also need to produce multiple distinct subterms. Could generate nested applications and lambdas with distinct variable names each time.
+
+We need to be careful to keep term size moderate (<=100). We'll implement a recursion depth parameter for term generation, say maxTermDepth=6-7 produce size ~ up to 100. But need to calibrate.
+
+We need to maintain random state: random.Random for picking choices.
+
+We need to maintain a global counter for fresh variable names to ensure uniqueness but not too many unique variable names (but they all count toward unique subterms). Could use incremental naming: var0, var1,... We'll generate them as needed.
+
+Implementation plan:
+
+- generate_type(rng, maxSize) returns Ty.
+- generate_term(rng, target_type, context: dict[str, Ty], maxDepth) returns Tm.
+
+But we also need to compute size of term (node count). We'll track node count for possibly limiting recursion.
+
+But also compute used_vars and applied_lambdas metrics? Those are computed by external harness (lc.run). So we just need to produce term that will get high scores. The harness will compute them based on term AST. We need to produce lambda terms that use variables. Also need to produce applications of lambdas.
+
+Thus our generate_term must produce many lambdas that have bodies containing variable references and also have applications.
+
+We need to consider term size: each lambda adds 1 node (Lam) + variable name + type annotation + body node count; each application adds 1 node (App) + left and right subterms. So we can approximate size.
+
+We also want unique subterms: we need to generate many distinct lambda and application subterms. For each lambda we can use unique variable names and perhaps combine with different bodies. For each application we can combine different function and argument combos.
+
+Thus we can produce term with many lambda abstractions each with unique variable name and body (maybe nested). That's likely enough to achieve high unique_subterms proportion.
+
+Used_vars proportion: proportion of variables introduced by lambdas that appear somewhere in term. If we always use bound variable inside its lambda body, used_vars proportion will be 1.0.
+
+Applied_lambdas proportion: proportion of lambda subterms that are applied at least once. So we need to apply some lambdas. In generate_term for function type we can sometimes generate application rather than lambda (i.e., generate a term that is an application of some lambda to an argument). That yields applied lambda.
+
+Goal: maximize applied_lambdas proportion > 0.
+
+Simplify: To guarantee high applied_lambdas, we can generate term that is an application of lambda to argument: we can first generate a lambda and then apply it to something. However we also need final term type to match target type. Let's think about target type: if target type is a function type, we can produce a lambda abstraction that returns some body that may itself be an application of another lambda, etc. That yields nested lambda and applications.
+
+Alternatively we can generate term as a tree where at some point we have an application: e.g., ((λ x: A . x) arg). That's an applied lambda.
+
+Thus for each function type we can at each recursion decide to output either a lambda or an application, with some probability.
+
+But need to ensure final term type matches target_type. Application: given a function type (domain -> codomain), we can generate function term of function type (so it's some function) and argument term of domain type. Then the whole application yields codomain type. But target type is function type itself, we can't apply a function to get a function. But we could generate an application that results in codomain, not target. So we must decide: if target type is base type, we can't apply. Only if target type is function type we can output lambda or variable. However we can also produce a term whose type is function type but that term may be something like λ x . (f x) where f is a variable of function type. That's a lambda that returns an application. That will be a lambda (so not an application of a lambda). But we also could produce a term that is an application of lambda that returns a function: e.g., (λ f . ... ) (λ x . x) where the outer lambda is applied. That outer lambda is applied.
+
+Ok, maybe we need to treat target type being function type, we can produce lambda that returns something of codomain. For applied lambdas proportion, we need at least some lambda being applied somewhere, not necessarily at top-level. So nested inside term can be an application of some lambda.
+
+Thus we could generate term of base type via literal. Then wrap lambdas around to create larger term while eventually return base type? That's similar to original but they'd be not used. But used_vars requires using variable inside lambda, which is satisfied if lambda's body uses the bound variable.
+
+Thus simplest large term: generate a series of nested lambdas each referencing the inner variable, then apply each lambda to some argument of appropriate type. That yields many lambda and application nodes and uses variables.
+
+E.g., produce term: (λ x:Int . (λ y:Int . (x y))) This is lambda applied to argument y? Actually inner lambda returns (x y), which is an application of x to y. That yields application node (App (Var x) (Var y)). That uses x variable (bound in outer lambda) applied to y. Good. Then we can apply outer lambda to some argument: ( (λ x:Int . (λ y:Int . (x y))) arg1 ). That yields outermost application. That yields used_vars proportion high.
+
+We can also add many nested lambdas.
+
+Thus we can generate term recursively:
+
+Define a function generate_term_of_type(target_type, context, maxDepth) that returns term.
+
+If target_type is base: produce literal (maybe variable if available). For base types, we may also produce variable if variable of that type exists in context.
+
+If target_type is function type (Fun domain codomain):
+
+- With probability p, generate a lambda: pick fresh variable name v of domain type, extend context with v -> domain. Then generate body term of codomain type with extended context. Then wrap as lambda: ('Lam', v, domain, body). This yields lambda term.
+
+- With probability q (maybe small), generate an application: we need to produce a term whose type is function type, but the only way to produce function type via application is to have something like (λ f . f) ??? Wait, that's not possible: applying a function yields codomain type, not function type. So to produce a term of function type via application we need to have something like (λ f . λ y . f y) ??? That's still lambda. So application cannot yield function type as result, except if we treat function type as result of an identity lambda returning a function. Actually we could produce a term that is lambda returning lambda. That's lambda.
+
+Thus to get applied lambdas, we need to apply some lambda somewhere inside term, not necessarily at top-level type. For example we can generate lambda for codomain that returns function type and inside its body generate an application that yields the codomain, etc.
+
+Simplify: We can generate term recursively while building from base type upward, using both lambda and application combos.
+
+Approach: Build term from the target type "downwards" by splitting target type into subgoals, building subterms accordingly. At each step we decide to use either a lambda or an application.
+
+Better to think: we want a term that produces given target type; we can treat building from the "bottom": start with some base term (like literal) and wrap with lambdas to adjust type. Each lambda adds an argument to function type. Wrapping a lambda around term changes type from inner type to function type (domain -> inner type). So we can generate term by starting with base term of some base type, then iteratively wrap lambda(s) to build function types, producing term like λ x1: A1 . λ x2: A2 . ... . baseTerm. That yields lambda chain with no applications. That's not using variables (the variables are bound but may not be used inside inner term). But we can include some uses by embedding application of bound variables: e.g., wrap λ x: A . (x)?? That's variable used; but for applied_lambdas proportion, we need some lambda application.
+
+But lambda can be used as function by applying to argument. Could embed an application inside body: e.g., λ x: A . (someFunc x) yields an App node. Then after building this chain, we can apply the outermost lambda to an argument to create App node.
+
+Thus we can produce a term of arbitrary size by generating nested lambda wrappers and optionally applying them.
+
+Given target type, we can build lambda chain to match that type, then apply some of them at top-level maybe to increase size.
+
+Implementation: generate_type_and_term with size target? Let's just generate random type with max size 10, then generate a term of that type with size up to 100 via this approach.
+
+Implementation details:
+
+- Represent type as a tuple: ('Bool',), ('Int',), ('String',), ('Fun', ty1, ty2).
+
+- Represent term: ('Lit', ...) using same constructors but given above representation: ('Bool', bool), etc. But we need to follow alias for terms: they use 'Bool' etc as constructors: e.g., ('Bool', True). Represent variable: ('Var', name). lambda: ('Lam', name, ty, body). application: ('App', func, arg).
+
+Now to generate type:
+
+Define function generate_type(rng, max_nodes) returns Ty.
+
+Pseudo:
+if max_nodes <= 1: choose base type among Bool, Int, String.
+Else: randomly decide to create function type: if rng.random() < 0.5 and max_nodes >= 3: then generate domain = generate_type(rng, some size) and codomain = generate_type(rng, remaining size). Ensure total nodes = 1 + node(domain) + node(codomain) <= max_nodes.
+
+We need to compute node count of type: each tuple counts as node; for Fun, it's 1 node + nodes of domain + codomain.
+
+We can track size.
+
+Alternatively, generate recursively: choose random "type constructors": either base or Fun. If choose base, return simple tuple. If Fun, recursively generate domain type and codomain type.
+
+We'll limit recursion depth to produce size <=10.
+
+Now for term generation:
+
+We'll generate term using context: mapping variable name -> type.
+
+Goal: produce term of target type (Ty). Approach:
+
+We'll generate recursively based on target type:
+
+If target type is base: produce literal or possibly variable if available.
+
+We can also produce variable if we want to use variable. That increases used_vars proportion. But we can also embed variable usage in lambda bodies.
+
+But we also need to keep term size large: we can produce some literal and then wrap with lambda chain, use variables inside.
+
+Better: Use approach that generates a term using "normal forms" building from base up.
+
+Simplify approach: Let's produce term in a way that always uses bound variables at least once, ensuring high used_vars. We'll produce a chain of lambdas where each inner lambda uses the variable bound by previous lambda in an application.
+
+Implementation details: We'll create term via "build bigger term" by first generating a base term of some base type (like integer literal). Then generate function type wrappers that map from some domain types to current type. At each step we choose a domain type that we can generate. We'll maintain a stack of domain types added. The body will use variable from most recent lambda in an application.
+
+Let's think concretely: Suppose we generate type of term as some nested function type: T0 -> T1 -> T2 -> ... -> Tb (where Tb is base). For each function arrow, we can wrap a lambda: λ x_i: T_i . body_i. Then body_i can be something like (x_i)?? No, to use variable we can embed application: App (Var x_i) arg_i where arg_i is some term of appropriate type for the next arrow.
+
+Simplify: Let's generate chain:
+
+- Start with base term: literal (like Int 0) (type T_base). That's our innermost term.
+
+- For each step we want to wrap with lambda of type (domain -> inner type). So we need to decide domain type (maybe base type, like Int). Then we can define body as an application of bound variable (x) to some argument that we will generate later. But the argument should be of domain type? Wait, if we wrap with lambda λ x: A . body, where inner type is maybe B (the result after applying), the body must have type B. The body could be an application: (x arg) where arg has type A? No: x is of type A, so we can't apply x to something unless its type is a function, i.e., x: A -> B. Then x arg yields result of type B. That's good. But we need domain type to be a function if we want to apply x (variable). Alternatively we could apply something else to x, but that would require the something else to be a function whose codomain is type of x? Not needed.
+
+Thus we may need domain types to be function types to allow variable usage in application. However we can also use variable simply as value (i.e., just return it) - that would still count as using variable (the lambda returns the variable). That would still count as used variable? Possibly yes because the variable occurs in the body (as leaf). But they'd likely count usage only if variable appears in term. Indeed it's used.
+
+Simplify: Use lambda that returns the variable itself: λ x: A . x. That's using the variable. That's one use. Also this yields type A -> A.
+
+But we also need applied_lambdas proportion: we need lambda applied at some point. That can be achieved by applying outer lambda to an argument after building chain. E.g., term = ((λ x:Int . x) 5). That's lambda application.
+
+If we have nested lambda chain: λ f . λ x . (f x). This contains lambda f and lambda x; the body contains application (f x). The outer lambda f is not applied (maybe later). We can apply outer lambda to something else later.
+
+Simplify: Let's just generate final term as a series of nested lambda and applications: like ((λ x:Int . (λ y:Int . (x y))) argX) argY? Let's construct: let term = ((λ x:Int . (λ y:Int . (x y))) 5) 6. This yields outer application (App (Lam x ...) 5) then App (that result) 6. That's two applications, each applying a lambda. This yields used_vars proportion: x used in (x y), y used as argument. Both variables are used.
+
+Thus this yields good metrics.
+
+Thus we could generate term as combination of lambdas and applications by building something like:
+
+Define lambda chain of length L, each inner lambda uses previous variable in an application. Then apply each outer lambda to some argument (which may be literal of appropriate type). This yields many application nodes and lambda nodes.
+
+Thus we can generate term with certain number of lambdas and applications. The total nodes will be roughly L lambdas + L applications + ... plus arguments.
+
+Goal: size <=100. If we generate chain of length maybe 10, each lambda adds maybe 2 nodes (Lam and variable and type annotation) + inner body; each application adds App node and two subterms; that might be manageable.
+
+Thus let's design algorithm: generate a random number of layers (maybe random 3-8). For each layer, we need to define domain type for lambda; we can pick base types (Int, Bool, String) as domain type. To keep type consistency, we need each lambda domain = some base type; the inner type also can be function type or base, but easier to use Int.
+
+Simplify: Let's generate domain type for each lambda as Int, so that we can use integer arguments and literals. That's permissible; function type can be Int -> Int, but we can also generate domain = Bool and use booleans.
+
+The final target type could be something like (Int->Int)->Int? The nested chain we generate might produce different types.
+
+Better: Let's generate chain of lambdas with domain types random among base types, and codomain type being either base or next function type, to make nested.
+
+But easier: Let's simply generate type that matches the term we construct. Then we can compute type after building term. That's okay. The harness just checks term matches type we output (type we provide in generate_sample). We must ensure term's type equals type we output. That's crucial.
+
+Thus we need to construct term, compute its type, then output that type. Or we can start with target type and generate term accordingly.
+
+Simplify: Generate term from scratch with random choices, then compute its type via type inference (or just track while building). But we need to supply type to generate_sample returning both Ty and Tm. We can compute type after constructing term by inferring from term's annotation.
+
+Simpler approach: Use type generation after term, but we must ensure they match. Could do simultaneously: build term with known target type as we construct.
+
+One approach: Use the "type-directed generation" described earlier: given a type, we can produce a term that has that type.
+
+We can generate type first with generate_type (size up to 10). Then using target type, generate term. That ensures type matching.
+
+Thus pipeline: first generate_type (maybe using recursion), then generate_term(target_type). Then ensure term has that type. That's easy.
+
+Thus we need to implement generate_type that yields random type within node limit. Then generate_term_of_type.
+
+Let's design generate_type: produce random type in roughly up to 10 nodes. Use recursion with max_nodes.
+
+We'll also keep track of the "base types" used: Bool, Int, String. Let's treat them as base. For functions we can nest: e.g., Fun (Int) (Fun (Bool) (String)). That yields size 1 + size(domain) + size(codomain). We'll generate recursively until size approx max_nodes (maybe up to 10). Use random decisions.
+
+Now for term generation: Let's implement generate_term_of_type(ty, context, max_nodes). We'll use recursion, generating subterms of appropriate types.
+
+We need to manage size. The term size is number of nodes. We'll approximate using recursion depth limit. We'll include a "budget" like max_nodes - perhaps use remaining nodes to decide whether to add more complexity.
+
+We also need to be able to generate variables that refer to those bound in context. The context is mapping variable name to type. This context is built as we add lambda wrappers.
+
+We'll generate term based on type:
+
+Case 1: ty is base type (Bool, Int, String). Then we can:
+
+- Option A: If there exists variable in context with that type, we can use variable reference. That uses variable. But to maximize used_vars, we want at least one such variable to be used. So we can occasionally pick variable if available.
+
+- Option B: Generate a literal. For Bool: random boolean; Int: random integer (maybe within small range); String: random string.
+
+We can also embed application if we want to apply variable, but that would produce type not base, unless we have something like x arg where x is a function type. But that results in codomain type. Since target is base, not possible. So base case must be literal or variable.
+
+We'll give probability to pick variable if context has that type, to increase used_vars. But we need to ensure we also use that variable in context for later lambda bodies.
+
+Case 2: ty is function type (Fun domain codomain). Then we have two options:
+
+- Generate a lambda: choose a fresh variable name v with domain type. Extend context. Then generate body term of codomain type in extended context. Then return lambda term.
+
+- Generate an application? Wait we need resulting type to be function type, not codomain. Applying a function yields codomain type. So we cannot produce application to get function type directly. However we could generate something like a lambda that returns another function: but that is still lambda, not application.
+
+Thus for function type we must generate a lambda term (or variable if variable of that type exists). Could also pick a variable that is bound earlier with that function type. That's possible: if context contains variable of type function, we can just use that variable. That also counts as variable usage.
+
+Thus we can incorporate these options.
+
+Now, to maximize applied_lambdas proportion, we want some lambda applied to argument somewhere, i.e., term of shape (App (Lam ...) arg). This shape is produced when we choose to generate an application node where the function subterm is a lambda. This can happen when we are generating a term for a function type: but earlier we concluded we cannot get function type from application directly. However, application nodes can appear within the body of lambda as subterm, e.g., lambda returns an application; that counts as application inside term. That's fine.
+
+Thus algorithm can include recursion where we may generate application nodes in generating term for codomain type of a lambda, like body can be an application.
+
+Now to maximize unique subterms, we need many distinct lambda and application nodes. Using distinct variable names ensures each lambda is distinct. Using different argument terms also yields distinct applications.
+
+Thus our term generation algorithm must generate many distinct subterms. Use randomness to generate distinct sub-terms each time, using fresh variable names each time, and generate random literals each time.
+
+Implementation details for generate_term:
+
+We'll define a class or functions with state: rng, context, max_nodes, maybe "remaining_nodes" to track. At each recursion, we allocate node counts.
+
+But simpler: Use depth parameter: max depth of recursion for term generation. Each step reduces remaining_nodes by something like 1 for each new node. When remaining_nodes <= small threshold, we fallback to base case.
+
+Alternatively, we can use recursion limiting by depth like maxDepth: number of lambda layers to generate. Might be easier: Use generate_term_of_type with "size budget".
+
+Define a function generate_term_of_type(ty, context, max_nodes). It will compute possible ways to produce term within size budget.
+
+We need to decide when to create lambda vs variable vs literal.
+
+When ty is base: we can choose variable or literal. The variable uses no extra node besides Var node (counts as node). The literal also counts as node.
+
+When ty is function type: we can create lambda that adds one Lam node plus body. But the lambda also uses variable name and type annotation (these are not nodes? They are part of tuple, but likely counted as nodes? In AST representation, each tuple is a node. For lambda, we have tuple with 4 elements: 'Lam', name, type, body. That's one node. The name and type are sub-nodes: type is a tuple representing type. So they contribute to node count. But they are part of outer tuple anyway.
+
+Thus each lambda introduces at least 1 node (the tuple). So to approximate node count we can count each tuple as a node. So we can track approximate size by counting each term tuple created. That's okay.
+
+Given difficulty of exact count, we can approximate: each lambda adds ~ (size of type domain + size of body + something). But we can just use recursion depth as approximate. The external harness uses node count based on tuple count; maybe each tuple counts. We'll approximate with depth.
+
+Thus we can set recursion depth to a certain value (like 6 or 7) to produce size around maybe 50-100. We can calibrate manually.
+
+We need also to keep within max term size of 100 nodes. Hard to know exact but we can set max depth accordingly.
+
+Our algorithm can generate type first, then generate term using depth maybe ~ min(10, some bound). We also need to handle scenario where the type is function type and we want to apply lambdas.
+
+Better to construct a function that builds term using type and maybe a "budget" param representing number of nodes we can allocate.
+
+Simplify: Instead of trying to be too precise, we can generate fairly big terms but not too huge (like 60 nodes). That likely yields good scores.
+
+The key is we must ensure type correctness. We'll use type-directed generation.
+
+Implementation Plan:
+
+1. Define helper functions:
+
+- new_var_name(counter): produce var0, var1, ... each time increment.
+
+- generate_type(rng, max_nodes): returns Ty.
+
+- generate_term(rng, ty, context, max_nodes): returns Tm.
+
+2. compute size of type: we can compute number of tuple nodes by recursing.
+
+3. In generate_term, we use recursion with max_nodes parameter to limit complexity.
+
+We'll also need to compute node counts for term. We'll approximate using "budget" where each call reduces budget by something. But it's complicated.
+
+Instead we can generate term of size approximate by recursion depth parameter that we choose based on the target type's "size". For type size up to maybe 10 nodes, we can set term depth as something like type_size * 5 maybe.
+
+Given constraints: maximum allowed term size is 100 nodes. We don't have direct measure of node count; but we can approximate using depth.
+
+Simpler: We'll generate term as nested lambda chain of length L (like between 3 and 8). This yields size roughly L * (some). That will produce many nodes but probably within 100. Then we apply each lambda to argument at top-level maybe. That's fine.
+
+We can also vary domain types.
+
+Thus a simpler algorithm: produce term by constructing lambda chain as described. We'll compute its type after generation, and then output that type.
+
+Simplify: We'll generate the term first using lambda chain approach, then compute its type using a simple type inference algorithm: we can compute type of term using environment mapping variable names to types. Since we built the term with type annotations on lambdas, we can compute the type by evaluating type of term using those annotations.
+
+But easier: We know exactly the type we built: the outermost lambda's type is domain -> (domain -> ... -> base). This is a curried function type. We can compute type by iterating over the chain: each lambda introduces function type: domain -> innerType. So final type is nested Fun nodes. For chain of length n with domain_i each base type and final inner base type: the type is Fun(domain1, Fun(domain2, ... Fun(domain_n, base)...). That is nested function type.
+
+Thus we can compute the type by building nested Fun accordingly.
+
+So we can produce term like:
+
+Start with base term literal of type base (choose random base type B0). Then create lambda chain: for i in reversed(range(n)): choose domain type Di; wrap with lambda that returns body = previous body (or uses variable for inner part). But also we can embed application inside body to use previous variable in body. Implementation: we need each lambda's body to maybe apply its bound variable to argument, then result passes to inner.
+
+Simplify: Build chain with each lambda binding variable v_i of type D_i, and body = application of variable v_i to some term of type D_i? Wait to apply v_i, we need v_i's type to be function, not base. So we can instead let each lambda just return the variable v_i, which is allowed: λ v_i : D_i . v_i. That yields identity for each layer. That's simple. That uses the variable, yields variable usage. But does not contain application; we can apply outer lambda at final stage.
+
+But to increase applied_lambdas proportion, we can apply outer lambda(s) to arguments at top-level: after building chain, we can apply outermost lambda to an argument and maybe chain more. That yields application nodes.
+
+Thus we can generate term: ((...((λ v1: D1 . λ v2: D2 . ... λ vn: Dn . base) arg1) arg2) ... argn). That's nested applications. That's basically applying each lambda to an argument. This yields used variable usage (the variables are used as identity, but they appear in term). The applied lambdas proportion is high because each lambda is applied.
+
+Unique subterms: each lambda and each application is distinct due to distinct variable names and arguments.
+
+Thus this seems a good approach.
+
+We'll implement:
+
+- Determine number of layers L: random integer between maybe 3 and 8 (ensuring term size is not too large). We can also randomize domain types: choose random base types for each domain (Bool, Int, String). Use random selection.
+
+- Build base term: for base type B0: generate literal with random value. We'll need B0 to be some base type: either Bool, Int, String. We can random choose.
+
+- Then for each layer i from 1 to L (outermost to innermost? Let's think: we want final type to be nested functions: D1 -> D2 -> ... -> Dn -> B0. We can generate by folding: start with base term; then for each domain D_i, wrap as lambda: λ v_i : D_i . previous_body. At the end we have outermost lambda with type D1 -> (D2 -> ... -> B0). That's nested. Then we apply each lambda to a random argument of appropriate type (matching domain). That yields application chain.
+
+We also need arguments to be terms of respective domain types. So for each D_i we need to generate argument term of that type. For domain types being base types, we can generate literal of that type (e.g., for Int, integer; for Bool, boolean; for String). That's appropriate. Could also generate variable reference if variable in context of appropriate type, but easier to use literals.
+
+Thus we can produce argument literals.
+
+One nuance: When applying outermost lambda, we need argument of type D1. We'll generate that argument as literal of type D1. Then after applying we get term of type D2 -> ... -> B0. Then apply next lambda, etc.
+
+Thus final term is nested application: (( ( ( (λ v1: D1 . λ v2: D2 . ... λ vn: Dn . base) arg1) arg2) ... argn). That's one application after each lambda, resulting in total L applications.
+
+We also need the overall term size maybe around L*some nodes. Each lambda adds node; each argument literal adds node; each application adds node. Roughly 3L nodes? That's okay.
+
+We

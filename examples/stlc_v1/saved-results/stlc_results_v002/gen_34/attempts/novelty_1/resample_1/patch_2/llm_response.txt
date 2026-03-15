@@ -1,0 +1,43 @@
+The user wants me to provide a new program that improves on the current one. Let me analyze the metrics again and create a novel approach.
+
+Current program metrics:
+- good_ratio: 1.00
+- used_vars_proportions_average: 0.00
+- applied_lambdas_proportions_average: 0.00
+- unique_subterms_proportions_average: 0.14
+
+The key insight is that the current program:
+1. Creates literals (Bool, Int, String)
+2. Creates lambdas but NEVER uses Var to reference the bound variable
+3. Never creates App terms
+
+I need to carefully introduce Var and App while maintaining good_ratio as high as possible.
+
+Let me think about a type-safe approach:
+
+1. For Var usage: When we create a lambda, we can either:
+   - Return the bound variable (identity function)
+   - Return a more complex term that uses the variable
+
+2. For App: We need to apply a function to an argument, which requires type matching.
+
+Let me design a new approach that:
+1. Uses a depth parameter to control recursion
+2. At each step, decides whether to:
+   - Return a literal
+   - Create a lambda that uses its variable (identity or application)
+   - Apply a function to an argument
+
+The key is to make sure types match. Let me think about this more carefully.
+
+When we have a lambda `("Lam", "x", ty, body)`:
+- The type of the lambda is `("Fun", ty, body_type)`
+- The variable "x" has type `ty`
+
+For a Var to be well-typed, we need to track what variables are in scope.
+
+For an App to be well-typed:
+- `("App", func, arg)` requires func to have type `FunTy arg_ty result_ty` and arg to have type `arg_ty`
+- The result has type `result_ty`
+
+Let me create a more sophisticated generator that tracks types properly.

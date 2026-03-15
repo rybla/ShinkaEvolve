@@ -1,0 +1,23 @@
+Let me analyze the current program and the prior programs to understand what improvements can be made.
+
+Current program analysis:
+- Score: 10.28
+- good_ratio: 1.00 (perfect - all samples are type-correct)
+- tm_sizes_average: 1.33
+- ty_sizes_average: 1.33
+- used_vars_proportions_average: 0.00 (no variables are used!)
+- applied_lambdas_proportions_average: 0.00 (no lambda applications!)
+- unique_subterms_proportions_average: 0.14
+
+The key insight is that the current program:
+1. Only generates literals and lambdas (no applications)
+2. Never uses variables (always returns the inner term in lambdas, not the bound variable)
+3. Has a simple recursive structure that doesn't use the depth parameter effectively
+
+I need to design a new program that:
+1. Tracks bound variables
+2. Uses variables from bound_vars with some probability
+3. Has type-safe application
+4. Uses probabilistic termination
+
+Let me write the new program:

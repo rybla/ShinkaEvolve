@@ -1,0 +1,31 @@
+The previous edit was not applied. Let me try again with the exact format needed.
+
+I need to make sure I'm using the exact SEARCH/REPLACE format as required. Let me look at the current program block more carefully and propose a complete replacement of the generate_sample function.
+
+The current code in EVOLVE-BLOCK-START to EVOLVE-BLOCK-END is:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+I need to replace this with a more sophisticated version that:
+1. Tracks bound variables with a `bound_vars` parameter
+2. Uses probabilistic variable selection
+3. Has unique variable names
+4. Includes App case with type checking
+
+Let me make sure I'm doing this correctly.

@@ -1,0 +1,46 @@
+
+Let me look at the current code more carefully and understand what's happening. The error says "No changes applied" - I think I need to actually provide a proper diff in my response.
+
+Let me analyze the current code:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+The issue is clear: when creating a lambda, the body `tm` is generated fresh without any reference to the bound variable `"x"`.
+
+I need to modify this so that:
+1. The function can track available variables
+2. Sometimes the lambda body can use the bound variable (as a Var)
+3. Maintain type correctness (good_ratio = 1.00)
+
+Let me create a proper edit that adds a parameter to track available variables:
+
+The key insight is:
+- When we create `("Lam", "x", ("Int",), tm)`, we know `"x"` is in scope
+- We should sometimes return `("Var", "x")` as the body instead of generating a fresh term
+
+Here's my plan:
+1. Add an optional `available_vars` parameter to track bound variables
+2. At each step, occasionally return a variable from available_vars instead of generating fresh
+
+
+3. Make sure the returned variable has the correct type (this is tricky!)
+
+Actually, the simplest approach is: when creating a lambda, sometimes return the bound variable directly as the body. This maintains type correctness because if we have `Lam "x" : Int -> Int`, then the body must have type Int, and `Var "x"` has type Int.
+
+The key is to occasionally return the bound variable directly as the lambda body rather than generating a fresh term. This preserves type correctness since the variable has the same type as the parameter.

@@ -1,0 +1,42 @@
+Let me analyze the current program and the performance metrics to understand what needs to be improved.
+
+Current performance:
+- Combined score: 10.30
+- good_ratio: 1.00 (perfect - all generated terms are type-correct)
+- tm_sizes_average: 1.38 (small terms)
+- ty_sizes_average: 1.38 (small types)
+- used_vars_proportions_average: 0.00 (NO variables are used!)
+- applied_lambdas_proportions_average: 0.00 (NO lambdas are applied!)
+- unique_subterms_proportions_average: 0.15 (low uniqueness)
+
+The key insight from the analysis is:
+1. The current algorithm creates lambdas but never uses `Var` to reference the bound variable
+2. It never creates `App` terms (function applications)
+3. It creates repetitive nested structures
+
+The problem is in the `generate_sample` function:
+- When `i == 3`, it creates a lambda but the body `tm` is generated without using the variable "x"
+- It never creates `App` terms
+- It never decrements depth, so it could potentially generate infinite/deep structures
+
+To improve, I need to:
+1. **Use variables**: When creating a lambda, the body should sometimes use `Var` to reference the bound variable
+2. **Apply lambdas**: Need to create `App` terms to apply functions to arguments
+3. **Unique subterms**: Need to generate different branches rather than always nesting the same structure
+
+Let me think about how to modify the code:
+
+1. Add a chance to use the variable "x" in the lambda body (using `Var`)
+2. Add a chance to create an `App` term (apply a function to an argument)
+3. Decrement depth to control recursion
+4. Add more variety in the generated terms
+
+Here's my plan:
+- When depth > 0, allow creating lambdas and apps
+
+
+- When creating a lambda, sometimes use `Var` instead of recursing further
+- When creating an app, apply a lambda to an argument
+- Decrement depth to prevent infinite recursion
+
+The main issue is that the current code always wraps the same recursive call in a lambda without actually using the bound variable. I need to introduce `Var` usage and `App` construction while maintaining type correctness. The simplest approach is to add a case that creates a lambda body using `Var` to reference the bound variable, and another case that applies a lambda to an argument.

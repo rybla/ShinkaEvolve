@@ -1,0 +1,107 @@
+Looking at the performance metrics, the current program has:
+- good_ratio: 1.00 (perfect - all generated terms are type-correct)
+- tm_sizes_average: 1.34 (terms are very small)
+- used_vars_proportions_average: 0.00 (no variables are used!)
+- applied_lambdas_proportions_average: 0.00 (no lambdas are applied!)
+- unique_subterms_proportions_average: 0.14 (very low uniqueness)
+
+The combined score is 10.28.
+
+The key issue is that the current algorithm:
+1. Creates lambdas but never uses `Var` to reference the bound variable
+2. Never creates `App` terms to apply functions to arguments
+3. Creates very repetitive nested structures
+
+The prompt mentions that:
+- "A generated term is better the more it uses its variables"
+- "A generated term is better the more it applies its lambdas to arguments"  
+- "A generated term is better the more unique sub-terms it has"
+
+But these aren't being achieved! Let me think about how to fix this.
+
+The current algorithm for generating lambdas is:
+```python
+else:
+    ty, tm = generate_sample(rng)
+    return (
+        ("Fun", ("Int",), ty),
+        ("Lam", "x", ("Int",), tm),
+    )
+```
+
+This always creates:
+- A lambda with bound variable "x"
+- But the body `tm` is generated recursively WITHOUT using the variable "x"
+
+To fix this, I need to:
+1. When generating a lambda, sometimes use `Var` to reference the bound variable
+2. Generate `App` terms to apply functions to arguments
+3. Vary the generated structures more
+
+Let me think about how to do this in a type-safe way:
+
+For using variables:
+- When we generate a `Lam`, the body could either be:
+  a) A recursive call to generate a term (current behavior - doesn't use the variable)
+  b) A `Var` referencing the bound variable "x"
+
+For applying lambdas:
+- We could generate `App` terms by having two recursive calls and combining them
+
+For uniqueness:
+- Use different base types and values
+- Use different variable names
+- Randomize which branch is taken more
+
+Let me draft an improved algorithm:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    # Base case: generate literals when depth is low
+    if depth <= 0:
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", True))
+        elif i == 1:
+            return (("Int",), ("Int", 27))
+        else:
+            return (("String",), ("String", "hello world"))
+    
+    # At deeper levels, introduce variables and applications
+    i = rng.randrange(0, 6)
+    
+    # Use a variable reference
+    if i == 0:
+        return (("Int",), ("Var", "x"))
+    
+    # Apply a function to an argument
+    elif i == 1:
+        func_ty, func_tm = generate_sample(rng, depth - 1)
+        arg_ty, arg_tm = generate_sample(rng, depth - 1)
+        return (("Fun", arg_ty, func_ty), ("App", func_tm, arg_tm))
+    
+    # Create a lambda that uses its variable
+    elif i == 2:
+        body_ty, body_tm = generate_sample(rng, depth - 1)
+        return (("Fun", ("Int",), body_ty), ("Lam", "x", ("Int",), body_tm))
+    
+    # Base literals
+    else:
+        j = rng.randrange(0, 3)
+        if j == 0:
+            return (("Bool",), ("Bool", True))
+        elif j == 1:
+            return (("Int",), ("Int", 27))
+        else:
+            return (("String",), ("String", "hello world"))
+```
+
+The key improvements are:
+1. Using `Var` to reference bound variables
+2. Generating `App` terms that apply functions to arguments
+3. Varying the generated structures across different branches
+4. Using randomness to select between different construction paths for better diversity in the generated terms
+
+However, there's a critical problem: when generating a lambda like `("Lam", "x", ("Int",), body_tm)`, the body needs to reference "x" to be meaningful, otherwise it's just an unused variable. But generating a type-correct `Var` term requires knowing what type "x" has, which creates a circular dependency.
+
+A simpler strategy would be to handle this by having the lambda generation directly construct a `Var` reference to the bound variable, ensuring the body properly uses what was bound in the lambda's parameter.

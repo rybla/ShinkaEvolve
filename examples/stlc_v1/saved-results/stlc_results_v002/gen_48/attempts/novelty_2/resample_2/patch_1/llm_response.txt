@@ -1,0 +1,40 @@
+Looking at the current program and its performance metrics:
+
+- Combined score: 10.88
+- good_ratio: 0.99 (very high, already good)
+- tm_sizes_average: 4.34 (term sizes)
+- ty_sizes_average: 1.34 (type sizes)
+- used_vars_proportions_average: 0.18 (variable usage - could be improved)
+- applied_lambdas_proportions_average: 0.18 (application usage - could be improved)
+- unique_subterms_proportions_average: 0.39 (could be improved)
+
+The current program already uses:
+1. `bound_vars` to track bound variables
+2. Probabilistic variable selection with `rng.random() < 0.35`
+3. Unique variable naming with `f"x{rng.randint(0, 100)}"`
+4. Type-safe application (checks if variable type is "Fun" before using as function)
+
+Looking at the insights from the analysis:
+- The best programs use type-safe application with fallback
+- Context-aware variable injection via bound_vars
+- Fresh variable generation with f-strings
+- Probabilistic termination
+
+The key improvement I can suggest is **Type-Filtered Variable Selection**: Instead of randomly picking any variable from `bound_vars`, filter the list to only include variables that match the `target_type` requested by the current recursive branch.
+
+Currently, when selecting a variable, the code does:
+```python
+if bound_vars and rng.random() < 0.35:
+    var_name, var_type = rng.choice(bound_vars)
+    return (var_type, ("Var", var_name))
+```
+
+This picks a random variable without considering what type is needed. This means most of the time, the randomly chosen variable won't be of the right type, and we'll fall back to literals.
+
+The improvement is to:
+1. Filter `bound_vars` to only include variables of the type we need
+
+
+2. Only select a variable if there's a type-compatible one available
+
+This should significantly boost `used_vars_proportions_average` since we're no longer wasting variable selection attempts on type mismatches. I need to modify the variable selection logic to filter by type compatibility before choosing, ensuring we only return variables that match what the current context expects.

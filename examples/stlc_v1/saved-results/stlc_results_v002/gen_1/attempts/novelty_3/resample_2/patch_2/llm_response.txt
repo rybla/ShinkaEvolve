@@ -1,0 +1,135 @@
+Let me analyze the current implementation and the requirements more carefully.
+
+The current implementation:
+1. Uses simple random selection from 4 options (Bool, Int, String, Fun)
+2. Only generates literals or simple lambdas with Int type annotation
+3. Very small term sizes (1.38 average, max 100)
+4. Zero usage of variables (used_vars_proportions_average: 0.00)
+5. Zero applied lambdas (applied_lambdas_proportions_average: 0.00)
+6. Low unique subterms (0.15)
+
+The requirements:
+- Generate types with max 10 nodes
+- Generate terms with max 100 nodes
+- Maximize usage of variables (from lambdas)
+- Maximize lambda applications
+- Maximize unique subterms
+
+I need to design a completely different algorithm. Let me think about what would work better:
+
+1. **Type generation**: Generate larger types with up to 10 nodes
+2. **Term generation**: 
+   - Track available variables (from lambda bindings)
+   - Generate terms that USE those variables
+   - Apply lambdas to arguments
+   - Build up more complex terms
+
+The key insight is that the current implementation doesn't track variables at all - it just generates random structures without considering what variables are in scope.
+
+My new approach:
+1. Generate a type first (with size target)
+2. Generate a term that has that specific type
+3. Track variables in scope with their types
+4. Use variables from scope in applications
+5. Build larger terms by composing smaller ones
+
+Let me implement this:
+
+```python
+from typing import Literal, Tuple, List
+import random
+
+type Ty = BoolTy | IntTy | StringTy | FunTy
+type BoolTy = Tuple[Literal["Bool"]]
+type IntTy = Tuple[Literal["Int"]]
+type StringTy = Tuple[Literal["String"]]
+
+
+type FunTy = Tuple[Literal["Fun"], Ty, Ty]
+
+type Tm = LitTm | VarTm | LamTm | AppTm
+type LitTm = (
+    Tuple[Literal["Bool"], bool]
+    | Tuple[Literal["Int"], int]
+    | Tuple[Literal["String"], str]
+)
+type VarTm = Tuple[Literal["Var"], str]
+type LamTm = Tuple[Literal["Lam"], str, Ty, Tm]
+type AppTm = Tuple[Literal["App"], Tm, Tm]
+
+# Context: list of (variable_name, type) pairs
+type Context = List[Tuple[str, Ty]]
+
+def generate_type(rng: random.Random, size: int) -> Ty:
+    """Generate a random type with approximately the given size."""
+    if size <= 1:
+        # Base types
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return ("Bool",)
+        elif i == 1:
+            return ("Int",)
+        else:
+            return ("String",)
+    else:
+        # Function type: split size between domain and codomain
+        left_size = rng.randrange(1, size)
+        right_size = size - left_size
+        domain = generate_type(rng, left_size)
+        codomain = generate_type(rng, right_size)
+        return ("Fun", domain, codomain)
+
+def generate_term(rng: random.Random, ctx: Context, target_type: Ty, size: int) -> Tm:
+    """Generate a term of the given type with approximately the given size."""
+    if size <= 1:
+        # Generate a variable or literal based on target type
+        if ctx and rng.random() < 0.5:
+            # Use a variable from context
+            var_name, var_type = rng.choice(ctx)
+            if var_type == target_type:
+                return ("Var", var_name)
+        # Generate a literal matching the target type
+        if target_type == ("Bool",):
+            return ("Bool", rng.choice([True, False]))
+        elif target_type == ("Int",):
+            return ("Int", rng.randint(0, 100))
+        elif target_type == ("String",):
+            return ("String", rng.choice(["a", "b", "c"]))
+    else:
+        # Generate a lambda or application
+        if rng.random() < 0.5:
+            # Lambda: introduce new variable
+            var_name = f"x{rng.randint(0, 1000)}"
+            var_type = generate_type(rng, size // 2)
+            body = generate_term(rng, ctx + [(var_name, var_type)], target_type, size // 2)
+            return ("Lam", var_name, var_type, body)
+        else:
+            # Application: combine two terms
+            func_type = ("Fun", generate_type(rng, size // 2), target_type)
+            func = generate_term(rng, ctx, func_type, size // 2)
+            arg = generate_term(rng, ctx, func_type[1], size // 2)
+            return ("App", func, arg)
+
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """Generate a random type and term sample."""
+    ty = generate_type(rng, depth)
+    tm = generate_term(rng, [], ty, depth)
+    return ty, tm
+
+I see the current implementation has significant limitations in generating complex lambda calculus structures. The approach needs fundamental restructuring to create more sophisticated type and term generation. 
+
+The key challenges involve creating a more dynamic generation process that can:
+- Construct more intricate type hierarchies
+- Generate lambda terms with meaningful variable usage
+- Ensure type consistency throughout the generation
+- Build more complex term structures beyond simple literals
+
+I'll need a recursive, context-aware generation strategy that tracks variable scopes and allows for more nuanced term construction. This requires rethinking the entire generation mechanism to support more complex lambda calculus representations.
+
+The new approach will focus on:
+- Intelligent type generation
+- Context-sensitive term creation
+- Meaningful variable binding
+- Sophisticated term composition
+
+I'll generate a type first, then carefully construct a term that matches that type, ensuring each generated structure has semantic depth and complexity.

@@ -1,0 +1,10 @@
+
+The user is saying the previous edit was not successful and no changes were applied. I need to propose a new edit to improve the program.
+
+Looking at the current program and the analysis I provided, I need to make targeted changes to the `generate_sample` function to:
+1. Decrement depth to control recursion
+2. Use unique variable names
+3. Sometimes use the bound variable in the lambda body
+4. Maintain high good_ratio
+
+Let me write the SEARCH/REPLACE block correctly.

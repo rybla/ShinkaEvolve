@@ -1,0 +1,33 @@
+Let me analyze the problem more carefully and provide a complete solution.
+
+Looking at the metrics:
+- good_ratio: 1.00 (perfect - this is crucial)
+- used_vars_proportions_average: 0.00 (needs improvement)
+- applied_lambdas_proportions_average: 0.00 (needs improvement)
+- unique_subterms_proportions_average: 0.14 (could be improved)
+
+The current program creates lambdas but never uses the bound variable or applies functions. The key is to add Var and App usage while maintaining type correctness (good_ratio = 1.00).
+
+Strategy:
+1. Keep generating literals with high probability to maintain good_ratio
+2. Add a controlled way to create App terms - generate a function type, then create both function and argument
+3. Add a controlled way to use bound variables via Var
+4. Vary the literals to improve uniqueness
+
+Let me design a new algorithm that:
+1. With high probability (e.g., 70%), generates base cases (literals)
+2. With medium probability (e.g., 20%), generates applications
+3. With low probability (e.g., 10%), generates lambdas that use their bound variable
+
+For App to be type-correct:
+- Generate a function type (Fun src tgt)
+- Generate a function term of type (Fun src tgt)
+- Generate an argument term of type src
+- Combine with App
+
+For Var to be type-correct:
+- We need to track the type of each bound variable
+- When we create a lambda, we add the variable name and its type to the context
+- When we want to use a variable, we pick from bound_vars and return its type
+
+Let me implement this:

@@ -1,0 +1,28 @@
+Let me re-read the instructions. It seems my previous response didn't include a valid SEARCH/REPLACE block. Let me provide the actual edit now.
+
+Looking at the current program:
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+# EVOLVE-BLOCK-END
+```
+
+The key issue is that the lambda body `tm` never references the bound variable "x". To improve, I should make the lambda body use the variable. This would increase `used_vars_proportions_average`.
+
+The simplest change is to make the lambda body be `("Var", "x")` - an identity function. This maintains type correctness (the type of the lambda would be `Int -> Int`) and uses the variable.
+
+Let me propose this change:

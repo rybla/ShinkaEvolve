@@ -1,0 +1,36 @@
+Let me analyze the current program and the performance metrics to understand what needs to be improved.
+
+Current performance metrics:
+- Combined score to maximize: 10.30
+- good_ratio: 1.00 (all generated samples are well-typed)
+- tm_sizes_average: 1.38 (very small terms)
+- ty_sizes_average: 1.38 (very small types)
+- used_vars_proportions_average: 0.00 (no variables are being used!)
+- applied_lambdas_proportions_average: 0.00 (no lambdas are being applied!)
+- unique_subterms_proportions_average: 0.15 (low uniqueness)
+
+Looking at the current `generate_sample` function:
+1. It only generates literals (Bool, Int, String) and simple lambdas with Int as the domain
+2. It never generates variables or applications
+3. It never uses the variables it introduces
+4. The types are very small (max depth seems limited)
+
+The key issues based on the metrics:
+1. `tm_sizes_average: 1.38` - terms are too small (max is 100)
+2. `ty_sizes_average: 1.38` - types are too small (max is 10)
+3. `used_vars_proportions_average: 0.00` - variables introduced by lambdas are never used
+4. `applied_lambdas_proportions_average: 0.00` - lambdas are never applied to arguments
+5. `unique_subterms_proportions_average: 0.15` - low uniqueness
+
+To improve, I need to:
+1. Generate larger types (up to 10 nodes)
+2. Generate larger terms (up to 100 nodes)
+3. Actually use variables that are introduced by lambdas
+4. Apply lambdas to arguments
+5. Have more unique subterms
+
+Let me design a better generator:
+
+1. 
+
+I should build a type generator that creates larger function types by recursively composing simpler types, and a term generator that produces more complex lambda expressions with variables and applications. The term generator needs to track bound variables so it can reference them appropriately, and it should construct larger terms by applying lambdas to arguments and combining multiple subterms.

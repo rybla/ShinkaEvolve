@@ -1,0 +1,29 @@
+Let me analyze the prior programs and understand what patterns lead to better performance:
+
+1. **First program (Score: 8.73)**: Uses depth parameter, but has poor good_ratio (0.82)
+2. **Second program (Score: 10.26)**: Uses context (ctx) for variables, has good_ratio=1.00
+3. **Third-Fifth programs (Score: 10.26-10.30)**: Simple recursive without depth decrement, good_ratio=1.00
+
+Looking at the best performing programs from the system prompt:
+- **Program 1 (Score: 10.8819)**: Uses `bound_vars`, probabilistic variable selection `rng.random() < 0.35`, unique variable names `f"x{rng.randint(0, 100)}"`, type-safe application
+- **Program 2 (Score: 10.5488)**: Uses `bound_vars`, similar patterns
+
+Key insights:
+1. **Type-safe application**: Check if `func_type[0] == "Fun"` before applying
+2. **Context-aware variable injection**: Use `bound_vars` to track variables in scope
+3. **Fresh variable generation**: Use unique variable names to avoid conflicts
+4. **Probabilistic termination**: Use both depth and random chance
+
+Current program problems:
+- No variables (used_vars_proportions_average: 0.00)
+- No applications (applied_lambdas_proportions_average: 0.00)
+- Simple recursion without proper depth control
+- No type checking for App terms
+
+To improve, I need to:
+1. Add context/bound_vars tracking for variables
+2. Add App term generation with type checking
+3. Use proper depth decrementing
+4. Generate unique variable names
+
+Let me craft an improved version:

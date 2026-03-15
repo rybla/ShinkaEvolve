@@ -1,0 +1,46 @@
+Let me analyze the current program and the prior programs to understand what improvements can be made.
+
+Current program:
+- Score: 10.31
+- good_ratio: 1.00 (perfect - all generated terms are type-correct)
+- tm_sizes_average: 1.41
+- ty_sizes_average: 1.41
+- used_vars_proportions_average: 0.00 (no variables used!)
+- applied_lambdas_proportions_average: 0.00 (no applications!)
+- unique_subterms_proportions_average: 0.16
+
+The key insight from the system prompt analysis is:
+1. The best programs (score ~10.88) used `bound_vars` to track bound variables
+2. They used `rng.random() < 0.35` for probabilistic variable selection
+3. They used unique variable names with `f"x{rng.randint(0, 100)}"`
+4. They had type-safe application: checks `func_type[0] == "Fun"` before applying
+5. They used hybrid termination: `depth <= 0 or (not bound_vars and rng.random() < 0.5)`
+
+Looking at the current program:
+- It only generates literals and simple lambdas
+- No variables are used (used_vars_proportions_average: 0.00)
+- No applications (applied_lambdas_proportions_average: 0.00)
+- It generates nested lambdas like `("Lam", "x", ("Int",), tm)` but never uses `Var` terms
+
+The problem is clear: the current program creates lambdas but never:
+1. Uses the bound variables (no Var terms)
+2. Applies functions (no App terms)
+
+The current code has:
+- `("Lam", "x", ("Int",), tm)` - creates a lambda but never references the variable
+
+To improve, I need to:
+1. Add support for Var terms - when we have bound variables, we should be able to return them
+
+
+2. Add support for App terms - apply functions to arguments
+3. Implement type-safe application with proper type checking
+
+The issue is that the current recursive call doesn't decrement depth properly:
+```python
+ty, tm = generate_sample(rng)  # This should be generate_sample(rng, depth - 1)
+```
+
+Also, the function never passes or uses `bound_vars`. I'll implement a more sophisticated version that tracks bound variables and can generate Var and App terms properly, using type-safe application with fallbacks to handle type mismatches.
+
+The core approach: maintain a `bound_vars` list of (name, type) tuples, and at each recursive step decide whether to return a bound variable, create a lambda (adding to bound_vars), or apply a function. Type checking ensures that App terms only apply when the function type is FunTy, otherwise returning the argument as a fallback.

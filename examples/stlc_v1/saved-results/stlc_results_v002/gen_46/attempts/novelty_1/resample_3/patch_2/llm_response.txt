@@ -1,0 +1,26 @@
+The user is saying the previous edit was not successful, but I haven't actually made an edit yet. Let me look at what the current program is and think about what improvement to make.
+
+Looking at the current program:
+1. It generates lambda calculus terms with depth control
+2. Uses `bound_vars` to track bound variables
+3. Uses probability 0.35 for variable usage
+4. Has a hybrid termination condition
+
+The key issue I identified is that when creating an application, the code generates an argument term without ensuring it matches the expected argument type. This could cause type mismatches.
+
+Let me look at the specific code:
+
+```python
+# Generate argument term matching the function's input type
+arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+```
+
+This doesn't pass `arg_type` as a required type, so the generated argument might have a different type than what the function expects.
+
+I should add a `required_type` parameter to `generate_sample` that forces the generated term to have a specific type. When `required_type` is provided, the generator should:
+1. At base case: return a literal of the required type (or fallback to variable of that type if bound_vars has one)
+2. In recursion: generate terms that result in the required type
+
+This would ensure type safety and potentially improve the good_ratio.
+
+Let me implement this:

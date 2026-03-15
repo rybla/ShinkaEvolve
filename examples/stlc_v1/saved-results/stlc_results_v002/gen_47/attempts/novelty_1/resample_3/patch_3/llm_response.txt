@@ -1,0 +1,13 @@
+The user is saying my previous edit was not successful. But I haven't actually submitted an edit yet in this conversation - I only provided analysis. Let me look at the current state of the file and provide a proper SEARCH/REPLACE edit.
+
+Looking at the code in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END, I need to modify the generate_sample function. The key issue is:
+
+1. When creating an App, the arg_term is generated without ensuring its type matches the expected arg_type
+2. This causes type mismatches and reduces good_ratio
+
+The fix:
+1. Add a target_type parameter to generate_sample
+2. When generating at base case, if target_type is specified, generate a literal of that type
+3. When generating an App, pass the arg_type to ensure type-correct argument generation
+
+Let me write the proper diff now.

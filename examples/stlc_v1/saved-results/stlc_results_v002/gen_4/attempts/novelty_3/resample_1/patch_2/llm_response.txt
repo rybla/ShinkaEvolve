@@ -1,0 +1,5 @@
+The user is asking me to make an edit to the program. Let me look at what's needed. The previous edit wasn't successful, and I need to provide a valid SEARCH/REPLACE block.
+
+Looking at the current program, I need to modify the `generate_sample` function in the EVOLVE-BLOCK-START to EVOLVE-BLOCK-END section.
+
+Let me create the improved generator:

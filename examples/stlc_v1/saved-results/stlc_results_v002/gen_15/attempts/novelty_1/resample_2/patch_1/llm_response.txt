@@ -1,0 +1,68 @@
+Let me analyze the problem:
+
+1. The current program generates simple lambda calculus terms
+2. It achieves 100% good_ratio (all terms are type-correct)
+3. But it fails on:
+   - `used_vars_proportions_average: 0.00` - never uses variables
+   - `applied_lambdas_proportions_average: 0.00` - never applies lambdas
+   - `unique_subterms_proportions_average: 0.14` - repetitive structures
+
+The key insight from the analysis is that the current approach creates lambdas but never uses `Var` to reference the bound variable. The lambdas created always wrap the same recursive structure.
+
+To improve, I need to:
+1. Use `Var` to reference bound variables (this increases `used_vars_proportions_average`)
+2. Create `App` terms to apply functions to arguments (this increases `applied_lambdas_proportions_average`)
+3. Generate different branches rather than always nesting the same structure (this increases `unique_subterms_proportions_average`)
+
+The main challenge is that I need to maintain type correctness (good_ratio close to 1.00) while improving the other metrics.
+
+Let me design a new approach:
+
+1. When creating a Lambda, the body should sometimes use `Var` to reference the bound variable
+2. Create `App` terms that apply lambda functions to arguments
+3. Vary the generated terms more
+
+Here's my plan:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    if depth <= 0:
+        # Base cases - return simple literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", True))
+        elif i == 1:
+            return (("Int",), ("Int", 27))
+        else:
+            return (("String",), ("String", "hello world"))
+    
+    i = rng.randrange(0, 5)  # Added more options
+    
+    if i == 0:
+        # Return a boolean literal
+        return (("Bool",), ("Bool", rng.choice([True, False])))
+    elif i == 1:
+        # Return an integer literal
+        return (("Int",), ("Int", rng.randint(0, 100)))
+    elif i == 2:
+        # Return a string literal
+        return (("String",), ("String", rng.choice(["hello", "world", "test"])))
+    elif i == 3:
+        # Create a lambda that references its bound variable
+        inner_ty, inner_tm = generate_sample(rng, depth - 1)
+        var_name = f"x{depth}"
+        return (
+            ("Fun", ("Int",), inner_ty),
+            ("Lam", var_name, ("Int",), ("Var", var_name))
+        )
+    else:
+        # Apply a lambda to an argument
+        func_ty, func_tm = generate_sample(rng, depth - 1)
+        arg_ty, arg_tm = generate_sample(rng, depth - 1)
+        return (
+            ("Fun", arg_ty, func_ty),
+            ("App", func_tm, arg_tm)
+        )
+```
+
+This approach adds variable usage by creating lambdas that reference their bound variables, applies lambdas to arguments, and varies the generated structures to improve uniqueness while maintaining type correctness. The current implementation fails to use variables or apply lambdas because it creates lambda abstractions without ever referencing them through `Var` nodes. The fix requires using the bound variable directly in the body or applying the lambda to an argument. Additionally, the approach needs variation—currently it only generates literals in base cases and nested lambdas recursively, so the structure should branch differently to avoid repetition.

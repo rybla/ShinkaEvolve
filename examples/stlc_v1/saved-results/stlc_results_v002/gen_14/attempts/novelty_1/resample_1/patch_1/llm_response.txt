@@ -1,0 +1,40 @@
+Let me analyze the current program and the prior programs to understand what improvements can be made.
+
+Looking at the metrics:
+- Current program: Combined score 10.30, good_ratio 1.00, used_vars_proportions_average 0.00, applied_lambdas_proportions_average 0.00, unique_subterms_proportions_average 0.15
+- Prior programs: Combined score 10.28, good_ratio 1.00, used_vars_proportions_average 0.00, applied_lambdas_proportions_average 0.00, unique_subterms_proportions_average 0.13-0.14
+
+The key issue is that:
+1. `used_vars_proportions_average` is 0.00 - variables are never used
+2. `applied_lambdas_proportions_average` is 0.00 - lambdas are never applied
+3. `unique_subterms_proportions_average` is low (0.15) - repetitive structures
+
+The current algorithm creates lambdas like `("Lam", "x", ("Int",), tm)` but never uses `Var` to reference the bound variable "x". It also never creates `App` terms.
+
+To improve, I need to:
+1. Use `Var` to reference bound variables in lambda bodies
+2. Create `App` terms for function application
+3. Generate more unique subterms
+
+Looking at the current code:
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+The problem is that when creating a lambda, it just passes through `tm` without ever using the bound variable. I should modify the lambda case to sometimes use `Var` to reference the bound variable, and also add `App` terms to apply functions. Additionally, I should vary the generated subterms to increase uniqueness rather than always nesting the same structure.
+
+The depth parameter isn't actually being used to control recursion, so I need to decrement it and add a base case when depth reaches 0. This way, the recursion will properly terminate and generate more varied terms.

@@ -1,0 +1,32 @@
+Let me analyze the current program and the prior programs to understand what improvements can be made.
+
+Looking at the current program:
+- It generates simple literals (Bool, Int, String)
+- It creates lambda terms with a fixed variable name "x" and type ("Int",)
+- It doesn't use the depth parameter properly (depth is not decremented in recursion)
+- It doesn't generate App terms (applied_lambdas_proportions_average: 0.00)
+- It doesn't use variables from context (used_vars_proportions_average: 0.00)
+
+Looking at the best prior programs:
+- The best score was 10.88 from Program 1 which used:
+  - `bound_vars` parameter to track bound variables
+  - `rng.random() < 0.35` to probabilistically choose variables
+  - `f"x{rng.randint(0, 100)}"` for unique variable names
+  - Type-safe application: checks `func_type[0] == "Fun"` before applying
+  - Hybrid termination: `depth <= 0 or (not bound_vars and rng.random() < 0.5)`
+
+The key missing features in the current program:
+1. No App terms (function application)
+2. No Var terms (using variables from context)
+3. No proper depth tracking
+4. No type-safe application
+
+Let me create an improved version that incorporates these features:
+
+1. Add a `bound_vars` parameter to track variables in scope
+2. Add probability to use variables from context
+3. Add function application (App terms)
+4. Use proper depth decrementing
+5. Add type-safe application with fallback
+
+Let me write the improved code:

@@ -1,0 +1,26 @@
+The user is saying the previous edit was not successful. Let me re-read the task and provide a proper SEARCH/REPLACE block.
+
+Looking at the current program in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END, I need to modify it to improve performance.
+
+The current code is:
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+# EVOLVE-BLOCK-END
+```
+
+I need to replace this with an improved version. Let me create a proper diff.
