@@ -21,29 +21,30 @@ import tqdm
 
 
 class BugException(Exception):
-    pass
+    def __str__(self):
+        return f"Bug: {super().__str__()}"
 
 
 class GrammarException(Exception):
-    msgs: List[str]
+    msg: str
 
-    def __init__(self, *msgs: str):
+    def __init__(self, msg: str):
         super().__init__()
-        self.msgs = list(msgs)
+        self.msg = msg
 
     def __str__(self):
-        return "\n".join(self.msgs)
+        return f"Grammar error: {self.msg}"
 
 
 class TypingException(Exception):
-    msgs: List[str]
+    msg: str
 
-    def __init__(self, *msgs: str):
+    def __init__(self, msg: str):
         super().__init__()
-        self.msgs = list(msgs)
+        self.msg = msg
 
     def __str__(self):
-        return "\n".join(self.msgs)
+        return f"Type error: {self.msg}"
 
 
 # ==============================================================================
@@ -175,7 +176,7 @@ class SingleForm(Form):
                 form = allForms[param.name]
                 yield from form.check(arg)
             else:
-                raise Exception(f"Invalid form param: {param}")
+                raise BugException(f"Invalid form param: {param}")
 
 
 def getSingleForm(v: NameFormArg) -> SingleForm:
@@ -507,7 +508,7 @@ class GoodResult:
                 else:
                     pass
 
-            raise Exception(
+            raise BugException(
                 f"Impossible, out-of-scope variable '{x}' in a well-formed term in context {ctx}"
             )
 
@@ -537,7 +538,7 @@ class GoodResult:
                 pass
 
             else:
-                raise Exception(
+                raise BugException(
                     f"Impossible, unrecognized term label '{tm[0]}' in a well-formed term "
                 )
 
@@ -575,7 +576,7 @@ class GoodResult:
                 pass
 
             else:
-                raise Exception(
+                raise BugException(
                     f"Impossible, unrecognized term label '{tm[0]}' in a well-formed term "
                 )
 
@@ -613,7 +614,7 @@ class GoodResult:
                 pass
 
             else:
-                raise Exception(
+                raise BugException(
                     f"Impossible, unrecognized term label '{tm[0]}' in a well-formed term "
                 )
 
@@ -649,7 +650,7 @@ class ErrorResult:
     exn: Exception
 
     def show_verbosely(self) -> str:
-        return "TODO"
+        return f"{self.exn}"
 
 
 def run(
