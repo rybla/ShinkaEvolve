@@ -20,6 +20,24 @@ import tqdm
 # ==============================================================================
 
 
+class BugException(Exception):
+    pass
+
+
+class CheckingException(Exception):
+    msgs: List[str]
+
+    def __init__(self, *msgs: str):
+        super().__init__()
+        self.msgs = list(msgs)
+
+    def __str__(self):
+        return "\n".join(self.msgs)
+
+
+# ==============================================================================
+
+
 class NameFormArg:
     name: str
 
@@ -55,12 +73,6 @@ class Form:
     @abstractmethod
     def check(self, a: Any) -> Generator[CheckingException, Any, None]:
         pass
-
-
-def getSingleForm(v: NameFormArg) -> SingleForm:
-    form = allForms[v.name]
-    assert isinstance(form, SingleForm)
-    return form
 
 
 class MultiForm(Form):
@@ -155,6 +167,12 @@ class SingleForm(Form):
                 raise Exception(f"Invalid form param: {param}")
 
 
+def getSingleForm(v: NameFormArg) -> SingleForm:
+    form = allForms[v.name]
+    assert isinstance(form, SingleForm)
+    return form
+
+
 TyForm = MultiForm(
     label="Ty",
     variants=[
@@ -242,24 +260,6 @@ type AppTm = Tuple[Literal["App"], Tm, Tm]
 
 
 type Ctx = List[Tuple[str, Ty]]
-
-
-# ==============================================================================
-
-
-class BugException(Exception):
-    pass
-
-
-class CheckingException(Exception):
-    msgs: List[str]
-
-    def __init__(self, *msgs: str):
-        super().__init__()
-        self.msgs = list(msgs)
-
-    def __str__(self):
-        return "\n".join(self.msgs)
 
 
 # ==============================================================================
