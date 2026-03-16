@@ -62,9 +62,9 @@ evo_config:
     - 0.3
     - 0.1
   # Total number of generations to run.
-  num_generations: 1
+  num_generations: 4
   # Max API spend budget for this run (USD).
-  max_api_costs: 0.5
+  max_api_costs: 10.0
   # Retries for resampling patch format/content before giving up.
   max_patch_resamples: 3
   # Retries for patch application/generation attempts.
