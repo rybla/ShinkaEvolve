@@ -1,7 +1,6 @@
-I need to provide a proper SEARCH/REPLACE block. Let me look at the exact code in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END section and provide the correct diff format.
+I need to actually provide a SEARCH/REPLACE block. Let me look at the current code in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END section and make a targeted improvement.
 
 The current code is:
-
 ```python
 
 def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
@@ -26,4 +25,11 @@ def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
 
 ```
 
-I need to replace this with a more sophisticated implementation. Let me write the proper diff.
+I need to make changes to:
+1. Decrease depth properly
+2. Generate unique variable names
+3. Add application cases to use lambdas
+4. Use different base types
+5. Track available variables to use them
+
+Let me write a proper diff that improves the generator significantly.

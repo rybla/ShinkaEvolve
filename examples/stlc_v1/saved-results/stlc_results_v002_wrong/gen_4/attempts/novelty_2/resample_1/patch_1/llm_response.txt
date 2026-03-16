@@ -1,0 +1,38 @@
+Let me analyze the current program and the performance metrics to understand what needs to be improved.
+
+Current performance metrics:
+- Combined score to maximize: 10.30
+- good_ratio: 1.00 (all generated samples are well-typed)
+- tm_sizes_average: 1.38 (very small terms)
+- ty_sizes_average: 1.38 (very small types)
+- used_vars_proportions_average: 0.00 (no variables are being used!)
+- applied_lambdas_proportions_average: 0.00 (no lambdas are being applied!)
+- unique_subterms_proportions_average: 0.15 (low uniqueness)
+
+Looking at the current `generate_sample` function:
+1. It only generates literals (Bool, Int, String) or simple lambdas with Int as the argument type
+2. It never generates variables or applications
+3. The types are very simple (mostly Bool, Int, String, or Fun from Int to something)
+4. There's no recursion to build larger terms
+
+The key issues based on the metrics:
+1. `tm_sizes_average: 1.38` - terms are too small (max is 100)
+2. `ty_sizes_average: 1.38` - types are too small (max is 10)
+3. `used_vars_proportions_average: 0.00` - variables are never used
+4. `applied_lambdas_proportions_average: 0.00` - lambdas are never applied
+
+To improve, I need to:
+1. Generate larger types (up to 10 nodes)
+2. Generate larger terms (up to 100 nodes)
+3. Use variables that are introduced by lambdas
+4. Apply lambdas to arguments
+5. Have more unique subterms
+
+Let me design a better generator:
+
+1. First, I need a type generator that can build larger types (Fun types nested)
+
+
+2. Then a term generator that can create variables, applications, and nested lambdas while tracking the type context to ensure well-typedness
+
+The approach is to generate a type first, then build a term matching that type while maintaining a context of available variables. This ensures well-typedness throughout the generation process.

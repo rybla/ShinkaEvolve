@@ -1,0 +1,16 @@
+The user is asking me to improve the generate_sample function. Let me analyze the current state and propose improvements.
+
+Looking at the current code:
+1. The `generate_sample` function doesn't properly use the `depth` parameter
+2. It rarely generates function types (only 25% chance when depth > 0)
+3. It never uses variables or creates applications
+4. The types and terms are very small
+
+I need to propose a new implementation that:
+1. Uses depth to control size (max 10 for types, 100 for terms)
+2. Generates larger types
+3. Generates terms that actually use variables
+4. Creates application nodes
+5. Increases unique subterms
+
+Let me write the improved code.

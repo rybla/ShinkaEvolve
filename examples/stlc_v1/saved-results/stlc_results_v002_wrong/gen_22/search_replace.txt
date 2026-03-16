@@ -1,0 +1,41 @@
+
+Let me try again. I need to provide a valid SEARCH/REPLACE block that will actually improve the code.
+
+Looking at the current code:
+
+```python
+
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)  # Note: depth is not decremented!
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+
+```
+
+The issue is:
+1. `depth` is never decremented - this causes infinite recursion
+2. Always uses the same literal values
+3. Always uses the same variable name "x"
+
+To improve the score, I need to:
+1. Decrement depth to prevent infinite recursion and generate larger terms
+2. Use varied literal values
+3. Use varied variable names
+
+Let me propose a change that:
+1. Decrements depth properly
+2. Uses random literal values (Bool, Int, String)
+3. Uses unique variable names based on depth
+
+This should increase tm_sizes_average and unique_subterms_proportions_average while maintaining good_ratio at 1.00.

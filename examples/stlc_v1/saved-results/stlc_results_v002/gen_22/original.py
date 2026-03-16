@@ -41,7 +41,13 @@ type AppTm = Tuple[Literal["App"], Tm, Tm]
 
 
 # EVOLVE-BLOCK-START
+
+
 def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
     i = rng.randrange(0, 4 if depth > 0 else 3)
 
     if i == 0:
@@ -51,11 +57,13 @@ def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
     elif i == 2:
         return (("String",), ("String", "hello world"))
     else:
-        ty, tm = generate_sample(rng)  # Note: depth is not decremented!
+        ty, tm = generate_sample(rng)
         return (
             ("Fun", ("Int",), ty),
             ("Lam", "x", ("Int",), tm),
         )
+
+
 # EVOLVE-BLOCK-END
 
 # This part remains fixed (not evolved)

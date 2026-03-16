@@ -1,10 +1,20 @@
-The user is asking me to make changes to the code, but I need to provide a SEARCH/REPLACE block. Let me look at the current code and propose an improvement.
+The user is asking me to improve the performance of the lambda calculus generator. Let me analyze the current state and propose a targeted improvement.
 
-The current `generate_sample` function is very basic and doesn't generate well-typed terms properly. I need to rewrite it to:
-1. Generate larger types (up to 10 nodes)
-2. Generate larger terms (up to 100 nodes)
-3. Use variables from the context
-4. Apply lambdas to arguments
-5. Ensure well-typedness
+Looking at the current program in the EVOLVE-BLOCK-START section, it only generates very simple terms (literals and simple lambdas). The metrics show:
+- tm_sizes_average: 1.35 (very small)
+- ty_sizes_average: 1.35 (very small)
+- used_vars_proportions_average: 0.00 (no variables used)
+- applied_lambdas_proportions_average: 0.00 (no lambda applications)
+- unique_subterms_proportions_average: 0.15 (low)
 
-Let me write a better generator.
+The prior program had better metrics in terms of size and complexity but lower good_ratio (0.82 vs 1.00).
+
+I need to create a generator that:
+1. Generates larger types (up to 10 nodes)
+2. Generates larger terms (up to 100 nodes)
+3. Uses variables from context
+4. Applies lambdas to arguments
+5. Has more unique subterms
+6. Maintains good_ratio = 1.00
+
+Let me write a more sophisticated generator that builds on the prior program's approach but with better type safety to maintain good_ratio = 1.00.

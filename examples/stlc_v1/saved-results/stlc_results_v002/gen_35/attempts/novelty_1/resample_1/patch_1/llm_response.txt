@@ -1,51 +1,60 @@
-Let me analyze the prior programs and the current program to understand what patterns lead to higher scores.
+Let me analyze the current program and the prior programs to understand what's happening:
 
-Looking at the performance metrics:
+1. **Current program** (Score: 10.31):
+   - good_ratio: 1.00 (perfect correctness)
+   - tm_sizes_average: 1.38
+   - ty_sizes_average: 1.38
+   - used_vars_proportions_average: 0.00 (no variables used!)
+   - applied_lambdas_proportions_average: 0.00 (no App constructors)
+   - unique_subterms_proportions_average: 0.15
 
-1. Program 1 (score 8.73): used_vars_proportions_average: 0.16 - but lower good_ratio
-2. Programs with scores 10.26-10.30: all have used_vars_proportions_average: 0.00
+The key issue I see is that the current program never actually adds variables to the context! When it creates a lambda, it should add the parameter "x" to the context when recursing into the body. Currently it's just passing the same `context` without adding "x".
 
-Wait, that's interesting. The first program has higher used_vars_proportions but lower overall score. Let me look at what factors drive the combined score.
+Also, looking at the metrics:
+- The used_vars_proportions_average is 0.00, meaning no variables are being used
+- This is because the context is never populated
 
-Looking at the best performing programs (10.29-10.30), they all:
-- Have good_ratio: 1.00
-- Have tm_sizes_average around 1.34-1.38
-- Have unique_subterms_proportions_average around 0.13-0.15
-- Have used_vars_proportions_average: 0.00
-
-The current program has:
-- good_ratio: 1.00
-- tm_sizes_average: 1.34
-- unique_subterms_proportions_average: 0.13
-
-So it's close to the best performers. To improve, I need to either:
-1. Increase unique_subterms_proportions_average (currently 0.13, best is 0.15)
-2. Increase tm_sizes_average slightly
-3. Keep good_ratio at 1.00
-
-Looking at Program 1 which scored 8.73 - it had used_vars_proportions_average of 0.16 but lower good_ratio (0.82). So the trade-off is between using variables and maintaining good_ratio.
-
-But wait, let me re-read the first program that had used_vars_proportions_average: 0.16:
-
+Let me trace through the current code:
 ```python
-def generate_sample(rng: random.Random, depth=10, ctx: list[tuple[str, Ty]] = None) -> Tuple[Ty, Tm]:
-    if ctx is None:
-        ctx = []
-    ...
-    elif i == 3 and ctx:
-        # Use a variable from context
-        var_name, var_ty = rng.choice(ctx)
-        return (var_ty, ("Var", var_name))
+else:
+    if context and rng.random() < 0.3:  # 30% chance to use a variable
+        var_name = rng.choice(context)
+        return (
+            ("Fun", ("Int",), ("Int",)),
+            ("Lam", "x", ("Int",), ("Var", var_name)),
+        )
+    else:
+        ty, tm = generate_sample(rng, depth - 1, context)  # BUG: context not updated!
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
 ```
 
-This program introduces a context mechanism to track bound variables and uses them. The issue is that it had a lower good_ratio (0.82). I need to understand why good_ratio dropped - likely because variable usage introduced type errors or scope issues that weren't properly handled.
+The bug is that when recursing, it doesn't add "x" to the context. So the context stays empty forever!
 
-Looking at the better performing programs, they tend to avoid variable usage entirely. The best programs achieve scores around 10.30 with zero variable usage, suggesting the scoring heavily prioritizes well-formed terms over complexity from variable binding.
+The fix should be:
+```python
+else:
+    new_context = context + ["x"]  # Add the parameter to context
+    if context and rng.random() < 0.3:  # 30% chance to use a variable
+        var_name = rng.choice(context)
+        return (
+            ("Fun", ("Int",), ("Int",)),
+            ("Lam", "x", ("Int",), ("Var", var_name)),
+        )
+    else:
+        ty, tm = generate_sample(rng, depth - 1, new_context)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
 
-To improve from 10.28, I should either increase unique_subterms_proportions_average from 0.13 to 0.15 or boost tm_sizes_average slightly while maintaining good_ratio. A potential approach involves using more varied literals - current programs use fixed values like "True", "27", "hello world" - but the scoring appears to reward uniqueness in subterms rather than just literal diversity.
+This would populate the context as we create nested lambdas, allowing variables to actually be referenced. However, there's another issue to consider: when we choose to use a variable from context, we're creating a body that returns that variable directly, but we're not using the populated context for the recursive call.
 
-The real constraint seems to be breaking through the 10.30 ceiling. The top programs share certain patterns: they track bound variables to prevent shadowing issues, use variable naming with random ranges (like x0-x100), implement type-safe application fallbacks, and sometimes rely on probabilistic termination. I need to understand how these elements combine to push beyond the current maximum.
+Looking at the prior programs, they achieve similar scores (10.3055, 10.2993) but with used_vars_proportions_average of 0.01. Even Program 1 with depth parameter and context tracking only manages 0.01 - it appears the context gets populated but variables aren't actually being referenced properly. The primary factor driving performance is good_ratio at 1.00, meaning correctness is what matters most.
 
-Looking at the scoring breakdown, I have good_ratio at 1.00, tm_sizes_average around 1.34, and unique_subterms_proportions_average at 0.13. To improve, I should explore introducing variable usage while maintaining type safety, potentially through more sophisticated variable naming strategies that avoid conflicts.
+I should try a different strategy. Since App is never generated, perhaps adding App could improve the unique_subterms_proportions_average metric. Looking at the code structure, we're always generating Lam nodes that wrap other terms, but never applying them. The issue is that App requires two subterms - a function and an argument - and generating valid applications while maintaining type correctness is challenging.
 
-The key is using context properly to select variables, ensuring type-safe fallback mechanisms are in place, and implementing probabilistic termination to prevent infinite recursion.
+A more elegant solution would be fixing the context bug properly. The key insight is that each lambda introduces a new bound variable, so when recursing into a lambda body, I need to add that parameter to the context while also allowing the option to reference previously bound variables. This maintains the depth-limited approach while enabling proper variable tracking and potential term reuse.

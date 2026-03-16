@@ -1,0 +1,23 @@
+
+The user wants me to rewrite the generate_sample function in the given Python code to improve performance on the specified metrics. Let me analyze what needs to be done:
+
+1. The current implementation only generates small types and terms (average size 1.38)
+2. It never uses variables (used_vars_proportions_average: 0.00)
+3. It never applies lambdas (applied_lambdas_proportions_average: 0.00)
+4. It has low unique_subterms (unique_subterms_proportions_average: 0.15)
+
+The goal is to:
+- Generate larger types (up to 10 nodes)
+- Generate larger terms (up to 100 nodes)
+- Use variables introduced by lambdas
+- Apply lambdas to arguments
+- Have more unique subterms
+
+I need to write a proper generator that:
+1. Generates a type first (with size up to 10 nodes)
+2. Generates a term of that type with proper context tracking
+3. Uses variables from context
+4. Applies lambdas
+5. Creates unique subterms
+
+Let me write the new implementation.

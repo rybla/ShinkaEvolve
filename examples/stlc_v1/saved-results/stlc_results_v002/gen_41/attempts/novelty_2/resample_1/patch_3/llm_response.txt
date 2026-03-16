@@ -1,12 +1,20 @@
-I need to provide the edit in the correct format. Let me analyze what I need to change and provide the exact SEARCH/REPLACE block.
+The user is asking me to improve the program's performance. Let me analyze the current state and propose a new version.
 
-Looking at the current program:
-- It has `generate_sample(rng: random.Random, depth=10)` 
-- The function body needs to be completely replaced to add:
-  1. bound_vars parameter
-  2. Variable usage
-  3. Application terms
-  4. Proper depth control
-  5. Unique variable names
+Looking at the metrics:
+- Current score: 10.60
+- Best prior: 10.62
 
-Let me provide the exact diff format.
+The key differences are in tm_sizes_average (1.84 vs 1.87) and unique_subterms_proportions_average (0.23 vs 0.25).
+
+I need to provide a complete new program. Let me structure my response properly with NAME, DESCRIPTION, and CODE sections.
+
+Let me think about what changes could improve the score:
+
+1. The 30% chance to use a variable in lambda might be limiting nesting - this could reduce tm_sizes
+2. More varied literals could increase unique_subterms
+3. The application branch could be more varied
+
+I'll create a program that:
+1. Uses more varied literal values
+2. Has a slightly different probability distribution
+3. Maintains correctness

@@ -1,20 +1,49 @@
-The user is asking me to rewrite the program to improve its performance. Let me provide a complete new program code directly.
+The user is asking me to provide a complete new program. Let me analyze the current program and the best prior programs to design an improved version.
 
-Looking at the current program:
-- Score: 10.55
-- good_ratio: 0.99
-- tm_sizes_average: 2.12
-- used_vars_proportions_average: 0.17
-- applied_lambdas_proportions_average: 0.06
-- unique_subterms_proportions_average: 0.27
+Current program (score 10.27):
+- good_ratio: 1.00 (perfect correctness)
+- tm_sizes_average: 1.32
+- ty_sizes_average: 1.32
+- used_vars_proportions_average: 0.00
+- applied_lambdas_proportions_average: 0.00
+- unique_subterms_proportions_average: 0.13
 
-The key issues I identified:
-1. When generating applications, if the function type is not a Fun type, the App term is discarded - this loses applications
-2. The program needs to ensure type-correct applications
+Best prior program (score 10.30):
+- good_ratio: 1.00
+- tm_sizes_average: 1.35
+- ty_sizes_average: 1.35
+- used_vars_proportions_average: 0.00
+- applied_lambdas_proportions_average: 0.00
+- unique_subterms_proportions_average: 0.15
 
-Let me write a new version that:
-1. First generates a function type (FunTy)
-2. Then generates the function term and argument term to match that type
-3. This ensures every App term created is type-correct
+The key differences are:
+1. The best program has higher tm_sizes_average (1.35 vs 1.32)
+2. The best program has higher unique_subterms_proportions_average (0.15 vs 0.13)
 
-I'll also increase the probability of using variables and vary the primitive values more to increase unique subterms.
+The current program generates:
+- At depth > 0: 4 options (3 literals + 1 lambda with probability 0.25)
+- At depth = 0: 3 options (3 literals only)
+
+The best program generates:
+- At depth > 0: 4 options
+- At depth = 0: 3 options
+
+Both programs don't actually use the depth parameter properly for recursion. They call generate_sample(rng) without passing depth.
+
+To improve, I should:
+1. Use the depth parameter properly to generate more complex nested structures
+2. Maintain good_ratio = 1.00 (correctness is primary)
+3. Try to increase tm_sizes_average and unique_subterms_proportions_average
+
+Let me think about what changes would help:
+
+1. 
+
+I'll modify the generation strategy to leverage depth more effectively. By recursively generating nested structures with decreasing depth, I can create more complex terms while maintaining type safety. The key is to balance lambda generation with literal creation, ensuring that each recursive call reduces depth and expands term complexity.
+
+Specifically, I'll adjust the generation probabilities to:
+- Increase lambda generation at higher depths
+- Ensure depth decreases with each recursive call
+- Maintain strict type checking to preserve good_ratio
+
+This approach should incrementally increase tm_sizes_average and unique_subterms_proportions_average without compromising type correctness.

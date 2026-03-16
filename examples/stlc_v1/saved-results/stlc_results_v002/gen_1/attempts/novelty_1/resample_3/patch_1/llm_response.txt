@@ -1,44 +1,95 @@
-Let me analyze the current program and the performance metrics to understand what needs to be improved.
+Let me analyze the current program and the performance metrics to understand what improvements are needed.
 
 Current metrics:
-- Combined score to maximize: 10.30
-- good_ratio: 1.00 (all samples are well-formed and well-typed)
-- tm_sizes_average: 1.38 (very small terms - max is 100)
-- ty_sizes_average: 1.38 (very small types - max is 10)
-- used_vars_proportions_average: 0.00 (no variables are being used!)
-- applied_lambdas_proportions_average: 0.00 (no lambdas are being applied!)
+- Combined score: 10.30
+- good_ratio: 1.00 (all generated samples are well-formed and well-typed)
+- tm_sizes_average: 1.35 (very small terms, max is 100)
+- ty_sizes_average: 1.35 (very small types, max is 10)
+- used_vars_proportions_average: 0.00 (no variables are being used)
+- applied_lambdas_proportions_average: 0.00 (no lambdas are being applied)
 - unique_subterms_proportions_average: 0.15 (low uniqueness)
 
-Looking at the current `generate_sample` function:
-1. It only has 3 base cases (Bool, Int, String literals)
-2. The recursive case only creates lambda terms with Int type annotation
-3. The depth parameter isn't being used properly to limit recursion
-4. There's no mechanism to use variables (no App terms with the variable being applied)
-5. There's no mechanism to apply lambdas to arguments
+The current generator is very simple and only generates:
+1. Simple literals (Bool, Int, String)
+2. Simple lambda that wraps another term with Int -> ty
 
 The main issues are:
-1. Terms are too small (1.38 avg vs max 100)
-2. No use of variables (0.00 vs should be higher)
-3. No application of lambdas (0.00 vs should be higher)
-4. Types are too small (1.38 vs max 10)
+1. Types are too small (1.35 average, max 10)
+2. Terms are too small (1.35 average, max 100)
+3. No variable usage (0%)
+4. No lambda applications (0%)
+5. Low unique subterms
 
-To improve:
-1. Use the depth parameter properly to control recursion depth
-2. Create more complex types using FunTy
-3. Create application terms that use variables
-4. Make sure lambdas are applied to arguments
+To improve, I need to:
+1. Generate larger types (more function types)
+2. Generate larger terms with more lambdas and applications
+3. Actually use the variables introduced by lambdas
+4. Apply lambdas to arguments
 
-Let me design a better generator that:
-- Uses depth to control size
-- Has proper base cases for types
-- Has proper recursive cases for both types and terms
-- Creates applications that use variables from enclosing lambdas
-- Creates lambdas that are applied to arguments
+Let me design a better generator:
 
-I need to track:
-- Available variables (from enclosing lambdas)
+1. First, I need to generate types that are larger - using the Fun constructor
+2. Generate terms that:
+   - Have more lambdas
+   - Apply lambdas to arguments
+   - Use variables (both as-is and as arguments to applications)
 
+Here's my plan:
 
-- The target type we're generating for
+```python
+def generate_type(rng, max_depth=10):
+    """Generate a random type up to a certain depth."""
+    if max_depth <= 0 or rng.random() < 0.3:
+        # Base types
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return ("Bool",)
+        elif i == 1:
+            return ("Int",)
+        else:
+            return ("String",)
+    else:
+        # Function type
+        arg_ty = generate_type(rng, max_depth - 1)
+        ret_ty = generate_type(rng, max_depth - 1)
+        return ("Fun", arg_ty, ret_ty)
+```
 
-The key insight is that I need to generate terms that match a given type, and I should track variables so they can be used in applications. Let me create a more sophisticated generator.
+For generating terms, I need to track variables in scope so I can reference them appropriately. I'll maintain a context of available variables and their types, then randomly choose between creating lambdas, applications, or variable references.
+
+```python
+def generate_term(rng, ty, max_depth=100, context=None):
+    if context is None:
+        context = []
+    
+    # If we're at max depth or this is a base type, generate a literal
+    if max_depth <= 0 or ty[0] in ("Bool", "Int", "String"):
+        return generate_literal(rng, ty)
+    
+    # For function types, we can generate a lambda or use a variable from context
+    if ty[0] == "Fun":
+        # Sometimes use a variable from context if available
+        if context and rng.random() < 0.3:
+            var
+
+, _ = rng.choice(context)
+            return ("Var", var)
+        
+        # Otherwise create a lambda
+        arg_name = f"x{rng.randrange(1000)}"
+        arg_ty = ty[1]
+        new_context = context + [(arg_name, arg_ty)]
+        
+        # Generate body
+        body_ty = ty[2]
+        body = generate_term(rng, body_ty, max_depth - 1, new_context)
+        
+        return ("Lam", arg_name, arg_ty, body)
+    
+    # For base types, generate literal
+    return generate_literal(rng, ty)
+```
+
+The key insight is that I need to track variables in scope and reference them appropriately. When generating a function type, I should occasionally use a variable from the context rather than always creating a new lambda. For the body of a lambda, I pass the extended context so inner terms can reference the lambda's parameter.
+
+I also need to handle applications - when I have a function in scope, I can apply it to arguments. The generate_sample function should create a type first, then generate a term matching that type, and finally wrap it in additional lambdas to reach a reasonable size.

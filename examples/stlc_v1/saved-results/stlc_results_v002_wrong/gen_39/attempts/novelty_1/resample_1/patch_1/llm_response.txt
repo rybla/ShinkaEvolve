@@ -1,0 +1,38 @@
+Let me analyze the prior programs and their performance metrics to understand what techniques are helping and what's not working.
+
+Looking at the programs:
+
+1. **Program 1** (score 8.73): Used a context parameter and had variable usage, but had lower good_ratio (0.82)
+2. **Program 2** (score 10.26): Simple structure without context, perfect good_ratio (1.00)
+3. **Program 3** (score 10.26): Same as above, slight variation
+4. **Program 4** (score 10.27): Same approach with small variation
+5. **Program 5** (score 10.29): Removed depth decrement in recursive call
+6. **Program 6** (score 10.30): Same as Program 5, slightly different structure
+
+The current best programs have:
+- `good_ratio=1.00` - Perfect type correctness
+- `used_vars_proportions_average=0.00` - No variable usage
+- `applied_lambdas_proportions_average=0.00` - No lambda applications
+
+The key insight is that adding variables (Program 1) decreased good_ratio from 1.00 to 0.82, which hurt the score despite improving other metrics.
+
+Looking at the current program, it has:
+- Score: 10.28
+- good_ratio: 1.00
+- tm_sizes_average: 1.34
+- used_vars_proportions_average: 0.00
+- applied_lambdas_proportions_average: 0.00
+- unique_subterms_proportions_average: 0.13
+
+To improve, I need to:
+1. Keep good_ratio at 1.00 (or close to it)
+2. Increase unique_subterms_proportions_average (currently 0.13, best was 0.21)
+
+
+3. Potentially increase tm_sizes_average
+
+The current approach generates nested lambdas like `("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm)` where `tm` is generated recursively. This creates a linear chain of identity functions. To increase unique_subterms, I should vary the argument types and return types instead of always using `("Int",)`, or create function compositions that generate more structural diversity. I could also try different base types like `("Bool",)` or `("String",)` as arguments.
+
+However, there's a constraint: when creating a lambda like `("Lam", "x", ("Bool",), body)`, the body must have type Bool, and if it references `("Var", "x")`, that variable has type Bool. For function types, if I have `("Fun", ("Bool",), ("Int",))`, the lambda body must have type Int. I can generate different argument types for lambdas and ensure the recursive call generates a body with a compatible type.
+
+Looking at what's tried: Program 1's context approach reduced good_ratio significantly, so I need to be more careful about type correctness. To improve unique_subterms from 0.13 to something higher, I could vary the types more while keeping the lambda structure sound. The current structure always generates either a literal or a lambda wrapping a recursive call, with the lambda having `("Int",)` as the argument type. Instead, I should vary the argument type (like `("Bool",)` or `("String",)`) to create more diverse structures. The key is varying the literal values and types while maintaining a recursive structure that keeps good_ratio high.

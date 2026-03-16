@@ -1,0 +1,14 @@
+{
+  "generation": 35,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "dynamic_tapered_budget_and_context_weighting",
+  "patch_description": "This edit implements a \"Dynamic Tapered Budget Splitting\" strategy. Instead of a fixed 92/8 split, the split starts more aggressively (96/4) to build a massive initial spine and then tapers down to 80/20 as the budget depletes. This ensures that argument branches have enough \"residual fuel\" to generate variables or small sub-terms rather than just literals, improving variable reuse. Additionally, it introduces a frequency-weighted context selection to further bias towards types that are already heavily populated in the environment.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:46:55.637661",
+  "llm_cost": 0.0101075,
+  "llm_model": null
+}

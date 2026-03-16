@@ -1,0 +1,14 @@
+{
+  "generation": 25,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "asymmetric_spine_shadow_generator",
+  "patch_description": "This generator combines the high-depth application logic of the current program with the superior variable reuse and lambda-forcing strategies of the crossover candidates. \n\nKey improvements:\n1.  **Aggressive Lambda Forcing**: Increases `applied_lambdas_proportions_average` by ensuring function types are almost always inhabited by `LamTm` when budget allows.\n2.  **Context-Aware Application**: Instead of generating random argument types, it samples types already present in the context with 75% probability. This significantly boosts `used_vars_proportions_average`.\n3.  **Shadowing Preference**: When selecting variables, it prioritizes the most recently bound variables (the end of the context), which are more likely to be unique to the current sub-term.\n4.  **Asymmetric Budgeting (85/15)**: Uses a highly skewed split for `AppTm` to create deep left-heavy spines, maximizing `tm_sizes_average` while keeping the argument side small and valid.\n5.  **Hard Floor Logic**: Implements a strict base-case at budget <= 2 to prevent infinite recursion and ensure valid literal/variable termination.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:45:21.312462",
+  "llm_cost": 0.010592500000000001,
+  "llm_model": null
+}

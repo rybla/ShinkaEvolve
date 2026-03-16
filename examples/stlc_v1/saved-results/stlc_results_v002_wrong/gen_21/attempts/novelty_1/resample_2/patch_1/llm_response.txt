@@ -1,0 +1,74 @@
+Let me analyze the situation carefully.
+
+Looking at the metrics:
+- good_ratio: 1.00 (excellent - all terms are type-correct)
+- tm_sizes_average: 1.38 (small terms)
+- ty_sizes_average: 1.38 
+- used_vars_proportions_average: 0.00 (PROBLEM - never uses variables)
+- applied_lambdas_proportions_average: 0.00 (PROBLEM - never applies lambdas)
+- unique_subterms_proportions_average: 0.15 (low diversity)
+
+The current program:
+1. Only generates literals (Bool, Int, String) or lambdas wrapping other samples
+2. Never uses `Var` to reference bound variables
+3. Never uses `App` to apply functions
+
+The key insight from the meta-review:
+- The program creates lambda terms like `("Lam", "x", ("Int",), tm)` but never references `x` inside the body
+- It's creating "identity-like" lambdas that ignore their argument
+
+I need to redesign the program to:
+1. Use `Var` terms to actually reference bound variables
+2. Create `App` terms for function application
+3. Generate more diverse subterms
+
+The challenge is that adding complexity (Var, App) might break type correctness if not done carefully. I need to maintain the depth-controlled approach to ensure good_ratio stays high.
+
+Let me design a new structure:
+
+1. Keep depth-controlled generation (for type correctness)
+2. At each recursive step, consider:
+   - Base types: Bool, Int, String literals
+   - Variables: Only if we have bound variables available
+   - Lambdas: Create a lambda and generate its body
+   - Applications: Create a function application (needs careful type matching)
+
+Here's my approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars: list = None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # With low depth, prefer base cases to maintain type correctness
+    if depth <= 0 or (not bound_vars and rng.random() < 0.7):
+        # Generate base types: Bool, Int, String
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c"])))
+    
+    # When we have bound variables available, occasionally use them
+    if bound_vars and rng.random() < 0.3:
+        var_name = rng.choice(bound_vars)
+        # Return the type and variable reference
+        return (("Int",), ("Var", var_name))
+    
+    # Generate lambda or application based on remaining depth
+    i = rng.randrange(0, 2)
+    if i == 0 and depth > 1:
+        # Create a lambda with a new bound variable
+        var = "x"
+        ty, tm = generate_sample(rng, depth - 1, bound_vars + [var])
+        return (("Fun", ("Int",), ty), ("Lam", var, ("Int",), tm))
+    else:
+        # Create an application
+        func_ty, func_tm = generate_sample(rng, depth - 1, bound_vars)
+        arg_ty, arg_tm = generate_sample(rng, depth - 1, bound_vars)
+        return (arg_ty, ("App", func_tm, arg_tm))
+```
+
+This approach maintains type correctness by controlling depth while introducing variables, lambdas, and applications. The key is balancing the use of bound variables with the need to generate increasingly complex terms as depth decreases.

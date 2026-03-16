@@ -1,12 +1,19 @@
-The user is saying the previous edit was not successful. Let me try again with a proper SEARCH/REPLACE block. I need to make sure I'm matching the exact text from the current program, including all whitespace and indentation.
+Let me try a different approach. Looking at the current code more carefully, I need to understand what exactly is in the EVOLVE-BLOCK-START section and make a proper edit.
 
-Let me carefully extract the exact text from the EVOLVE-BLOCK-START to EVOLVE-BLOCK-END section:
+The current code in the EVOLVE-BLOCK-START is:
 
 ```python
 # EVOLVE-BLOCK-START
-def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+def generate_sample(rng: random.Random, depth=10, context=None) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    Uses context to track bound variables for potential Var usage.
+    """
+    if context is None:
+        context = []
+    
     i = rng.randrange(0, 4 if depth > 0 else 3)
-
+    
     if i == 0:
         return (("Bool",), ("Bool", True))
     elif i == 1:
@@ -14,12 +21,42 @@ def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
     elif i == 2:
         return (("String",), ("String", "hello world"))
     else:
-        ty, tm = generate_sample(rng)  # Note: depth is not decremented!
-        return (
-            ("Fun", ("Int",), ty),
-            ("Lam", "x", ("Int",), tm),
-        )
+        # Generate function type and term
+        # Use context to potentially reference bound variables
+        if context and rng.random() < 0.3:  # 30% chance to use a variable
+            var_name = rng.choice(context)
+            return (
+                ("Fun", ("Int",), ("Int",)),
+                ("Lam", "x", ("Int",), ("Var", var_name)),
+            )
+        else:
+            ty, tm = generate_sample(rng, depth - 1, context)
+            return (
+                ("Fun", ("Int",), ty),
+                ("Lam", "x", ("Int",), tm),
+            )
 # EVOLVE-BLOCK-END
 ```
 
-Let me write the edit properly.
+I need to change:
+```python
+        else:
+            ty, tm = generate_sample(rng, depth - 1, context)
+            return (
+                ("Fun", ("Int",), ty),
+                ("Lam", "x", ("Int",), tm),
+            )
+```
+
+To:
+```python
+        else:
+            new_context = context + ["x"]
+            ty, tm = generate_sample(rng, depth - 1, new_context)
+            return (
+                ("Fun", ("Int",), ty),
+                ("Lam", "x", ("Int",), tm),
+            )
+```
+
+The key difference is that I'm creating `new_context` by appending "x" to the existing context, then passing that updated context to the recursive call. This way, when we generate the lambda body, the variable "x" will be available in scope.

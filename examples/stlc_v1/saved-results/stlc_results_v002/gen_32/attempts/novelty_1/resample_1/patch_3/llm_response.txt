@@ -1,43 +1,27 @@
-The user is asking me to improve the current program. Let me analyze the current state and make a targeted improvement.
+The user is asking me to make an edit to improve the program. Let me analyze the current state:
 
-Looking at the current program:
-- It generates simple literals or creates lambda functions
-- Lambda always has ("Int",) as parameter type
-- Lambda body is always a recursive call without depth control
-- Never uses Var, never applies lambdas
+Current program:
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)  # Note: depth is not decremented!
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
 
-Current metrics: Combined score 10.28
-- good_ratio: 1.00
-- tm_sizes_average: 1.34
-- ty_sizes_average: 1.34  
-- used_vars_proportions_average: 0.00
-- applied_lambdas_proportions_average: 0.00
-- unique_subterms_proportions_average: 0.13
+The issue is that depth is not being decremented in the recursive call. This could lead to infinite recursion in theory (though in practice it stops because of the depth > 0 check).
 
-The best prior programs achieved around 10.30. The key issue is:
-1. used_vars_proportions_average: 0.00 - variables are never used
-2. applied_lambdas_proportions_average: 0.00 - lambdas are never applied
-3. unique_subterms_proportions_average: 0.13 - low uniqueness
+I need to make a change. Let me propose a change that:
+1. Decrements depth properly
+2. Adds context tracking to use variables
 
-To improve, I need to:
-1. Use variables in lambda bodies (use Var to reference the lambda parameter)
-2. Apply lambdas to arguments
-3. Increase uniqueness
-
-Let me try a conservative approach that maintains type correctness:
-1. Create lambdas that return their input variable (identity functions) - this maintains type correctness
-2. Vary the parameter types to increase uniqueness
-3. Apply the lambda to a literal argument in some cases
-
-For type correctness:
-- If lambda has type ("Fun", ("Int",), ret_ty), then applying it to an Int should give ret_ty
-- ("App", ("Lam", "x", ("Int",), ("Var", "x")), ("Int", 42)) would be an Int
-
-Let me try creating:
-1. Identity functions: ("Lam", "x", ty, ("Var", "x"))
-2. Apply identity to a literal: ("App", ("Lam", "x", ty, ("Var", "x")), lit)
-
-This should increase used_vars_proportions and applied_lambdas_proportions while maintaining type correctness.
-
-
-I'll start by implementing a simple identity function to test the approach.
+Let me write the SEARCH/REPLACE block properly.

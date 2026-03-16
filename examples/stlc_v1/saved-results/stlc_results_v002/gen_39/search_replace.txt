@@ -1,30 +1,36 @@
-The user is saying my previous edit was not successful. Let me try again with a proper SEARCH/REPLACE block. I need to provide the exact code that should be found and replaced.
+The user is saying the previous edit was not successful. Let me think about what might have gone wrong.
 
-Looking at the current program:
+Looking at the error "No changes applied", this might mean:
+1. The SEARCH block didn't match exactly
+2. There was some other issue with the diff format
+
+Let me look at the current program more carefully and propose a targeted change.
+
+The current program has:
+- Lambda case (i == 3): Always recurses with context + ["x"], never uses variables from context
+- App case (i == 4): Uses identity function
+
+I want to add a 30% chance to use a variable from context in the lambda case, similar to what worked in Program 3.
+
+Let me look at the exact code in the current program:
 
 ```python
-
-def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
-    i = rng.randrange(0, 4 if depth > 0 else 3)
-
-    if i == 0:
-        return (("Bool",), ("Bool", True))
-    elif i == 1:
-        return (("Int",), ("Int", 27))
-    elif i == 2:
-        return (("String",), ("String", "hello world"))
-    else:
-        ty, tm = generate_sample(rng)
-        return (
-            ("Fun", ("Int",), ty),
-            ("Lam", "x", ("Int",), tm),
-        )
-
+elif i == 3:
+    # Generate lambda - FIX: add parameter to context
+    ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+    return (("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm))
 ```
 
-I need to make changes to this code. Let me propose a targeted improvement that adds support for:
-1. Using bound variables (Var terms)
-2. Applying functions (App terms)
-3. Proper type checking
+I need to change this to:
+```python
+elif i == 3:
+    # Generate lambda - with 30% chance to use a variable from context
+    if context and rng.random() < 0.3:
+        var_name = rng.choice(context)
+        return (("Fun", ("Int",), ("Int",)), ("Lam", "x", ("Int",), ("Var", var_name)))
+    else:
+        ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+        return (("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm))
+```
 
-Let me create a proper edit with the exact SEARCH/REPLACE format.
+Let me make sure the indentation and everything matches exactly.

@@ -1,0 +1,14 @@
+{
+  "generation": 26,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 3,
+  "patch_name": "probability_skewed_context_selection",
+  "patch_description": "To further improve `used_vars_proportions_average`, we refine the \"Type-Inhabitant\" selection and variable matching. \n1. When selecting a matching variable in the base case, we increase the probability of matching to 0.98 (from 0.95) to minimize literal generation when valid context variables exist.\n2. We improve \"Type-Inhabitant Caching\" by using a frequency-weighted choice for `arg_ty`. Instead of a flat `rng.choice`, choosing from types that appear more often in the context increases the probability that the subsequent `gen_term` call for the argument will find multiple variables to choose from, maximizing the utility of the context.\n3. We slightly calibrate the term budget to 140 to ensure we stay closer to the 100-node optimal target without overshooting too much into regions of diminishing returns, while keeping asymmetric splits aggressive.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:45:31.120014",
+  "llm_cost": 0.007880999999999999,
+  "llm_model": null
+}

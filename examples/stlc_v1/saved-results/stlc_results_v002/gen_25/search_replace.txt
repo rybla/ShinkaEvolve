@@ -1,0 +1,34 @@
+The user is saying my previous edit wasn't applied. Let me try again with a proper SEARCH/REPLACE block.
+
+Looking at the current code in the EVOLVE-BLOCK-START section:
+
+```python
+
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+
+```
+
+I need to modify this to:
+1. Pass depth to recursive calls (depth - 1)
+2. Track context and use variables from context
+3. Potentially add application
+
+Let me write a proper edit now.

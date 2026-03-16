@@ -1,0 +1,27 @@
+The previous edit wasn't successful because I didn't actually provide a valid SEARCH/REPLACE block. Let me now provide the actual edit to the code.
+
+Looking at the current code:
+
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+    
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+# EVOLVE-BLOCK-END
+```
+
+I need to replace this with a version that introduces variable usage and potentially lambda application while maintaining type correctness.
+
+Let me write the edit properly:

@@ -1,0 +1,52 @@
+Let me look at the exact format of the code in the EVOLVE-BLOCK. I need to match the indentation and content exactly.
+
+Looking at the current code:
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+# EVOLVE-BLOCK-END
+```
+
+The issue might be that I need to make sure I'm only replacing what's INSIDE the markers, not including the markers themselves. Let me try again with just the function body.
+
+Actually, I think the problem is that I'm supposed to replace from "def generate_sample" to the end of the function, but not include the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END markers themselves.
+
+Wait, let me re-read the instructions. It says:
+"* You may only modify text that lies below a line containing "EVOLVE-BLOCK-START" and above the next "EVOLVE-BLOCK-END". Everything outside those markers is read-only."
+
+So I need to modify the text between these markers. Let me try again with the correct format.
+
+The SEARCH block should be:
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+And the REPLACE block should be my new implementation.

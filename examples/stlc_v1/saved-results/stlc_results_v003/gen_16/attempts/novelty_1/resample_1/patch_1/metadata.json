@@ -1,0 +1,14 @@
+{
+  "generation": 16,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "type_directed_alignment_and_stricter_bounds",
+  "patch_description": "To improve the `good_ratio` to 1.0 and significantly increase `tm_sizes_average`, I am implementing a stricter type-directed generation strategy. \n\n1. **Strict Type Matching**: The current `good_ratio` of 0.94 indicates that `gen_term` occasionally fails to produce a term matching `target_ty` (specifically when budget is low and no variable exists for a `Fun` type). I've added a mandatory `Lam` fallback for function types.\n2. **Context-Aware Argument selection**: In `AppTm`, instead of always generating a new type from scratch, we now attempt to pull an existing type from the context with high probability. This reinforces `used_vars_proportions_average`.\n3. **Asymmetric Budget Split**: To push `tm_sizes_average` beyond 60, I've adjusted the application splitting logic to be heavily left-biased (70/30) and ensured the recursion depth is utilized by avoiding early exits unless budget is truly exhausted.\n4. **Unique Literal Generation**: To maintain high `unique_subterms_proportions`, literals are now indexed by the current context length.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:43:59.528704",
+  "llm_cost": 0.009715,
+  "llm_model": null
+}

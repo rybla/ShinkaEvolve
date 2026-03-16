@@ -1,19 +1,85 @@
-The user is asking me to rewrite the generate_sample function to improve performance. Let me analyze the current code and the requirements.
+The user is asking me to improve the performance of the lambda-calculus generator. Looking at the current code and metrics, I need to make targeted changes to the `generate_sample` function.
 
-Current issues:
-1. tm_sizes_average: 1.38 (needs to be bigger, max 100)
-2. ty_sizes_average: 1.38 (needs to be bigger, max 10)
-3. used_vars_proportions_average: 0.00 (needs to use variables)
-4. applied_lambdas_proportions_average: 0.00 (needs to apply lambdas)
-5. unique_subterms_proportions_average: 0.15 (needs more unique subterms)
+Let me analyze what needs to change:
 
-I need to write a generator that:
-1. Generates larger types (function types with depth)
-2. Generates larger terms (with lambdas, applications, variables)
-3. Uses variables from lambda bindings
-4. Applies lambdas
-5. Creates unique subterms
+1. The current generator only produces very small terms (avg 1.35 nodes) and types (avg 1.35 nodes)
+2. No variables are being used (0%)
+3. No lambdas are being applied (0%)
+4. The depth parameter is not being used effectively
 
-The key is to generate a type first, then generate a term of that type using a context of bound variables.
+I need to modify the generate_sample function to:
+1. Use depth to control complexity
+2. Generate larger types (up to 10 nodes)
+3. Generate larger terms (up to 100 nodes)
+4. Use variables in applications
+5. Apply lambdas to arguments
 
-Let me write the new generate_sample function.
+Let me write a better generator that addresses all these issues.
+
+The SEARCH block should match exactly what's in the current file. Let me look at the current generate_sample function:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+I need to replace this with a better implementation. Let me write the new code:
+
+```python
+def generate_type(rng: random.Random, depth: int) -> Ty:
+    """Generate a random type with controlled depth."""
+    if depth <= 0:
+        # Base types only when we've reached max depth
+        return rng.choice([("Bool",), ("Int",), ("String",)])
+    
+    # With some probability, generate a base type
+    if rng.random() < 0.3:
+        return rng.choice([("Bool",), ("Int",), ("String",)])
+    
+    # Otherwise generate a function type
+    # Reduce depth for recursive calls to avoid too large types
+    new_depth = depth // 2
+    arg_ty = generate_type(rng, new_depth)
+    ret_ty = generate_type(rng, new_depth)
+    return ("Fun", arg_ty, ret_ty)
+
+I'll focus on generating more complex types by recursively building function types. The key is to control depth carefully, ensuring we don't create overly complex structures while still introducing variability. By using depth division and random selection, I can create a more sophisticated type generation approach that produces larger, more interesting types.
+
+The strategy involves generating base types with a small probability and function types with higher probability, gradually reducing depth to prevent infinite recursion. This approach allows for creating diverse type structures while maintaining a manageable complexity.
+
+For term generation, I'll need a context to track variable types and names. This will help me generate more nuanced and contextually appropriate terms, ensuring type safety and meaningful variable usage.
+
+The term generation will involve recursive depth-based generation, with careful management of variable contexts to support lambda abstractions and applications. By tracking variable types and names, I can create more sophisticated and type-consistent terms.
+
+I'll generate variables from the context, create lambda abstractions with new variables, and build complex applications by recursively generating function and argument terms. The key is maintaining type consistency and using the available variable context effectively.
+
+The generation strategy involves carefully selecting between base cases like literals and variables, and more complex constructions like lambda abstractions and function applications. By controlling depth and using random selection, I can create diverse and interesting terms while preserving type safety.
+
+I'll recursively generate terms with decreasing depth, ensuring I can still construct meaningful lambda calculus expressions. The approach allows generating increasingly complex terms by strategically breaking down the generation process.
+
+The key is maintaining a balance between generating simple literals, variables, and more intricate lambda abstractions and function applications. By managing depth and context, I can create a flexible term generation mechanism that supports various term structures.
+
+I'll carefully track variable contexts, generating unique names and ensuring type-consistent term construction. The recursive strategy allows exploring different term complexities while preventing infinite generation.
+
+The generation process involves selecting term types probabilistically, with depth and context playing crucial roles in determining the appropriate term structure. This approach enables generating diverse, well-typed lambda calculus expressions.
+
+When creating lambda terms, I'll introduce a new variable with a generated type, extend the context, and recursively generate the body. For applications, I'll ensure type compatibility by generating function and argument terms that match expected type signatures.
+
+The key is maintaining type consistency while allowing flexible, controlled term generation across different complexity levels.

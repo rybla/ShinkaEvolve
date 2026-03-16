@@ -1,47 +1,57 @@
-Let me analyze the current program and the prior programs to understand what's happening and how to improve.
+Looking at the current program and the prior programs, I can see the following:
 
-## Current Program Analysis
+1. The current program has a `context` parameter to track bound variables, but it's not actually working properly - `used_vars_proportions_average: 0.00` shows that no variables are being used.
 
-The current program has:
-- good_ratio: 1.00 (perfect type correctness)
-- tm_sizes_average: 1.35
-- ty_sizes_average: 1.35
-- used_vars_proportions_average: 0.00 (no variables used!)
-- applied_lambdas_proportions_average: 0.00 (no lambda applications!)
-- unique_subterms_proportions_average: 0.14
-- Combined score: 10.29
+2. The issue is that when creating a lambda, the variable "x" is not being added to the context. The context should be updated when recursing into the lambda body.
 
-The current program generates:
-1. Literals (Bool, Int, String) with fixed values
-2. Lambda abstractions that create nested functions but never use the bound variable
+3. Looking at the code:
+   - When `context and rng.random() < 0.3` is true, it creates a simple lambda that returns a variable from context
+   - But when it recurses with `generate_sample(rng, depth - 1, context)`, the context is NOT updated with "x"
 
-The key issue is that the program creates lambdas like `("Lam", "x", ("Int",), tm)` but never uses `Var` to reference `"x"`. It also never creates `App` terms to apply functions.
+The fix should be:
+1. When creating a lambda, add the parameter "x" to the context before recursing into the body
+2. This will allow the context to properly track bound variables
 
-## Looking at Prior Programs
+Let me also think about other improvements:
+- The current program has a 30% chance to use a variable from context, but only when depth > 0
+- The context should be passed with the new variable added when recursing
 
-1. First program (score 7.32): Tried to use variables and applications but had low good_ratio (0.72)
-2. Second program (score 9.11): Also tried to use variables but had good_ratio 0.87
-3. Third program (score 10.26): Fixed literals, no variable usage, perfect good_ratio
-4. Fourth program (score 10.29): Same as third
-5. Fifth program (score 10.30): Same as third/fourth
+Here's my proposed change:
 
-The pattern is clear: programs that try to use variables and applications lose type correctness (good_ratio drops), while programs that stay safe with simple literals get perfect good_ratio but poor other metrics.
+```python
+def generate_sample(rng: random.Random, depth=10, context=None) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    Uses context to track bound variables for potential Var usage.
+    """
+    if context is None:
+        context = []
+    
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+    
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        # Generate function type and term
+        # Use context to potentially reference bound variables
+        if context and rng.random() < 0.3:  # 30% chance to use a variable
+            var_name = rng.choice(context)
+            return (
+                ("Fun", ("Int",), ("Int",)),
+                ("Lam", "x", ("Int",), ("Var", var_name)),
+            )
+        else:
+            # Add "x" to context when creating lambda
+            new_context = context + ["x"]
+            ty, tm = generate_sample(rng, depth - 1, new_context)
+            return (
+                ("Fun", ("Int",), ty),
+                ("Lam", "x", ("Int",), tm),
+            )
+```
 
-## The Challenge
-
-The scoring function seems to heavily weight good_ratio (type correctness). The current best programs achieve perfect good_ratio (1.00) but score poorly on other metrics.
-
-Looking at the metrics:
-- `used_vars_proportions_average`: Measures how often variables are used when they're bound
-
-
-- `applied_lambdas_proportions_average`: Measures how often lambdas are applied
-- `unique_subterms_proportions_average`: Measures diversity of subterms
-
-The current program creates lambdas but never uses them. To improve, I need to introduce variable usage and lambda applications while maintaining type correctness. The key insight is that I can create an identity function by generating a lambda that returns its bound variable, which would use a variable without breaking type safety.
-
-Looking at the code, when depth > 0, it creates a lambda with a fresh variable "x" of type ("Int",), then generates the body with that variable added to the bound_vars list. The problem is the body generation doesn't actually reference the variable—it just creates more lambdas or literals. To fix this, I should occasionally have the body return the variable itself using ("Var", var_name), which would create proper identity functions like `("Lam", "x", ("Int",), ("Var", "x"))`. This would improve the used_vars_proportions_average metric while keeping the type structure valid.
-
-The current approach has a flaw: when bound_vars exists, it returns ("Int",) as the type regardless of what variable is actually selected. This breaks type consistency. Instead, I need to track both the variable name and its associated type in bound_vars, then return the correct type when a variable is chosen. This ensures type correctness is maintained while still allowing variable usage.
-
-Looking at the best-performing programs, they all achieve good_ratio of 1.00 but score poorly on variable usage. The solution is to add a mechanism where the body can reference bound variables with their proper types, creating identity functions that actually use the lambda parameter rather than ignoring it.
+The key fix is passing `new_context` (which includes "x") to the recursive call instead of the original `context`. This ensures that when we recurse into the lambda body, the newly bound variable "x" is available to reference. This should increase the `used_vars_proportions_average` metric since variables will actually be used in the generated terms.

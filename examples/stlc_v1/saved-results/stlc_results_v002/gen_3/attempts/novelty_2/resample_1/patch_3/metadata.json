@@ -1,0 +1,14 @@
+{
+  "generation": 3,
+  "novelty_attempt": 2,
+  "resample_attempt": 1,
+  "patch_attempt": 3,
+  "success": false,
+  "num_applied": 0,
+  "patch_name": "A shortened name summarizing the edit you are proposing. Lowercase, no spaces, underscores allowed.",
+  "patch_description": "A description and argumentation process of the edit you are proposing.",
+  "error_msg": "SEARCH text not found in editable regions\n\nLooking for: '# Original code to find and replace (must match exactly including indentation)'\n\nEditable regions where you can make changes:\n  Region 1 (lines 43-67):\n    def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:\n        \"\"\"\n        Generate a sample type and term using a random seed.\n    ... (13 more lines)\n                (\"Fun\", (\"Int\",), ty),\n                (\"Lam\", \"x\", (\"Int\",), tm),\n            )\n\nQuick fixes:\n\u2022 Verify the text exists in the file\n\u2022 Check that you're searching within EVOLVE-BLOCK regions\n\u2022 Try a smaller, more specific search pattern",
+  "timestamp": "2026-03-15T13:17:22.494582",
+  "llm_cost": 0.0033162,
+  "llm_model": null
+}

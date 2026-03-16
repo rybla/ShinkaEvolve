@@ -1,0 +1,51 @@
+The user is saying the previous edit was not successful. Let me re-analyze the situation and provide a more targeted improvement.
+
+Looking at the current program vs the third prior program:
+
+Current program (score 10.60):
+- Has 30% chance to use variable from context in lambda case
+- This reduces the chance of generating deeper terms
+
+Third prior program (score 10.62):
+- Always recurses for lambda body
+- No variable usage from context
+
+The third prior program has higher scores. Let me try to improve on it.
+
+Looking at what could help:
+1. The current approach already has App (applied_lambdas = 0.11)
+2. We could try to increase unique_subterms_proportions (currently 0.23, third prior had 0.25)
+
+One idea: Instead of always using the same literal values, we could vary them more to increase unique subterms.
+
+Another idea: The current program has a 30% chance to use a variable, which might be reducing the tm_sizes. Let me remove that and see if it improves.
+
+Actually, let me look more carefully at the differences:
+
+Current program lambda case:
+```python
+elif i == 3:
+    # Generate lambda - with 30% chance to use a variable from context
+    if context and rng.random() < 0.3:
+        var_name = rng.choice(context)
+        return (("Fun", ("Int",), ("Int",)), ("Lam", "x", ("Int",), ("Var", var_name)))
+    else:
+        ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+        return (("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm))
+
+
+```
+
+Third prior program lambda case:
+```python
+elif i == 3:
+    # Generate lambda - FIX: add parameter to context
+    ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+    return (("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm))
+```
+
+The key difference is the 30% chance to use a variable. This reduces the recursion depth and thus reduces tm_sizes. Let me remove this and see if it improves the score.
+
+Actually wait - the current program has score 10.60 and the third prior has score 10.62. So the third prior is slightly better. Let me try to match it and then add an improvement.
+
+I should remove the 30% variable usage chance and align with the third prior program's approach. This should increase recursion depth and improve tm_sizes, which might boost the overall score.

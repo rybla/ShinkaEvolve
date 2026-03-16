@@ -41,7 +41,8 @@ type AppTm = Tuple[Literal["App"], Tm, Tm]
 
 
 # EVOLVE-BLOCK-START
-def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+fun_ty = ("Fun", generate_base_type(rng), target_ty)
+fun = generate_term(rng, depth - 1, context, fun_ty)
 # EVOLVE-BLOCK-END
 
 # This part remains fixed (not evolved)

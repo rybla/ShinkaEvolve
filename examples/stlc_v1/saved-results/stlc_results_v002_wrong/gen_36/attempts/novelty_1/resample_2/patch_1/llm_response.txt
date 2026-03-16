@@ -1,0 +1,33 @@
+Let me analyze the performance metrics and prior programs to understand what improvements can be made.
+
+Looking at the current program:
+- Combined score: 10.27
+- good_ratio: 1.00 (perfect - all samples are type-correct)
+- tm_sizes_average: 1.30
+- ty_sizes_average: 1.30
+- used_vars_proportions_average: 0.00 (no variables are used!)
+- applied_lambdas_proportions_average: 0.00 (no applications of lambdas!)
+- unique_subterms_proportions_average: 0.13
+
+Looking at the best prior program (score 10.30):
+- It has used_vars_proportions_average: 0.00 and applied_lambdas_proportions_average: 0.00
+- But it has good_ratio: 1.00 and slightly larger tm_sizes_average: 1.38
+
+Looking at the first program (score 8.73):
+- It had used_vars_proportions_average: 0.16 but lower good_ratio: 0.82
+
+The key insight from the meta-review was that the best programs (10.54) had:
+1. `bound_vars` parameter to track bound variables
+2. `rng.random() < 0.4` to probabilistically choose variables
+3. Unique variable names with `f"x{rng.randint(0, 100)}"`
+4. Type-safe application: checks `func_type[0] == "Fun"` before applying
+5. Hybrid termination: `depth <= 0 or (not bound_vars and rng.random() < 0.5)`
+
+The current program is stuck at 10.27 because it never:
+1. Uses variables from context (used_vars_proportions_average: 0.00)
+2. Applies lambdas (applied_lambdas_proportions_average: 0.00)
+
+
+3. Introduces unique variable naming
+
+To improve, I need to implement context tracking with a `bound_vars` parameter, probabilistically select variables from that context, generate unique variable names, add an App case that checks if the function is actually a Fun type before applying, and use probabilistic termination instead of relying solely on depth.

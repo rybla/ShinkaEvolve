@@ -1,0 +1,37 @@
+Let me re-analyze the problem more carefully.
+
+Looking at the current program:
+- It generates nested lambdas like `("Lam", "x", ("Int",), ("Lam", "x", ("Int",), ...))`
+- The depth parameter is never decremented, so it creates infinite recursion until Python's recursion limit
+- It never uses variables, never applies lambdas
+
+The key insight from the prior programs:
+1. The first prior program (score 9.11) tried to add complexity with bound_vars tracking and variable usage, but got lower good_ratio (0.87)
+2. The second prior program (score 10.29) went back to the simple approach with perfect good_ratio (1.00) but no complexity
+
+The current program (score 10.30) is basically the same as the second prior program.
+
+I need to find a way to add complexity (variable usage, lambda application, uniqueness) WITHOUT breaking type correctness (good_ratio = 1.00).
+
+Looking at the problem more carefully:
+- The current algorithm creates lambdas but the body doesn't use the bound variable
+- To use a bound variable, I need to track it and create a `Var` term
+- To apply a lambda, I need to create an `App` term
+
+The challenge is that type checking must remain correct. Let me think about how to do this safely:
+
+1. When creating a lambda, I can occasionally make the body reference the bound variable - this would be type-correct if the variable's type matches
+2. When creating an application, I need to ensure the function type matches the argument type
+
+Let me look at the type system:
+- Lambda: `("Lam", var_name, param_type, body_tm)` where param_type is the type of the bound variable
+- The lambda has type `("Fun", param_type, body_type)` where body_type is the type of body_tm
+
+For type-correct application:
+
+
+- App: `("App", func_tm, arg_tm)` requires func_tm to have type `("Fun", arg_type, result_type)`
+
+So to create a type-correct application, I need to generate a function with the right input type and an argument of that same type. The current approach of using fixed `("Int",)` annotations might be causing problems. I should try a simpler modification that maintains type correctness: use unique variable names at each depth level to avoid shadowing issues, vary the literals to improve uniqueness, and introduce App terms carefully to avoid type mismatches.
+
+But there's a fundamental tension here. The prior program with complexity (score 9.11) had good_ratio = 0.87, while the simple program (score 10.29) achieved good_ratio = 1.00. This suggests that adding complexity breaks type correctness. The question becomes: can I add complexity while keeping good_ratio at 1.00? The current approach uses depth to control recursion but doesn't actually leverage it, and depth never decreases in the recursive case. I need to properly decrement depth to control recursion depth, add bound variable tracking, and occasionally reference those variables while ensuring type correctness throughout.

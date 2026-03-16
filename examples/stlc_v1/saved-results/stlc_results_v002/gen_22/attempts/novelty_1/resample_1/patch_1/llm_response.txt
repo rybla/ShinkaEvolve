@@ -1,50 +1,42 @@
-Let me analyze the current situation carefully.
-
-The current program has:
+Looking at the performance metrics, the current program has:
 - Combined score: 10.30
-- good_ratio: 1.00 (perfect type correctness)
-- tm_sizes_average: 1.38
-- ty_sizes_average: 1.38
-- used_vars_proportions_average: 0.00 (NO variable usage!)
-- applied_lambdas_proportions_average: 0.00 (NO lambda applications!)
+- good_ratio: 1.00 (perfect correctness)
+- tm_sizes_average: 1.35
+- used_vars_proportions_average: 0.00 (no variables used)
+- applied_lambdas_proportions_average: 0.00 (no lambda applications)
 - unique_subterms_proportions_average: 0.15
 
-Looking at the prior programs:
-1. First program (score 9.11): Had some variable usage (0.07) and lambda application (0.03), but lower good_ratio (0.87)
-2. Second program (score 10.29): Same as current, perfect good_ratio but no variable/lambda usage
+The analysis from the system prompt indicates:
+1. Correctness is the primary score driver (good_ratio is most significant)
+2. Type-Term coupling is important - generate both simultaneously
+3. Context-aware variable tracking is needed for non-zero variable utilization
+4. Constructor-first selection ensures termination
 
-The key insight is that the current algorithm:
-1. Always returns the same literals: `True`, `27`, `"hello world"`
-2. Creates lambdas with `"x"` but never uses them
-3. Never creates `App` terms
-4. Never creates `Var` terms
+The current program:
+- Uses depth-limited recursion (depth > 0 vs depth == 0)
+- At depth > 0: 4 options (Bool, Int, String, Fun)
+- At depth = 0: 3 options (Bool, Int, String) - no recursion to ensure termination
+- Uses ("Int",) as the lambda parameter type
+- Never uses Var to reference bound variables
+- Never uses App to apply lambdas
 
-The meta-review says:
-- "A generated term is better the more it uses its variables"
-- "A generated term is better the more it applies its lambdas to arguments"
-- "A generated term is better the more unique sub-terms it has"
+To improve the score, I should:
+1. Keep the correctness (good_ratio = 1.00) - this is critical
+2. Add variable usage (used_vars_proportions_average) - currently 0%
+3. Add lambda application (applied_lambdas_proportions_average) - currently 0%
+4. Increase unique_subterms_proportions_average - currently 0.15
 
-But there's a tension: the first prior program tried to add complexity (variable usage, lambda application) but got a lower score because good_ratio dropped from 1.0 to 0.87.
+The key insight is that I need to track the context of bound variables so I can reference them with Var. When I create a lambda, I should add the parameter to a context stack and allow referencing it.
 
-The key is to add complexity WHILE maintaining good_ratio = 1.0.
+Let me design an improved version:
 
-Looking at the current code:
-```python
-def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
-    i = rng.randrange(0, 4 if depth > 0 else 3)
+1. Track bound variables in a context
+2. When generating a term, have a chance to use a variable from context
 
-    if i == 0:
-        return (("Bool",), ("Bool", True))
-    elif i == 1:
-        return (("Int",), ("Int", 27))
-    elif i == 2:
-        return (("String",), ("String", "hello world"))
-    else:
-        ty, tm = generate_sample(rng)  # Note: depth is not decremented!
-        return (
-            ("Fun", ("Int",), ty),
-            ("Lam", "x", ("Int",), tm),
-        )
-```
 
-The problem is that depth never decreases in the recursive case, so it creates infinite nesting. More critically, the lambda body never references the bound variable `"x"` with a `Var` term, and there's no mechanism to apply lambdas to arguments. To improve while keeping good_ratio at 1.0, I need to track bound variables and occasionally use them in the lambda body, while also introducing App terms that apply functions to arguments.
+3. When generating a function, add the parameter to the context for the body
+4. Apply lambdas to arguments to increase applied_lambdas_proportions_average
+
+I'll implement a context-tracking mechanism to enable variable references and lambda applications while maintaining the current depth-limited recursion structure. This approach will help increase the used_vars_proportions_average and applied_lambdas_proportions_average without compromising the program's correctness.
+
+The key strategy involves carefully managing the context stack during lambda generation, ensuring that variables can be referenced and functions can be applied with a controlled probability. By introducing these subtle modifications, I can potentially improve the unique_subterms_proportions_average and overall diversity of generated terms.

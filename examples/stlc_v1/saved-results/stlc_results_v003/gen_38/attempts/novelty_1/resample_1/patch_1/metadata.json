@@ -1,0 +1,14 @@
+{
+  "generation": 38,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "spine_heavy_asymmetric_generator",
+  "patch_description": "The structural improvement focuses on maximizing `tm_sizes_average` and `used_vars_proportions_average`. \n1. **Extreme Asymmetry**: We move from a 0.75 split to an 0.85 split in `AppTm`, forcing deep functional \"spines\" which significantly increases average term size.\n2. **Context-Heavy Sampling**: When choosing an argument type for `AppTm`, we now have an 80% probability (previously 60%) to pull from the context, ensuring more variables are consumed and validated against the type system.\n3. **Collision Resistance**: To maintain the 0.98 `unique_subterms_proportions_average` at larger sizes, literals are now generated using a combination of context length and a random salt to ensure structural uniqueness.\n4. **Lambda Bias**: Increased target probability for `LamTm` to 0.9 for function types, ensuring the structural alignment between functions and their types is nearly absolute.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:47:32.539771",
+  "llm_cost": 0.009857999999999999,
+  "llm_model": null
+}

@@ -1,0 +1,14 @@
+{
+  "generation": 3,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "stateful_contextual_stlc_generator",
+  "patch_description": "This structural redesign moves away from simple recursion in favor of a \"Context-Aware Builder\" pattern. \n\nKey structural changes:\n1. **Type Pre-generation**: Separate logic for generating types within size constraints (Max 10 nodes).\n2. **Context-Driven Term Synthesis**: Uses an environment (typing context) to track available variables, ensuring terms reach the size limit (Max 100 nodes) while maximizing variable usage.\n3. **Budget Management**: Pass a 'budget' parameter to strictly control AST size while favoring nodes like 'App' and 'Lam' to improve performance metrics (applied lambdas, unique subterms).\n4. **Saturation Strategy**: When the budget is high, the generator prioritizes creating functions and immediately applying them. When the budget is low, it attempts to close terms using variables from the context.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:42:12.499972",
+  "llm_cost": 0.005163,
+  "llm_model": null
+}

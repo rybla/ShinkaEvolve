@@ -1,0 +1,43 @@
+The previous edit wasn't applied. Let me look at the current program more carefully and think about what change would actually improve the performance.
+
+Looking at the current program vs the best prior program (Program 3):
+
+Current program:
+- Combined score: 10.60
+- good_ratio: 1.00
+- tm_sizes_average: 1.84
+- ty_sizes_average: 1.30
+- used_vars_proportions_average: 0.11
+- applied_lambdas_proportions_average: 0.11
+- unique_subterms_proportions_average: 0.23
+
+Best prior (Program 3):
+- Combined score: 10.62
+- good_ratio: 1.00
+- tm_sizes_average: 1.87
+- ty_sizes_average: 1.32
+- used_vars_proportions_average: 0.11
+- applied_lambdas_proportions_average: 0.11
+- unique_subterms_proportions_average: 0.25
+
+The key differences are:
+1. The current program has a 30% chance to use a variable from context in the lambda branch
+2. The best prior program does NOT have this - it always recurses
+
+Let me look at the exact code to see what to change.
+
+Current code in the lambda branch (i == 3):
+```python
+elif i == 3:
+    # Generate lambda - with 30% chance to use a variable from context
+    if context and rng.random() < 0.3:
+        var_name = rng.choice(context)
+        return (("Fun", ("Int",), ("Int",)), ("Lam", "x", ("Int",), ("Var", var_name)))
+    else:
+        ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+        return (("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm))
+```
+
+I'll remove the conditional block and always recurse, which should increase term complexity and diversity. This means eliminating the 30% chance of using a variable and always generating a more complex lambda term.
+
+The modification will force the generator to create deeper, more varied lambda expressions by consistently recursing with an expanded context. This approach should help increase the unique subterms and potentially improve the overall performance metrics.

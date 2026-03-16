@@ -1,0 +1,28 @@
+Let me analyze the current program and the prior programs to understand what improvements can be made.
+
+Looking at the current program:
+- It generates simple literals (Bool, Int, String) and lambda terms
+- It has a good_ratio of 1.00 (all terms are type-correct)
+- But it has tm_sizes_average of 1.30, ty_sizes_average of 1.30 (very small)
+- used_vars_proportions_average: 0.00 (no variables used!)
+- applied_lambdas_proportions_average: 0.00 (no applications!)
+- unique_subterms_proportions_average: 0.13
+
+The key issue is that the current program:
+1. Doesn't use variables at all (used_vars_proportions_average: 0.00)
+2. Doesn't create applications (applied_lambdas_proportions_average: 0.00)
+
+Looking at the best prior programs mentioned in the system prompt:
+- Program 1 (Score: 10.8819) - Uses `bound_vars` parameter to track bound variables, uses `rng.random() < 0.35` for probabilistic variable selection, uses unique variable names with `f"x{rng.randint(0, 100)}"`, has type-safe application with fallback
+- Program 2 (Score: 10.5488) - Similar approach with bound_vars
+
+The key techniques from the best programs:
+1. **Context-Aware Variable Injection**: Uses `bound_vars` list containing `(name, type)` tuples to track bound variables
+2. **Type-Safe Application Fallbacks**: Checks if `func_type[0] == "Fun"` before applying, otherwise returns the argument
+3. **Fresh Variable Generation**: Uses f-strings like `f"x{rng.randint(0, 100)}"` for unique variable names
+4. **Probabilistic Termination**: Uses both depth and random chance for base case selection
+
+
+5. **Recursive Type Generation**: Creates a helper to generate more complex types including higher-order functions
+
+I need to implement a recursive type generator that can produce more sophisticated type structures. This involves creating a mechanism to track bound variables during generation, ensuring type safety through careful checking, and generating unique variable names to avoid conflicts. The goal is to increase term complexity while maintaining type correctness.

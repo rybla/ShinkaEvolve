@@ -1,0 +1,9 @@
+It seems there was an issue with my previous response. Let me try again with a cleaner approach. I need to provide the complete new program code for the generator that improves on the metrics:
+
+- tm_sizes_average: should be closer to 100 (max)
+- ty_sizes_average: should be closer to 10 (max)
+- used_vars_proportions_average: should be higher (uses variables from lambdas)
+- applied_lambdas_proportions_average: should be higher (applies lambdas to arguments)
+- unique_subterms_proportions_average: should be higher
+
+Let me write the full improved code:

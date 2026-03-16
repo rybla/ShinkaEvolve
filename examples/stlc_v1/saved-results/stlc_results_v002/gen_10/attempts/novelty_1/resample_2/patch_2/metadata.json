@@ -1,0 +1,14 @@
+{
+  "generation": 10,
+  "novelty_attempt": 1,
+  "resample_attempt": 2,
+  "patch_attempt": 2,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "none",
+  "patch_description": "none",
+  "error_msg": null,
+  "timestamp": "2026-03-15T13:33:50.717791",
+  "llm_cost": 0.0039564,
+  "llm_model": null
+}

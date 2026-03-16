@@ -1,0 +1,45 @@
+The previous edit wasn't applied. Let me look at the current program more carefully and understand what needs to be changed.
+
+Looking at the current program in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END:
+
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+# EVOLVE-BLOCK-END
+```
+
+The issue is that when calling `generate_sample(rng)` in the recursive case, it's not passing the `depth` parameter. This means depth stays at 10 (the default) throughout all recursive calls, which is incorrect. The depth should decrease to ensure termination.
+
+Let me propose a fix that passes `depth - 1` to the recursive call:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng, depth - 1)  # Pass depth - 1
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+I'll modify the recursive call to decrement the depth, ensuring proper termination and preventing infinite recursion. This simple change addresses the core issue of depth management in the generation process.

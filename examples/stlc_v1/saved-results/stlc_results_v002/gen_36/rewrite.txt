@@ -1,28 +1,8 @@
-def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
-    if bound_vars is None:
-        bound_vars = []
-    
-    # Base case: when depth is 0, return literals
-    if depth <= 0:
-        i = rng.randrange(0, 3)
-        if i == 0:
-            return (("Bool",), ("Bool", True))
-        elif i == 1:
-            return (("Int",), ("Int", 27))
-        else:
-            return (("String",), ("String", "hello world"))
-    
-    # Decide what to generate based on depth and bound_vars
-    # Key: We want to use bound_vars sometimes to get variable usage
-    # and create applications sometimes
-    
-    options = 4
-    if len(bound_vars) == 0:
-        # No bound variables - can't use vars or create well-typed apps
-        options = 3
-    
-    i = rng.randrange(0, options)
-    
-    if i == 0:
-        # Boolean literal
-        return (("Bool",), ("Bool", rng.choice([True, False])))
+else:
+    # Add parameter to context when recursing
+    new_context = context + ["x"]
+    ty, tm = generate_sample(rng, depth - 1, new_context)
+    return (
+        ("Fun", ("Int",), ty),
+        ("Lam", "x", ("Int",), tm),
+    )

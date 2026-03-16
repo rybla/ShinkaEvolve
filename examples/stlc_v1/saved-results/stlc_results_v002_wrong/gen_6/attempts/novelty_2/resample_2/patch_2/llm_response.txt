@@ -1,0 +1,5 @@
+The user is saying the previous edit was not successful and no changes were applied. This means I need to provide the SEARCH/REPLACE block properly. Let me look at the current state of the code and provide the correct diff.
+
+Looking at the code, I need to replace the `generate_sample` function in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END section.
+
+Let me write the proper diff:

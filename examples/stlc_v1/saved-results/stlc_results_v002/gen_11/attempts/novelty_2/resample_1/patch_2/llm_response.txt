@@ -1,0 +1,27 @@
+Let me analyze the problem and create a new implementation that addresses the issues:
+
+1. Term and type sizes are extremely small (1.35 vs max 100/10)
+2. Variables are never used (0.00 proportion)
+3. Lambdas are never applied (0.00 proportion)
+4. Unique subterms are limited (0.15)
+
+The current implementation only generates:
+- Literals (Bool, Int, String)
+- A single lambda wrapping a recursive call
+
+I need to create a more sophisticated generator that:
+1. Builds larger types (up to 10 nodes)
+2. Builds larger terms (up to 100 nodes)
+3. Uses variables from the context
+4. Applies lambdas to arguments
+5. Creates more unique subterms
+
+Let me design a novel approach:
+
+1. Type generation with size budget
+2. Term generation with:
+   - Size budget
+   - Type context (variables in scope with their types)
+   - Probability of using each production rule
+
+Key insight: I need to track variables in scope and actually use them in applications.

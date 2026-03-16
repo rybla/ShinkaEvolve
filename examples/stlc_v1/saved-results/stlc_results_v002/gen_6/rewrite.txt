@@ -1,23 +1,2 @@
-from typing import Literal, Tuple, List, Dict, Any
-import random
-from dataclasses import dataclass
-from typing import Union
-
-# Type definitions
-type Ty = BoolTy | IntTy | StringTy | FunTy
-
-
-type BoolTy = Tuple[Literal["Bool"]]
-type IntTy = Tuple[Literal["Int"]]
-type StringTy = Tuple[Literal["String"]]
-type FunTy = Tuple[Literal["Fun"], Ty, Ty]
-
-type Tm = LitTm | VarTm | LamTm | AppTm
-type LitTm = (
-    Tuple[Literal["Bool"], bool]
-    | Tuple[Literal["Int"], int]
-    | Tuple[Literal["String"], str]
-)
-type VarTm = Tuple[Literal["Var"], str]
-type LamTm = Tuple[Literal["Lam"], str, Ty, Tm]
-type AppTm = Tuple[Literal["App"], Tm, Tm]
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)

@@ -1,43 +1,32 @@
-Let me analyze the current program and understand what improvements can be made to boost the performance metrics.
+Let me analyze the current program and the prior programs to understand what improvements could be made.
 
-Looking at the current metrics:
-- Combined score: 10.88
-- good_ratio: 0.99 (already very high)
-- tm_sizes_average: 4.34 (term size)
-- ty_sizes_average: 1.34 (type size)
-- used_vars_proportions_average: 0.18 (variable usage)
-- applied_lambdas_proportions_average: 0.18 (lambda application)
-- unique_subterms_proportions_average: 0.39 (uniqueness)
+Looking at the current program:
+- Combined score: 10.64
+- good_ratio: 1.00 (perfect correctness - this is key!)
+- tm_sizes_average: 1.92
+- ty_sizes_average: 1.35
+- used_vars_proportions_average: 0.11
+- applied_lambdas_proportions_average: 0.11
+- unique_subterms_proportions_average: 0.26
 
-The key areas to improve:
-1. `used_vars_proportions_average` - currently 0.18, can be improved
-2. `applied_lambdas_proportions_average` - currently 0.18, can be improved
-3. `unique_subterms_proportions_average` - currently 0.39, can be improved
+Prior programs that performed well:
+1. Program with score 10.62 - very similar to current but without the 30% variable usage in lambda case
+2. Program with score 10.60 - had 30% chance to use variable from context but didn't add "x" to context when recursing
 
-Looking at the analysis from before, the best program (score 10.88) used:
-- `bound_vars` parameter to track bound variables
-- `rng.random() < 0.35` for variable selection
-- Unique variable names with `f"x{rng.randint(0, 100)}"`
-- Type-safe application with fallback
+The key insight from the analysis was:
+1. **Correctness (good_ratio) is the primary driver** - all top programs have good_ratio = 1.00
+2. They use a **depth-limited approach** for termination
+3. They generate types and terms together for consistency
+4. The depth parameter is used to control recursion
 
-The current program already has some of these features but let me analyze what's missing:
+Looking at what could improve the score:
+1. The current program has ty_sizes_average of 1.35, which is relatively low. This suggests we're not generating very complex types.
+2. The used_vars_proportions_average is 0.11, which means variables are rarely used from context
+3. The applied_lambdas_proportions_average is 0.11 - we have App but not very many
 
-1. The current program uses `bound_vars` but doesn't seem to use it as effectively
-2. The current program doesn't have explicit type-safe application fallbacks
-3. The variable selection probability is 0.35 but maybe we can tune it
+Looking at the analysis recommendations:
+1. **Dynamic Type Sampling for Lambdas**: The current best program hardcodes `("Int",)` as the parameter type for all `Lam` nodes. Introduce a helper function to generate a random `Ty` (e.g., `Bool`, `Int`, `String`, or a nested `Fun`) and use this for the lambda's parameter. This will force the generator to produce more diverse and deeply nested type trees.
+   
+I should create a helper function to generate random types, then use dynamic parameter types when constructing lambdas. This means modifying the lambda case to generate both the parameter type and body with that type annotation, and similarly for applications where I need to match the function's parameter type with the argument type. I need to be careful about type consistency here.
 
-Let me think about what specific improvements to make:
-
-1. **Better type-safe application**: When applying a function, check if the function type is actually "Fun" before applying. If not, return the argument instead.
-
-2. **Increase variable usage**: The current probability is 0.35, but we might want to adjust this or make it context-aware.
- 
-I'll focus on enhancing variable generation and application strategies. Unique variable names are crucial, so I'll implement a more robust naming mechanism. The type-safe application needs a precise fallback mechanism to handle type mismatches gracefully. I'll create a dynamic approach that increases lambda and variable usage while maintaining type integrity.
-
-The key is to create a more intelligent generation process that:
-- Generates truly unique variable names
-- Implements smart type-checking
-- Increases the likelihood of variable and lambda applications
-- Maintains the overall structural integrity of the program
-
-I'll design a method that dynamically adjusts generation parameters based on the current context, ensuring higher uniqueness and application rates.
+The scoring function likely rewards several factors: correctness, larger term and type sizes, and more complex constructions. Let me try using dynamic types with a helper function to generate random types rather than hardcoding everything to `Int`.

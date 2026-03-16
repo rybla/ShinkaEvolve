@@ -1,0 +1,54 @@
+Let me analyze the current program and the prior programs to understand what improvements can be made.
+
+Current program performance:
+- Combined score: 10.31
+- good_ratio: 1.00 (perfect!)
+- tm_sizes_average: 1.41
+- ty_sizes_average: 1.41
+- used_vars_proportions_average: 0.00 (no variable usage!)
+- applied_lambdas_proportions_average: 0.00 (no applications!)
+- unique_subterms_proportions_average: 0.16
+
+Looking at the best prior programs (from the system message), they achieved:
+- Program 1: Score 10.88 with good_ratio=0.9950, used_vars_proportions_average=0.1795, applied_lambdas_proportions_average=0.1821, unique_subterms_proportions_average=0.3927, tm_sizes_average=4.3427
+
+Key insights from the best programs:
+1. They use `bound_vars` parameter to track bound variables
+2. They use `rng.random() < 0.35` for probabilistic choice
+3. They generate unique variable names with `f"x{rng.randint(0, 100)}"`
+4. They implement type-safe application with fallback
+5. They use hybrid termination: depth <= 0 or (not bound_vars and rng.random() < 0.5)
+
+The current program has:
+- 0% variable usage
+- 0% applied lambdas
+- Low unique subterms (0.16)
+- Only 1.41 average term size
+
+To improve, I need to:
+1. Add support for Var terms (use bound_vars)
+2. Add support for App terms (application)
+3. Use type-safe application with fallback
+4. Use unique variable names
+
+Let me implement these improvements:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars: list = None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Base case with probabilistic termination
+    if depth <= 0 or (not bound_vars and rng.random() < 0.3):
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", True))
+        elif i == 1:
+            return (("Int",), ("Int", 27))
+        else:
+            return (("String",), ("String", "hello world"))
+```
+
+I need to choose between literals, bound variables, lambdas, and applications. The probabilistic choice should favor exploration of new constructs while respecting depth constraints. When depth is limited or no bound variables exist, I'll fall back to literals. Otherwise, I'll randomly select between creating a new variable reference, building a lambda abstraction, or applying functions.
+
+For lambda creation, I generate a fresh variable name and recursively build the body with the new variable added to the bound list. With application, I need to ensure type compatibility—the function must be a Fun type and its argument type must match what the function expects. If the function's type doesn't support application, I'll return the function itself as a fallback rather than forcing an invalid application.

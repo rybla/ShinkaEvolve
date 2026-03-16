@@ -1,0 +1,40 @@
+The user says the previous edit was not successful. Let me re-read the instructions and make sure I'm providing the correct format.
+
+Looking at the task again, I need to make changes to the code between the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END markers.
+
+Wait, I think I didn't actually submit an edit - I just provided analysis. Let me look at what I need to do:
+
+I need to provide a SEARCH/REPLACE block that modifies the generate_sample function.
+
+Let me create a proper edit:
+
+Current code:
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+New code with improvements:
+1. Add context parameter to track bound variables
+2. Add Var constructor to reference bound variables
+3. Add App constructor for function application
+4. This should increase unique_subterms_proportions_average
+
+Let me write this properly:

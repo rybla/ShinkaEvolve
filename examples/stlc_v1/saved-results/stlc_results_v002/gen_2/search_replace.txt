@@ -1,16 +1,70 @@
-The user is asking me to improve the generate_sample function. Let me analyze the current state and propose improvements.
+The user is asking me to make an edit to improve the performance of the code. Let me look at the current state of the code in the EVOLVE-BLOCK-START section and figure out what changes to make.
 
-Looking at the current code in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END:
-- The function doesn't properly use the depth parameter
-- It rarely generates function types (only 25% chance when depth > 0)
-- It never uses variables or creates applications
-- The types and terms are very small
+Looking at the code, I need to modify the generate_sample function to produce larger and more complex terms while still maintaining type correctness.
 
-I need to propose a new implementation that:
-1. Uses depth to control size (max 10 for types, 100 for terms)
-2. Generates larger types
-3. Generates terms that actually use variables
-4. Creates application nodes
-5. Increases unique subterms
+The current implementation is:
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
 
-Let me write the improved code and format it properly as a SEARCH/REPLACE block.
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+I need to replace this with a more sophisticated implementation that:
+1. Uses the depth parameter effectively to control term size
+2. Generates more complex types (up to 10 nodes)
+3. Generates more complex terms (up to 100 nodes)
+4. Uses variables from context
+5. Applies lambdas to arguments
+6. Has more unique subterms
+
+Let me create a better implementation:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+    # Generate type with controlled depth
+    ty = generate_type(rng, depth)
+    # Generate term with controlled depth and empty context
+    tm = generate_term(rng, depth, [], ty)
+    return (ty, tm)
+
+def generate_type(rng: random.Random, depth: int) -> Ty:
+    """Generate a type with controlled depth."""
+    if depth <= 0:
+        return generate_base_type(rng)
+
+    # Increase probability of function types to build complexity
+    if rng.random() < 0.7:
+        arg_ty = generate_base_type(rng)
+        ret_ty = generate_type(rng, depth - 1)
+        return ("Fun", arg_ty, ret_ty)
+
+    return generate_base_type(rng)
+
+I'll continue generating the base type by selecting from a limited set of primitive types, ensuring controlled complexity in the type generation process.
+
+When generating a term, I'll carefully consider the depth and context. For function types, I'll dynamically choose between lambda expressions and applications based on the current depth. For base types, I'll generate literals or variables to maintain type consistency.
+
+The literal or variable generation depends on the current context and target type. I'll probabilistically decide whether to use an existing variable or create a new literal that matches the specified type.
+
+When creating a lambda, I'll generate a unique argument name, determine its type from the function type, and construct a new context that includes this argument. The body of the lambda will be generated recursively with a reduced depth.
+
+For applications, I'll generate a function type, create a matching function term, and then generate an argument term that conforms to the function's input type.

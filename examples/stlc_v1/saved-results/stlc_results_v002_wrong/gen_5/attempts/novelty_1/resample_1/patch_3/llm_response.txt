@@ -1,0 +1,7 @@
+The user is asking me to provide a complete rewrite of the program. Let me analyze what needs to be done:
+
+1. The current generator produces very small terms and types
+2. It doesn't use variables, doesn't apply lambdas, and has few unique subterms
+3. I need to write a new generator that improves these metrics
+
+Let me provide the complete code with the improved generator.

@@ -1,0 +1,59 @@
+The user is saying the previous edit was not successful. Let me look at the current program and propose a targeted improvement.
+
+Looking at the current program:
+- It has perfect good_ratio (1.00)
+- It uses depth-limited recursion
+- It generates Bool, Int, String literals and Fun (lambda) types
+- No Var or App constructors are used
+
+The metrics show:
+- used_vars_proportions_average: 0.00
+- applied_lambdas_proportions_average: 0.00
+- unique_subterms_proportions_average: 0.15
+
+I need to make a change that improves the combined_score. Since good_ratio is already 1.00, I need to improve other metrics while maintaining correctness.
+
+Let me think about what change to make. The key insight is that the current program doesn't use variables at all. If I can add variable usage while maintaining correctness, it might improve the score.
+
+Let me propose a simple change: add a small chance to use a variable (Var constructor) when generating at depth > 0. I'll track the bound variables and occasionally use them.
+
+Actually, let me look at the exact format needed. I need to provide a SEARCH/REPLACE block.
+
+Let me write a modified version that:
+1. Tracks bound variables in a context
+2. Has a small chance to use a variable from the context
+3. Maintains the same structure for literals and lambdas
+
+Here's my proposal:
+
+```python
+def generate_sample(rng: random.Random, depth=10, context=None) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+    if context is None:
+        context = []
+
+    i = rng.randrange(0, 5 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    elif i == 3 and context and depth > 0:
+        # Use a variable from the context
+        var_name = rng.choice(context)
+        return (("Int",), ("Var", var_name))
+    else:
+        ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+I'll carefully analyze the potential improvements. The current approach introduces variable usage while maintaining the core generation strategy. By adding a small chance to select a variable from the context, I can potentially increase the unique subterms proportion without disrupting the existing correct generation mechanism.
+
+The key is to balance variable introduction with maintaining the perfect good_ratio. This modification allows for more diverse term generation while preserving the fundamental structure of the original program.

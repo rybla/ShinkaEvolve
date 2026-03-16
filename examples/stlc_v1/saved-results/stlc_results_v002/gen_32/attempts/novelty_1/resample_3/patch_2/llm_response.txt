@@ -1,0 +1,35 @@
+Let me analyze the problem and create a new program that improves the performance metrics.
+
+Looking at the current program:
+- good_ratio: 1.00 (perfect - all samples are well-formed)
+- tm_sizes_average: 1.33 (very small - target is up to 100)
+- ty_sizes_average: 1.33 (very small - target is up to 10)
+- used_vars_proportions_average: 0.00 (no variable usage)
+- applied_lambdas_proportions_average: 0.00 (no lambda applications)
+- unique_subterms_proportions_average: 0.14 (low)
+
+The current program just generates simple literals or wraps them in a simple lambda. It doesn't use variables from context, doesn't apply lambdas, and has very small sizes.
+
+I need to create a generator that:
+1. Generates larger types (up to 10 nodes)
+2. Generates larger terms (up to 100 nodes)
+3. Uses variables from context more often
+4. Applies lambdas to arguments
+5. Has more unique subterms
+6. Maintains good_ratio (well-typed terms)
+
+Key changes needed:
+1. Pass depth parameter correctly through recursive calls
+2. Build up context when generating lambdas
+3. Use variables from context when possible
+4. Generate applications to apply functions to arguments
+5. Use deeper recursion to build larger structures
+
+Let me design a new algorithm with these parameters:
+- depth parameter: controls size of generated types/terms (default 10 for types, but we need more for terms)
+- probability of function types: 0.7 at positive depth
+- probability of lambda vs application for function types: 0.5
+- probability of using variable from context: 0.4 (higher than current 0.3)
+- For applications, we need to generate proper function types
+
+Let me write the code:

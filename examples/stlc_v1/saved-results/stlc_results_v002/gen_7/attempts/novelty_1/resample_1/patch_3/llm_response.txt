@@ -1,0 +1,38 @@
+The user is asking me to improve the performance of the lambda calculus generator. Looking at the current program in the EVOLVE-BLOCK-START section, it only generates very simple terms - mostly just literals. The metrics show:
+- tm_sizes_average: 1.35 (very small)
+- used_vars_proportions_average: 0.00 (no variables used)
+- applied_lambdas_proportions_average: 0.00 (no lambda applications)
+
+I need to propose a change that will generate larger, more complex terms while maintaining type correctness.
+
+Let me write the SEARCH/REPLACE block properly. The current code in the EVOLVE-BLOCK-START section is:
+
+```python
+# EVOLVE-BLOCK-START
+
+
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+
+
+# EVOLVE-BLOCK-END
+```
+
+I need to replace this with a more sophisticated generator. Let me write the complete replacement.

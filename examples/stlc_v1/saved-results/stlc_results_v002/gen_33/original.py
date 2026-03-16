@@ -41,41 +41,20 @@ type AppTm = Tuple[Literal["App"], Tm, Tm]
 
 
 # EVOLVE-BLOCK-START
-def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
-    if bound_vars is None:
-        bound_vars = []
-    
-    # Base case: generate literals
-    if depth <= 0 or (not bound_vars and rng.random() < 0.5):
-        i = rng.randrange(0, 3)
-        if i == 0:
-            return (("Bool",), ("Bool", rng.choice([True, False])))
-        elif i == 1:
-            return (("Int",), ("Int", rng.randint(0, 100)))
-        else:
-            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
-    
-    # When we have bound variables, use them with some probability
-    if bound_vars and rng.random() < 0.4:
-        var_name, var_type = rng.choice(bound_vars)
-        return (var_type, ("Var", var_name))
-    
-    # Choose between lambda and application
-    i = rng.randrange(0, 2)
-    if i == 0 and depth > 1:
-        # Create a lambda
-        var_name = f"x{rng.randint(0, 100)}"
-        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
-        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
-        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
     else:
-        # Create an application
-        func_type, func_term = generate_sample(rng, depth - 1, bound_vars)
-        arg_type, arg_term = generate_sample(rng, depth - 1, bound_vars)
-        if func_type[0] == "Fun":
-            return (func_type[2], ("App", func_term, arg_term))
-        else:
-            return (arg_type, arg_term)
+        ty, tm = generate_sample(rng)  # Note: depth is not passed!
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
 # EVOLVE-BLOCK-END
 
 # This part remains fixed (not evolved)

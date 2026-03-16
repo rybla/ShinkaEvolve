@@ -1,85 +1,58 @@
-Looking at the performance metrics, I can see that:
+Let me analyze the current situation:
 
-1. `good_ratio`: 1.00 (perfect type correctness) - this is already great
-2. `used_vars_proportions_average`: 0.00 (never use variables) - this needs improvement
-3. `applied_lambdas_proportions_average`: 0.00 (never apply lambdas) - this needs improvement  
-4. `unique_subterms_proportions_average`: 0.13 (low diversity) - this needs improvement
+1. **Current Performance**: Combined score of 10.28 with:
+   - good_ratio: 1.00 (perfect correctness - most important!)
+   - tm_sizes_average: 1.33
+   - ty_sizes_average: 1.33
+   - used_vars_proportions_average: 0.00
+   - applied_lambdas_proportions_average: 0.00
+   - unique_subterms_proportions_average: 0.14
 
-The current program only creates lambdas but never uses `Var` to reference the bound variable. It also never creates `App` terms (function applications).
+2. **Best performing programs** (from prior programs):
+   - Combined score: 10.30
+   - Same good_ratio: 1.00
+   - tm_sizes_average: ~1.35
+   - unique_subterms_proportions_average: ~0.15
 
-The issue is that the current code always creates lambdas that wrap some inner term, but:
-1. It never creates `Var` terms to reference the lambda's bound variable
-2. It never creates `App` terms (function application)
+The key insight is that **good_ratio = 1.00 is the most important metric** - it means all generated samples are type-correct. If this drops, the score drops significantly.
 
-Looking at the structure:
-- Current: `("Lam", "x", ("Int",), tm)` - creates a lambda but `tm` doesn't reference "x"
-- Needed: Either identity function `("Var", "x")` or application `("App", ("Var", "x"), arg)`
+The current approach uses:
+- Depth-limited recursion (depth > 0 for function, depth = 0 for literals only)
+- Simple 3:1 ratio (3 literals, 1 function) at depth > 0
+- Fixed parameter type: ("Int",)
+- No variable usage, no lambda application
 
-The problem is that to use `Var`, I need to ensure the type matches. If I create `("Lam", "x", ("Int",), ("Var", "x"))`, the type is `Int -> Int`.
+Looking at the analysis provided in the system prompt, the top performers:
+1. Have perfect correctness (good_ratio = 1.00)
+2. Use depth-limited recursion
+3. Use a bias toward literals (3:1 ratio)
+4. Generate type and term together to ensure consistency
 
-For `App`, I need a function type. If I have `("Fun", arg_ty, ret_ty)`, then I can apply: `("App", ("Lam", "x", arg_ty, body), arg)`.
+The key improvement I should make:
+- Maintain the correctness (good_ratio = 1.00 is paramount)
+- Slightly increase tm_sizes_average and unique_subterms_proportions_average
+- Maybe try a different approach to generate more complex terms while maintaining type safety
 
-Let me think about how to improve this while maintaining type correctness:
+Let me think about a different approach:
 
-1. When creating a lambda at depth > 0, sometimes use `Var` to reference the bound variable (identity function)
-2. When creating an App, need to ensure proper type matching
-
-Key insight: The depth is being passed but not actually used to control recursion! Look at the current code:
+1. **Iterative deepening with explicit size tracking**: Instead of using depth, I could track the actual size of the generated term and stop at a certain size.
 
 
-- `i = rng.randrange(0, 4 if depth > 0 else 3)` - this checks depth but...
-- `ty, tm = generate_sample(rng)` - this doesn't pass depth-1!
+2. **Weighted choice approach**: I'll refine the selection mechanism to introduce more complexity while preserving type safety. By carefully adjusting the probability distribution, I can potentially generate more nuanced lambda terms without compromising correctness.
 
-So the depth parameter is useless. I need to fix this and also add proper variable usage. The depth should decrease with each recursive call to ensure termination and control complexity. When creating a Lambda, I should sometimes return `("Var", "x")` to reference the bound variable instead of always wrapping a new term. For App, I need to ensure the function type matches the argument type - if I have a function from A to B, I can apply it to something of type A and get type B.
+The strategy involves creating a sophisticated selection method that:
+- Prioritizes type-safe constructions
+- Introduces controlled randomness
+- Prevents type-incorrect term generation
+- Maintains a balanced approach between simplicity and complexity
 
-Let me write a version that addresses these issues:
+I'll explore ways to incrementally increase structural diversity while keeping the fundamental type-checking principles intact.
 
-```python
-def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
-    if depth <= 0:
-        # Base case: return simple literals
-        i = rng.randrange(0, 3)
-        if i == 0:
-            return (("Bool",), ("Bool", True))
-        elif i == 1:
-            return (("Int",), ("Int", 27))
-        else:
-            return (("String",), ("String", "hello world"))
-    
-    i = rng.randrange(0, 5)
-    
-    if i == 0:
-        return (("Bool",), ("Bool", True))
-    elif i == 1:
-        return (("Int",), ("Int", 27))
-    elif i == 2:
-        return (("String",), ("String", "hello world"))
-    elif i == 3:
-        # Create lambda with Var
-        arg_ty = ("Int",)
-        ret_ty = ("Int",)
-        return (
-            ("Fun", arg_ty, ret_ty),
-            ("Lam", "x", arg_ty, ("Var", "x"))
-        )
-    else:
-        # Create App
-        # For App we need: func: A -> B, arg: A, result: B
-        arg_ty = ("Int",)
-        # First generate the body (result type)
-        ret_ty, body = generate_sample(rng, depth - 1)
-        # Create a lambda that applies the bound variable to some argument
-        return (
-            ("Fun", arg_ty, ret_ty),
-            ("Lam", "x", arg_ty, body)
-        )
-```
+The core insight centers on generating lambda abstractions that capture variables from their immediate context. By ensuring generated lambdas can reference their own parameters, I can introduce more meaningful term structures without risking type errors.
 
-The key changes are using depth to control recursion properly, adding Var references to lambdas, and ensuring type consistency when building function applications.
-```
-("Lam", "x", ("Int",), ("Var", "x"))
-```
+The proposed approach involves:
+- Recursively generating term bodies
+- Dynamically adding parameter types to the available context
+- Ensuring lambda bodies can reference their own parameters
 
-This creates an identity function with type `Int -> Int`. The lambda wraps a variable reference back to itself, which is the simplest way to use a bound variable.
-
-For nested structures like `("Lam", "x", ("Int",), ("Lam", "y", ("Int",), ("Var", "x")))`, I get `Int -> (Int -> Int)`. The issue is that all my lambdas use "x" as the parameter name and always reference themselves, so I'm not actually constructing the more complex term patterns the scoring function expects. I need to generate lambdas that reference variables from outer scopes to improve the used_vars_proportions metric.
+This method allows creating identity-like functions that naturally incorporate variable references, potentially increasing both term size and unique subterm complexity.

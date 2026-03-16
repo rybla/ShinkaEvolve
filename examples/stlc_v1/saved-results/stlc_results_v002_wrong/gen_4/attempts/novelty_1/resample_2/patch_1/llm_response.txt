@@ -1,0 +1,185 @@
+Let me analyze the current program and the performance metrics to understand what needs to be improved.
+
+Current performance metrics:
+- Combined score to maximize: 10.30
+- good_ratio: 1.00 (all generated samples are well-formed and well-typed)
+- tm_sizes_average: 1.38 (very small terms)
+- ty_sizes_average: 1.38 (very small types)
+- used_vars_proportions_average: 0.00 (no variables are being used)
+- applied_lambdas_proportions_average: 0.00 (no lambdas are being applied)
+- unique_subterms_proportions_average: 0.15 (low diversity of subterms)
+
+The key issues I see:
+1. The types and terms are very small (1.38 nodes on average, but max is 10 for types and 100 for terms)
+2. No variables are being used (0% proportion)
+3. No lambdas are being applied (0% proportion)
+4. Low unique subterms
+
+Looking at the current `generate_sample` function:
+- It only generates literals (Bool, Int, String) or simple lambdas with Int type annotation
+- It never generates variables (VarTm)
+- It never generates applications (AppTm)
+- The depth parameter is not being used effectively
+
+The function should:
+1. Generate larger types (up to 10 nodes)
+2. Generate larger terms (up to 100 nodes)
+3. Use variables introduced by lambdas
+4. Apply lambdas to arguments
+5. Have more unique subterms
+
+Let me design an improved generator:
+
+1. First, I need to track the available variables (from lambda abstractions)
+2. Generate types with a depth parameter to control size
+3. Generate terms that:
+   - Can reference variables
+   - Can apply terms to arguments
+   - Can create lambda abstractions
+
+Here's my plan:
+- Add a helper to generate types with a size budget
+
+
+- Add a helper to generate terms with a size budget, maintaining a list of available variables
+- Use application more often to increase lambda applications
+- Make sure variables are used when available
+
+Let me write the improved code:
+
+```python
+def generate_type(rng: random.Random, size_budget: int) -> Ty:
+    """Generate a type with a given size budget."""
+    if size_budget <= 1:
+        # Base case: generate a base type
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return ("Bool",)
+        elif i == 1:
+            return ("Int",)
+        else:
+            return ("String",)
+    else:
+        # Recursive case: generate a function type
+        # Distribute the budget between domain and codomain
+        left_budget = rng.randrange(1, size_budget)
+        right_budget = size_budget - left_budget
+        domain = generate_type(rng, left_budget)
+        codomain = generate_type(rng, right_budget)
+        return ("Fun", domain, codomain)
+
+def generate_term(rng: random.Random, available_vars: list[str], size_budget: int) -> Tm:
+    """Generate a term with a given size budget and set of available variables."""
+    if size_budget <= 1:
+        # Base case: generate a literal or variable
+        if available_vars and rng.random() < 0.5:
+            # Use an available variable
+            return ("Var", rng.choice(available_vars))
+        else:
+            # Generate a literal
+            i = rng.randrange(0, 3)
+            if i == 0:
+                return ("Bool", rng.choice([True, False]))
+            elif i == 1:
+                return ("Int", rng.randint(0, 100))
+            else:
+                return ("String", rng.choice(["hello", "world", "test"]))
+    else:
+        # Recursive case: generate a lambda or application
+        if rng.random() < 0.5:
+            # Generate a lambda
+            var_name = f"x{rng.randint(0, 1000)}"
+            var_type = generate_type(rng, size_budget // 2)
+            body = generate_term(rng, available_vars + [var_name], size_budget // 2)
+            return ("Lam", var_name, var_type, body)
+        else:
+            # Generate an application
+            func = generate_term(rng, available_vars, size_budget // 2)
+            arg = generate_term(rng, available_vars, size_budget // 2)
+            return ("App", func, arg)
+```
+
+The key improvements are:
+1. The `generate_type` function now properly distributes the size budget between domain and codomain, ensuring we can build function types up to the target size
+2. The `generate_term` function uses available variables more frequently and creates applications to increase lambda application rates
+3. Both functions use recursion with size budgets to control the overall complexity of generated terms and types
+
+I need to reconsider the approach to better align with the scoring criteria. The current implementation doesn't fully capture what makes a good sample - specifically, I should focus on using variables more often, applying lambdas to arguments, and maximizing unique subterms.
+
+The key improvements needed are:
+1. Generate larger types (up to 10 nodes) and terms (up to 100 nodes)
+2. Use variables from enclosing lambdas in applications
+3. Apply lambdas to arguments more frequently
+4. Create more unique subterms
+
+I'll restructure the generator to track available variables and use them appropriately, while also ensuring the size constraints are properly respected.
+
+```python
+def generate_type(rng: random.Random, max_size: int) -> Ty:
+    """Generate a type with at most max_size nodes."""
+    if max_size <= 1:
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return ("Bool",)
+        elif i == 1:
+            return ("Int",)
+        else:
+            return ("String",)
+    
+    # Generate a function type
+    # Split the budget between domain and codomain
+    split = rng.randrange(1, max_size)
+    domain = generate_type(rng, split)
+    codomain = generate_type(rng, max_size - split)
+    return ("Fun", domain, codomain)
+
+def generate_term(rng: random.Random, available_vars: list[str], max_size: int) -> Tm:
+    """Generate a term with at most max_size nodes using available variables."""
+    if max_size <= 1:
+        # Either use a variable or create a literal
+        if available_vars and rng.random() < 0.5:
+            return ("Var", rng.choice(available_vars))
+        else:
+            i = rng.randrange(0, 3)
+            if i == 0:
+                return ("Bool", rng.choice([True, False]))
+            elif i == 1:
+                return ("Int", rng.randint(0, 100))
+            else:
+                return ("String", rng.choice(["hello", "world"]))
+    
+    # Decide between lambda, application, or variable use
+    choice = rng.randrange(0, 4)
+    
+    if choice == 0 and available_vars:
+        # Use a variable in an application
+        var = rng.choice(available_vars)
+        arg = generate_term(rng, available_vars, max_size - 1)
+        return ("App", ("Var", var), arg)
+    elif choice == 1:
+        # Create a lambda
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = generate_type(rng, max_size // 3)
+        body = generate_term(rng, available_vars + [var_name], max_size - 2)
+        return ("Lam", var_name, var_type, body)
+    elif choice == 2 and available_vars:
+        # Apply a lambda to an argument
+        func = generate_term(rng, available_vars, max_size // 2)
+        arg = generate_term(rng, available_vars, max_size // 2)
+        return ("App", func, arg)
+    else:
+        # Create a literal
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return ("Bool", rng.choice([True, False]))
+        elif i == 1:
+            return ("Int", rng.randint(0, 100))
+        else:
+            return ("String", rng.choice(["hello", "world"]))
+```
+
+The key improvements are generating larger types and terms by using the max_size parameter effectively, introducing variables from lambda scopes, and creating more application nodes to increase lambda usage. I need to reconsider the approach. The current implementation doesn't properly handle the size constraints - I'm not tracking AST node counts correctly, and the type generation isn't aligned with term generation.
+
+I should build a more robust system that generates types and terms in tandem while respecting size limits. The key is ensuring type annotations match the actual term structure, and that I can generate meaningful lambda abstractions and applications within the node budget.
+
+Let me restructure this to properly count nodes and generate coherent type-term pairs that stay within the size boundaries.

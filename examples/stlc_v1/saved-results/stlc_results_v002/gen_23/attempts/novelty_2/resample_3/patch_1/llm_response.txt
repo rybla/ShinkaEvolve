@@ -1,0 +1,59 @@
+Looking at the performance metrics, I can see that:
+
+1. The current program has a good_ratio of 1.00 (perfect correctness)
+2. The combined score is 10.28
+3. Key issues: used_vars_proportions_average is 0.00 and applied_lambdas_proportions_average is 0.00
+
+The top-performing programs (score 10.30) are essentially the same as the current program. They all have:
+- good_ratio: 1.00 (perfect correctness)
+- used_vars_proportions_average: 0.00
+- applied_lambdas_proportions_average: 0.00
+- unique_subterms_proportions_average: ~0.15
+
+The problem is that the current programs never use variables (Var) or apply lambdas (App), which limits the complexity and diversity of the generated terms.
+
+To improve, I need to introduce:
+1. Variable usage - reference bound variables from the lambda context
+2. Lambda application - apply lambdas to arguments
+
+However, I need to be careful to maintain type correctness (good_ratio = 1.00). The key insight from the analysis is that type-term coupling is important - generate both simultaneously.
+
+Let me think about how to add variable usage:
+
+1. When we create a lambda, we need to track the variable name and its type
+2. When generating the body of a lambda, we should have a chance to either:
+   - Generate a fresh term recursively
+   - Use the bound variable (Var) to reference the parameter
+
+For lambda application (App), we need:
+1. A function term on the left
+2. An argument term on the right
+3. The argument type must match the function's parameter type
+
+Let me design an improved version:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    # At depth 0, only generate base types (literals) to ensure termination
+    if depth == 0:
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", True))
+        elif i == 1:
+            return (("Int",), ("Int", 27))
+        else:
+            return (("String",), ("String", "hello world"))
+    
+    # At depth > 0, have a chance to use variables or apply lambdas
+    # But bias toward literals for termination
+    
+    # First, decide: literals (3 options) vs function (1 option)
+    i = rng.randrange(0, 4)  # 0, 1,
+
+I'll focus on generating base types at depth 0 to ensure termination, then introduce more complex term generation at deeper levels. The approach balances simplicity with the potential for interesting term structures by carefully controlling variable usage and lambda application.
+
+When creating a lambda, I'll ensure type consistency by generating a parameter type, recursively creating a body term, and then constructing the lambda with proper type annotations. This method maintains type safety while allowing flexible term generation.
+
+The key strategy involves generating types and terms together, ensuring that each lambda has a well-typed body that respects the parameter's type constraints.
+
+I'll carefully track the generated terms to prevent duplicate variable references, which could compromise the uniqueness of the generated lambda calculus expressions.

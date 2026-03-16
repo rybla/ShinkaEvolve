@@ -1,0 +1,42 @@
+
+Let me analyze the current program and understand what's happening:
+
+1. The current `generate_sample` function is very simple and generates very small types and terms
+2. Looking at the metrics:
+   - `tm_sizes_average: 1.38` (very small, max is 100)
+   - `ty_sizes_average: 1.38` (very small, max is 10)
+   - `used_vars_proportions_average: 0.00` (no variables are being used!)
+   - `applied_lambdas_proportions_average: 0.00` (no lambdas are being applied!)
+   - `unique_subterms_proportions_average: 0.15` (very low)
+
+The current implementation has several problems:
+1. It always generates literals most of the time (3 out of 4 chances when depth > 0)
+2. It never generates variable usage - the lambda always returns the term generated recursively
+3. No applications are being generated
+4. The depth parameter isn't really being used properly
+
+To improve this, I need to:
+1. Generate larger types (up to 10 nodes)
+2. Generate larger terms (up to 100 nodes)
+3. Actually use variables introduced by lambdas
+4. Apply lambdas to arguments
+5. Have more unique subterms
+
+Let me think about how to properly generate well-typed lambda calculus terms:
+
+For a term to be well-typed:
+- Literals have their corresponding types
+- Variables must be in scope with the right type
+- Lambda (λx:T. t) has type T -> type(t) where x is bound in t
+- Application (t1 t2) requires t1 : A -> B and t2 : A, result is B
+
+The key insight is that we need to track the type context (what variables are in scope with what types).
+
+Let me design a better generator:
+
+1. First, generate a type
+
+
+2. Then generate a term with that type, maintaining a context of available variables
+
+I'll track available variables in a context mapping names to their types, and randomly decide between generating a literal, using a variable from context, creating a lambda, or applying a function. The depth parameter controls how large the generated structures can grow.

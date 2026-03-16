@@ -1,0 +1,14 @@
+{
+  "generation": 20,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "type_directed_spine_and_var_reuse",
+  "patch_description": "This update optimizes the generator to achieve higher `tm_sizes_average` and `used_vars_proportions_average` while maintaining a perfect `good_ratio`. \n\nKey improvements:\n1.  **Context-Aware Application**: Instead of generating a random argument type for applications, it now pulls a type from the existing context with 60% probability. This significantly increases the likelihood that the argument term can be a `Var`, boosting variable reuse.\n2.  **Strict Lambda Forcing**: When the target type is a function, the probability of generating a `Lam` is increased to 80%. This ensures deeper structural alignment with the type.\n3.  **Asymmetric 75/25 Split**: The budget distribution for applications is shifted to 75% for the function and 25% for the argument, creating longer left-heavy spines.\n4.  **Literal Diversity**: Literals now incorporate the current budget or context length to ensure `unique_subterms_proportions_average` remains high even in very large terms.\n5.  **Hard Floor Termination**: Improved logic for low-budget scenarios to ensure a valid term is always returned, especially for function types.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:44:31.266156",
+  "llm_cost": 0.0065255,
+  "llm_model": null
+}

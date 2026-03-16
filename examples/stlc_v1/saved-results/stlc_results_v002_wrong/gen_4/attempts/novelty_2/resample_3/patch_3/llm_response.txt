@@ -1,0 +1,40 @@
+I need to provide a SEARCH/REPLACE block to modify the `generate_sample` function. Let me think about what exactly I need to write in the SEARCH block - it should match exactly what's in the current file between the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END markers.
+
+The current code is:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+I need to replace this with a more sophisticated generator. Let me create a proper implementation.
+
+The idea is:
+1. Generate a type of bounded size (up to 10 nodes)
+2. Generate a term of that type (up to 100 nodes)
+3. Use variables from the context
+4. Apply lambdas
+
+I'll need:
+- A function to generate types with size control
+- A function to generate terms with size control and type checking
+- A context to track available variables
+
+Let me write this carefully.

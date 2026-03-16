@@ -1,0 +1,30 @@
+The user is asking me to rewrite a program to improve its performance. Let me analyze the current state and propose an improved solution.
+
+Looking at the current program:
+- Combined score: 10.55
+- good_ratio: 0.99 (very high, close to 1.0)
+- tm_sizes_average: 2.12
+- ty_sizes_average: 1.57
+- used_vars_proportions_average: 0.17
+- applied_lambdas_proportions_average: 0.06
+- unique_subterms_proportions_average: 0.27
+
+The best prior programs had good_ratio=1.00 but very low on other metrics. The current program has improved but has good_ratio=0.99.
+
+Key issues in the current implementation:
+1. When creating an application, if the function type is not a FunTy, it just returns the argument, losing the application structure
+2. Need to ensure type-correct applications
+
+Let me design an improved version that:
+1. Maintains good_ratio at 1.0 or very close
+2. Increases variable usage
+3. Increases lambda application
+4. Increases unique subterms
+
+The key insight is that for type-correct applications, we need to:
+- First decide we want to create an application
+- Generate a function type (FunTy) 
+- Generate a function term that has that type
+- Generate an argument term that matches the input type of the function
+
+Let me write a cleaner implementation:

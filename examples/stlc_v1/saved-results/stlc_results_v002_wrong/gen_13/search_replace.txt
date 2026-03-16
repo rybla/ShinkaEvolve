@@ -1,0 +1,45 @@
+Let me carefully look at the current program and understand exactly what needs to be changed. The issue is that my previous edit wasn't applied. Let me check the exact format and content.
+
+Looking at the current program in the task:
+
+```python
+
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+
+```
+
+The key issues are:
+1. `used_vars_proportions_average: 0.00` - No variables are used
+2. `applied_lambdas_proportions_average: 0.00` - No lambdas are applied
+3. `unique_subterms_proportions_average: 0.14` - Very low uniqueness
+
+The problem with the current code is:
+- It creates lambdas but never uses `Var` to reference the bound variable "x"
+- It never creates `App` terms to apply functions to arguments
+- The structures are very repetitive
+
+I need to modify the code to:
+1. Use variables (Var terms) - when creating a lambda, the body should sometimes be a Var referencing the bound variable
+2. Apply lambdas (App terms) - create App terms that apply functions to arguments
+3. Increase unique subterms - use different types, values, and structures
+
+Let me create a proper edit. I'll need to carefully match the exact indentation and content.
+
+The SEARCH block must match exactly. Let me copy it exactly from the current program:
+
+
+The recursive call is missing the depth parameter, which is a critical bug. When generating samples at depth 10, it should decrement the depth to prevent infinite recursion and ensure termination.

@@ -1,20 +1,64 @@
-The user is saying the previous edit was not successful. Let me re-read the current program and propose a targeted improvement.
+The user is saying the previous edit wasn't applied. Let me look at the current code again and make sure I'm targeting the exact text that needs to be changed.
 
-Looking at the current program:
-- It generates simple literals (Bool, Int, String) and lambda terms
-- No variables are used (used_vars_proportions_average: 0.00)
-- No applications (applied_lambdas_proportions_average: 0.00)
-- The lambda always uses "x" as the variable name
+Looking at the current program in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END:
 
-The key insight from the prior programs is that:
-1. Programs that tracked bound variables (context) achieved higher scores
-2. Programs that used unique variable names achieved higher unique_subterms_proportions_average
-3. Type-safe application is important for maintaining good_ratio
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10, context=None) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    Uses context to track bound variables for potential Var usage.
+    """
+    if context is None:
+        context = []
+    
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+    
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        # Generate function type and term
+        # Use context to potentially reference bound variables
+        if context and rng.random() < 0.3:  # 30% chance to use a variable
+            var_name = rng.choice(context)
+            return (
+                ("Fun", ("Int",), ("Int",)),
+                ("Lam", "x", ("Int",), ("Var", var_name)),
+            )
+        else:
+            ty, tm = generate_sample(rng, depth - 1, context)
+            return (
+                ("Fun", ("Int",), ty),
+                ("Lam", "x", ("Int",), tm),
+            )
+# EVOLVE-BLOCK-END
+```
 
-Let me propose a change that:
-1. Adds a context parameter to track bound variables
-2. Uses the context to potentially return variables
-3. Uses unique variable names
-4. Adds application capability with type safety
+I need to change the else branch to add the parameter to context. Let me identify the exact text:
 
-I'll make a targeted change to the generate_sample function.
+```python
+        else:
+            ty, tm = generate_sample(rng, depth - 1, context)
+            return (
+                ("Fun", ("Int",), ty),
+                ("Lam", "x", ("Int",), tm),
+            )
+```
+
+This should become:
+
+```python
+        else:
+            new_context = context + ["x"]
+            ty, tm = generate_sample(rng, depth - 1, new_context)
+            return (
+                ("Fun", ("Int",), ty),
+                ("Lam", "x", ("Int",), tm),
+            )
+```
+
+I'm tracking the exact lines to modify - the else block needs to construct a new context with the parameter "x" appended before recursing, so the lambda parameter gets added to the scope for variable lookups.

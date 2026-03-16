@@ -1,17 +1,80 @@
-Let me analyze the problem and provide a complete solution.
+Let me analyze the problem more carefully. I need to provide a complete new program that combines the best parts of both code implementations.
 
-Looking at the current implementation:
-1. The `generate_sample` function doesn't use the `depth` parameter effectively
-2. It rarely generates function types/lambdas (only 25% chance)
-3. It never uses variables or applies lambdas
-4. The terms and types are very small
+Looking at the metrics:
+- Current program: good_ratio=1.00 (perfect), but tm_sizes_average=1.35, ty_sizes_average=1.35, used_vars=0.00, applied_lambdas=0.00, unique_subterms=0.15
+- Inspiration program: good_ratio=0.82, but tm_sizes_average=4.89, ty_sizes_average=2.90, used_vars=0.03, applied_lambdas=0.17, unique_subterms=0.49
 
-I need to rewrite the generator to:
-1. Use depth to control the size of generated types and terms
-2. Generate larger types (up to 10 nodes)
-3. Generate larger terms (up to 100 nodes)
-4. Use variables that are introduced by lambdas
-5. Apply lambdas to arguments
-6. Have more unique subterms
+The current program has perfect good_ratio but very small sizes and no variable usage. The inspiration program has better sizes and more complexity but lower good_ratio.
 
-Let me write a complete new implementation:
+I need to combine:
+1. The depth-controlled generation from the inspiration program (to get larger terms)
+2. The proper type checking from the current program (to maintain good_ratio=1.00)
+3. Better variable usage (to increase used_vars_proportions_average)
+4. More lambda applications (to increase applied_lambdas_proportions_average)
+
+The key issue with the inspiration program is that it sometimes generates ill-typed terms. I need to fix this while keeping the larger term generation.
+
+Let me write a clean implementation:
+
+```python
+from typing import Literal, Tuple, List
+import random
+import tqdm
+
+"""
+`Ty` and `Tm` define the shape of a simply-typed lambda-calculus deeply embedded in Python. 
+...
+"""
+
+type Ty = BoolTy | IntTy | StringTy | FunTy
+type BoolTy = Tuple[Literal["Bool"]]
+type IntTy = Tuple[Literal["Int"]]
+type StringTy = Tuple[Literal["String"]]
+
+
+type FunTy = Tuple[Literal["Fun"], Ty, Ty]
+
+
+type Tm = LitTm | VarTm | LamTm | AppTm
+type LitTm = (
+    Tuple[Literal["Bool"], bool]
+    | Tuple[Literal["Int"], int]
+    | Tuple[Literal["String"], str]
+)
+type VarTm = Tuple[Literal["Var"], str]
+type LamTm = Tuple[Literal["Lam"], str, Ty, Tm]
+type AppTm = Tuple[Literal["App"], Tm, Tm]
+
+
+# EVOLVE-BLOCK-START
+
+
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+    # Generate type with depth control
+    ty = generate_type(rng, depth)
+    # Generate term with depth control and empty context
+    tm = generate_term(rng, depth, [], ty)
+    return (ty, tm)
+
+I'll focus on the key generation strategies for creating complex, well-typed lambda calculus terms. The implementation uses recursive depth-controlled generation with careful type tracking. By maintaining a context of variable types and using probabilistic decisions, it creates diverse and structurally interesting terms while ensuring type safety.
+
+The generation process involves carefully balancing different term construction methods - literals, variables, lambda abstractions, and applications - with depth and randomness constraints. This approach allows generating increasingly complex terms while preserving type correctness.
+
+The core strategy involves recursively building types and terms, with depth limiting the complexity and random choices providing variation. Each generation function considers the current context, target type, and remaining depth to make intelligent construction decisions.
+
+I'll generate function types by recursively creating argument and return types, using a weighted probability to control depth and complexity. When depth permits, I'll favor creating nested function types, which allows building more sophisticated type structures.
+
+For base types, I'll randomly select between Boolean, Integer, and String types, ensuring a simple but diverse type generation approach. This provides fundamental building blocks for more complex type constructions.
+
+The term generation strategy involves carefully selecting generation strategies based on depth, target type, and available context. By dynamically choosing between lambda abstractions, applications, and literal generation, I can create increasingly complex and interesting program representations while maintaining type safety and structural constraints.
+
+When generating literals or variables, I'll first check if a compatible variable exists in the current context. If not, I'll generate a type-appropriate literal value, ensuring type consistency and providing a fallback mechanism for term creation.
+
+For lambda generation, I'll create a unique argument name, extract argument and body types from the function type, and recursively generate the lambda's body while expanding the type context. This approach allows constructing complex lambda expressions with type-safe transformations.
+
+The application generation involves creating a function type with a randomly selected base argument type, then recursively generating both the function and its argument while maintaining type compatibility. This ensures type-safe function application within the generated term structure.
+
+The key insight is maintaining type safety while allowing controlled randomness in term generation, leveraging the context and depth parameters to manage complexity.

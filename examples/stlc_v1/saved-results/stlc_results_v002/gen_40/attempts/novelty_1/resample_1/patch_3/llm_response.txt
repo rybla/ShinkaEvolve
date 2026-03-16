@@ -1,1 +1,21 @@
-The user is asking me to provide a complete new program code. Let me write the full program directly without trying to use a patch format.
+Let me try a different approach. I'll provide a complete new program with a different algorithmic strategy.
+
+Looking at the metrics:
+- Current score: 10.62
+- good_ratio: 1.00 (most important)
+- tm_sizes_average: 1.87
+- ty_sizes_average: 1.32
+- used_vars_proportions_average: 0.11
+- applied_lambdas_proportions_average: 0.11
+- unique_subterms_proportions_average: 0.25
+
+The key insight is that good_ratio = 1.00 is critical. The score seems to be heavily weighted on correctness.
+
+To improve, I should focus on:
+1. Maintaining good_ratio = 1.00
+2. Improving unique_subterms_proportions_average - this seems to be a key driver
+3. Possibly improving tm_sizes_average
+
+Strategy: Use varied literal values to increase unique_subterms. Instead of fixed values like True, 27, "hello world", use random values.
+
+Let me write a completely new algorithm:

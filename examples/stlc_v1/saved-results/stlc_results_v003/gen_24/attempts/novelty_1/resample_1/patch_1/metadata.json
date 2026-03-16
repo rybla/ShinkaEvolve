@@ -1,0 +1,14 @@
+{
+  "generation": 24,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "spine_and_cache_optimized_generator",
+  "patch_description": "The new algorithm focuses on two key improvements:\n1. **Context-Aware Type Inhabitant Selection**: Instead of randomly picking an argument type, we prioritize types that are already well-represented in the context. This increases the likelihood that a `gen_term` call for an argument can pick a variable, significantly boosting `used_vars_proportions_average`.\n2. **Dynamic Budget Scaling**: We increase the initial budget and use a 90/10 split in the application spine. This allows the generator to reach much higher `tm_sizes_average` (aiming for 100) while ensuring the argument branch remains simple enough to always terminate with a valid term.\n3. **Lambda Probability Tuning**: We set the probability of generating a Lambda to 0.82 to balance the depth of the application spine with the proportion of applied lambdas.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:45:21.257960",
+  "llm_cost": 0.009046,
+  "llm_model": null
+}

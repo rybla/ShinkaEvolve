@@ -1,9 +1,21 @@
-The user is asking me to make changes to the program. Let me look at the current program and understand what modifications I can make to improve the performance.
+The user is asking me to improve the program. Let me analyze the current state and provide a complete improved program.
 
-Looking at the program, I need to identify the exact code to modify. Let me focus on making a targeted improvement.
+Looking at the current program:
+- It has good_ratio = 1.00 (perfect correctness)
+- But tm_sizes_average = 1.32, ty_sizes_average = 1.32 (low)
+- used_vars_proportions_average = 0.00 (no variables!)
+- applied_lambdas_proportions_average = 0.00 (no applications!)
+- unique_subterms_proportions_average = 0.13
 
-The key areas to improve based on the analysis:
-1. Type-safe application - check if func_type[0] == "Fun" before applying
-2. Increase term sizes by reducing random base case probability
+The best programs from the prior analysis had:
+- Score: 10.6365
+- used_vars_proportions_average: 0.1103
+- applied_lambdas_proportions_average: 0.1140
 
-Let me create the SEARCH/REPLACE blocks for these changes.
+Key improvements needed:
+1. Add App generation (to increase applied_lambdas_proportions_average)
+2. Add context tracking and variable usage (to increase used_vars_proportions_average)
+3. Use proper depth-limited recursion (5 options at depth > 0, 3 at depth = 0)
+4. Generate types and terms together for consistency
+
+Let me write an improved program:

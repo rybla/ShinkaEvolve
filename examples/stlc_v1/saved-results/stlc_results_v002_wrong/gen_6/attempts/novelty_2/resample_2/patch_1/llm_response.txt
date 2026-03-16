@@ -1,0 +1,78 @@
+Let me analyze the current program and the performance metrics to understand what needs to be improved.
+
+Current metrics:
+- Combined score to maximize: 10.30
+- good_ratio: 1.00 (all samples are well-formed and well-typed)
+- tm_sizes_average: 1.38 (very small terms)
+- ty_sizes_average: 1.38 (very small types)
+- used_vars_proportions_average: 0.00 (no variables are being used)
+- applied_lambdas_proportions_average: 0.00 (no lambdas are being applied)
+- unique_subterms_proportions_average: 0.15 (low uniqueness)
+
+The main issues I see:
+1. The terms are very small (1.38 nodes on average)
+2. No variables are being used (0.00)
+3. No lambdas are being applied (0.00)
+4. Low unique subterms
+
+Looking at the current `generate_sample` function:
+- It only generates literals (Bool, Int, String) or simple lambdas with Int type annotation
+- It never generates applications
+- It never generates variables that reference bound variables
+- The depth parameter is not being used effectively
+
+The key problems:
+1. The function doesn't use the `depth` parameter to control recursion
+2. It never generates `App` terms
+3. It never generates `Var` terms that reference lambda-bound variables
+4. It always uses `("Int",)` as the type annotation for lambdas
+
+To improve this, I need to:
+1. Use the depth parameter to control the size of generated terms
+2. Generate application terms (`App`)
+3. Generate variable references (`Var`) that properly reference bound variables
+4. Generate more complex types using the `Fun` type constructor
+5. Track bound variables so we can generate valid variable references
+
+Let me design a better generator:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+    # Use depth to control the size - reduce depth as we go deeper
+    if depth <= 0 or rng.random() < 0.1:
+        # Base case: generate a literal
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", True))
+        elif i == 1:
+            return (("Int",), ("Int", 27))
+        else:
+            return (("String",), ("String", "hello world"))
+    
+    # Recursive case: choose between lambda or application
+    if rng.random() < 0.5:
+        # Generate a lambda with a random parameter type and body
+        param_type = generate_type(rng, depth - 1)
+        body_type, body_term = generate_sample(rng, depth - 1)
+        return (
+            ("Fun", param_type, body_type),
+            ("Lam", "x", param_type, body_term),
+        )
+    else:
+        # Generate an application
+        func_type, func_term = generate_sample(rng, depth - 1)
+        arg_type, arg_term = generate_sample(rng, depth - 1)
+        return (
+            ("App", func_type, arg_type),
+            ("App", func_term, arg_term),
+        )
+```
+
+This approach uses depth to control recursion, generates both lambdas and applications, and builds more complex types. However, it still doesn't properly track bound variables or ensure type correctness. I need to add a context to track variable types and generate variables that reference them. I need to reconsider the approach. The current implementation has several issues: it doesn't properly track variable bindings, generates invalid variable references, and lacks type consistency between the term and its type annotation.
+
+Let me restructure this to handle these problems. I'll need to maintain a mapping of bound variables to their types, generate type-correct terms, and ensure variables are only referenced when they're actually in scope. The depth parameter should control recursion depth, and I should use it to decide when to generate literals versus more complex terms like lambdas and applications.
+
+For the type generation, I'll recursively build function types when depth permits, otherwise fall back to base types. For terms, I'll track bound variables in a context dictionary, and when generating a lambda, I'll add the parameter to that context so it can be referenced in the body. Applications require generating a function term and an argument term, then combining them appropriately.

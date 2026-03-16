@@ -1,62 +1,43 @@
-Let me analyze the current program and the metrics to understand what needs to be improved.
+Let me analyze the current performance metrics and the problem:
 
 Current metrics:
-- Combined score to maximize: 10.30
-- good_ratio: 1.00 (all samples are well-typed)
-- tm_sizes_average: 1.38 (term sizes are very small, max is 100)
-- ty_sizes_average: 1.38 (type sizes are very small, max is 10)
-- used_vars_proportions_average: 0.00 (variables are not being used)
-- applied_lambdas_proportions_average: 0.00 (lambdas are not being applied)
-- unique_subterms_proportions_average: 0.15 (very few unique subterms)
+- Combined score: 10.30
+- good_ratio: 1.00 (all terms are well-typed)
+- tm_sizes_average: 1.35 (very small terms)
+- ty_sizes_average: 1.35 (very small types)
+- used_vars_proportions_average: 0.00 (no variable usage)
+- applied_lambdas_proportions_average: 0.00 (no lambda applications)
+- unique_subterms_proportions_average: 0.15 (low uniqueness)
 
-Looking at the current `generate_sample` function:
-1. It only generates base types (Bool, Int, String) or simple functions (Int -> ty)
-2. It only creates simple literals or trivial lambdas that don't use variables
-3. It doesn't generate applications at all
-4. It doesn't maintain a context of variables to use
-5. It doesn't recursively build larger types
+The goal is to improve:
+- tm_sizes_average (target: up to 100 nodes)
+- ty_sizes_average (target: up to 10 nodes)
+- used_vars_proportions_average (more variable usage)
+- applied_lambdas_proportions_average (more lambda applications)
+- unique_subterms_proportions_average (more unique subterms)
 
-The key issues are:
-1. Types are too small (need to reach size up to 10)
-2. Terms are too small (need to reach size up to 100)
-3. Variables introduced by lambdas are never used
-4. Lambdas are never applied
-5. No applications are generated at all
+The current implementation is very simple and produces tiny terms. It only generates:
+1. Bool literals
+2. Int literals
+3. String literals
+4. Simple lambdas wrapping other terms
 
-I need to create a more sophisticated generator that:
-1. Builds larger types (up to 10 nodes)
-2. Builds larger terms (up to 100 nodes)
-3. Tracks variables in scope
-4. Can generate applications
-5. Can use variables from scope
-6. Can apply lambdas to arguments
+The key issues:
+1. No variable usage at all - the context is never used to generate variables
+2. No applications - lambdas are never applied to arguments
+3. Very small sizes
 
-Let me design a better generator:
+Looking at the "prior programs" section, there's a more sophisticated implementation that was tried with better metrics (tm_sizes_average: 4.89, used_vars_proportions_average: 0.03, applied_lambdas_proportions_average: 0.17, unique_subterms_proportions_average: 0.49).
 
-```python
-def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
-    # First generate a type
-    ty = generate_type(rng, depth)
-    
-    # Then generate a term with that type
-    tm = generate_term(rng, ty, {}, depth)
-    
-    return (ty, tm)
+I need to design a completely different algorithm. Let me think about what would work better:
 
-def generate_type(rng: random.Random, depth) -> Ty:
-    if depth <= 0 or rng.random() < 0.3:
-        # Base types
-        i = rng.randrange(0, 3)
-        if i == 0:
-            return ("Bool",)
-        elif i == 1:
-            return ("Int",)
-        else:
-            return ("String",)
-    else:
-        # Function type
-        arg_ty = generate_type(rng, depth - 1)
-        ret_ty = generate_type(rng, depth - 1)
-        return ("Fun", arg_ty, ret_ty)
+1. **Grammar-based generation**: Instead of random choices, use a grammar-driven approach that builds up complexity systematically
+2. **Size-aware generation**: Track the exact size of the generated AST and ensure we use the full budget
 
-The generator builds types recursively, choosing between base types and function types based on depth and randomness. For terms, it needs to match the target type: literals work for base types, variables can be used if available in scope, lambdas create function types when wrapped around body terms, and applications combine two terms when the target is a function type.
+
+3. **Context-aware variable generation**: Actively look for variables in scope that match the target type
+4. **Application-heavy generation**: Prioritize creating applications to increase that metric
+
+The current implementation has several critical gaps: it lacks a proper context for tracking bound variables, never generates variables from context, never creates applications, and doesn't control term size. I need to build a system that maintains a context of available variables, generates variables when they match the target type, creates applications more frequently, and explicitly tracks AST size to maximize the budget.
+
+My approach will use a size-budget system where I generate types and terms with explicit size targets, maintain a context stack of available variables, and bias toward applications and lambda abstractions. I'll also ensure variables are actually used when they're introduced.

@@ -1,0 +1,40 @@
+The user is asking me to improve the performance of the code. Let me analyze the current state and the prior programs more carefully.
+
+Looking at the metrics:
+- Current program: Combined score 10.30, good_ratio 1.00, tm_sizes_average 1.35
+- Prior programs: Combined score 9.24, good_ratio 0.82, tm_sizes_average 4.89
+
+The current program has a higher combined score because it has perfect good_ratio (1.00), but generates very small terms.
+
+The key insight is that the combined score seems to balance good_ratio with other metrics. The current program gets 10.30 with perfect good_ratio but very small terms. The prior program got 9.24 with lower good_ratio but larger terms.
+
+I need to increase the term sizes while maintaining good_ratio at 1.00. The prior program's approach was good but had some issues with type safety.
+
+Let me look at the current code in the EVOLVE-BLOCK-START section:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+This is very simple and only generates small terms. The `depth` parameter is passed but not really used effectively.
+
+
+I should implement a more sophisticated generator that uses depth control properly, generates larger types and terms while maintaining type safety, and incorporates variables from context and lambda applications. The prior program attempted this but had type mismatches. I'll need to ensure proper type checking throughout the generation process to maintain good_ratio at 1.00.

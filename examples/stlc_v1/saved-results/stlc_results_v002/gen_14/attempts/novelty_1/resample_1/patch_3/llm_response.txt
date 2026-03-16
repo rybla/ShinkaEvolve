@@ -1,0 +1,35 @@
+The user is asking me to improve the performance of the lambda calculus generator. Let me look at the current code and propose a modification.
+
+The current code is:
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+This generates very small terms. The metrics show:
+- tm_sizes_average: 1.29 (max is 100)
+- ty_sizes_average: 1.29 (max is 10)
+- used_vars_proportions_average: 0.00
+- applied_lambdas_proportions_average: 0.00
+- unique_subterms_proportions_average: 0.13
+
+I need to create a more sophisticated generator. Let me propose a complete replacement that:
+1. Generates larger types (using depth)
+2. Generates larger terms
+3. Uses variables from context
+4. Generates applications
+5. Maintains type correctness
+
+I'll create a new version with helper functions similar to the first prior program but improved to maintain 100% good_ratio while increasing complexity.

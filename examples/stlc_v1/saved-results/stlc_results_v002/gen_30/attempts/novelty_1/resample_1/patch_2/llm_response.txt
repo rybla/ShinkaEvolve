@@ -1,32 +1,76 @@
-Let me analyze the problem more carefully. The current program generates lambda terms but never uses variables or applies lambdas. I need to find a way to add variable usage and lambda application while maintaining type correctness (good_ratio = 1.00).
+The user is saying my previous edit wasn't successful. Let me look at the current program again and propose a targeted improvement.
 
-The key insight is that I need to track variables in scope and properly type them when creating Var terms. Let me try a different approach - use a context-passing style to track bound variables.
+Current program:
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
 
-Looking at the type system:
-- A lambda `("Lam", "x", arg_ty, body)` has type `("Fun", arg_ty, ret_ty)` where `ret_ty` is the type of `body`
-- A variable `("Var", "x")` must refer to a bound variable with the correct type
+The issue is:
+1. Lambda always uses parameter "x" of type Int, but the body never uses "x"
+2. No App constructor is ever generated
+3. No Var constructor is ever used
 
-The issue is that when we create a lambda, we need to:
-1. Know what type the bound variable has (that's the arg_ty)
-2. Use that variable somewhere in the body with the correct type
+To improve, I should:
+1. Add context tracking - when creating a lambda, add the variable to context
+2. When generating the body of a lambda, sometimes use the variable from context (Var)
+3. Add App constructor to apply functions
 
-Let me think about how to generate valid terms that use variables:
+Let me create a more sophisticated generator that:
+1. Tracks variables in context
+2. Can generate Var (using context)
+3. Can generate App (applying functions)
+4. Maintains correctness (good_ratio = 1.00)
 
-For a lambda `("Lam", "x", ("Int",), body)`:
-- The body must have type "Int" (since the lambda returns Int)
-- We could use ("Var", "x") as the body - this would be type-correct!
+The key is to maintain type correctness while adding more complexity.
 
-But currently the code just passes `tm` as the body, which is the result of a recursive call. We need to either:
-1. Return the variable directly when depth is 0
-2. Or combine the variable with other constructs
+Let me write the improved version:
 
-Let me try a different approach - add a branch that creates a variable reference when the depth indicates we should use the bound variable.
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    return generate_with_context(rng, depth, [])
 
-Actually, let me think about this differently. The score seems to be:
-- good_ratio is weighted heavily (current: 1.0 gives best score ~10.3)
-- Other metrics like used_vars, applied_lambdas, unique_subterms also matter but less
+def generate_with_context(rng: random.Random, depth: int, context: List[Tuple[str, Ty]]) -> Tuple[Ty, Tm]:
+    if depth <= 0 or not context:
+        # Base case - just generate a literal
+        return generate_literal(rng)
+    
+    # Decide what to generate: 40% literal, 30% variable, 30% lambda
+    choice = rng.randrange(0, 10)
+    if choice < 4:
+        return generate_literal(rng)
+    elif choice < 7 and context:
+        # Use a variable from context
+        var_name, var_type = rng.choice(context)
+        return (var_type, ("Var", var_name))
+    else:
+        # Generate a lambda with a fresh variable
+        param_name = f"x{depth}"
+        param_type = ("Int",)
+        new_context = [(param_name, param_type)] + context
+        body_ty, body_tm = generate_with_context(rng, depth - 1, new_context)
+        return (("Fun", param_type, body_ty), ("Lam", param_name, param_type, body_tm))
 
-The first prior program with used_vars_proportions_average: 0.16 had good_ratio: 0.82 and score 8.73
+def generate_literal(rng: random.Random) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 3)
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 42))
+    else:
+        return (("String",), ("String", "hello"))
+```
 
-
-The trade-off is clear: trying to use variables breaks type correctness and hurts the score more than it helps. I should explore adding more structural variation instead - varying primitive types, adjusting recursion depth, and modifying how the nested lambdas are constructed might improve uniqueness without sacrificing the perfect type checking.
+This approach builds complexity by tracking variables in context, allowing the generator to reference them or create new lambdas that capture them, while staying type-correct through the context passing mechanism.

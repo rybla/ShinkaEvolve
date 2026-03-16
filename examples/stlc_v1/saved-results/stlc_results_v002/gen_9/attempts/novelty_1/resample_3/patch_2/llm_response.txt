@@ -1,0 +1,18 @@
+Let me try again with the correct format. I need to provide a complete new program that improves the performance metrics while maintaining the same inputs and outputs.
+
+Looking at the metrics:
+- tm_sizes_average: 1.35 (needs to be bigger, max 100)
+- ty_sizes_average: 1.35 (needs to be bigger, max 10)
+- used_vars_proportions_average: 0.00 (needs to be higher)
+- applied_lambdas_proportions_average: 0.00 (needs to be higher)
+- unique_subterms_proportions_average: 0.15 (needs to be higher)
+- good_ratio: 1.00 (must maintain this)
+
+The current program is too simple. I need to create a more sophisticated generator that:
+1. Builds larger types (up to 10 nodes)
+2. Builds larger terms (up to 100 nodes)
+3. Uses variables from context
+4. Applies lambdas to arguments
+5. Creates unique subterms
+
+Let me write a complete new program.

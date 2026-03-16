@@ -41,8 +41,22 @@ type AppTm = Tuple[Literal["App"], Tm, Tm]
 
 
 # EVOLVE-BLOCK-START
-def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
-    i = rng.randrange(0, 4 if depth > 0 else 3)
+def generate_sample(rng: random.Random, depth=10, context=None) -> Tuple[Ty, Tm]:
+    if context is None:
+        context = []
+
+    # At depth 0, only generate literals
+    if depth == 0:
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", True))
+        elif i == 1:
+            return (("Int",), ("Int", 27))
+        else:
+            return (("String",), ("String", "hello world"))
+
+    # At depth > 0, choose from literals, Lam, and App
+    i = rng.randrange(0, 5)  # 5 options
 
     if i == 0:
         return (("Bool",), ("Bool", True))
@@ -50,12 +64,17 @@ def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
         return (("Int",), ("Int", 27))
     elif i == 2:
         return (("String",), ("String", "hello world"))
+    elif i == 3:
+        # Generate lambda - FIX: add parameter to context
+        ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+        return (("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm))
     else:
-        ty, tm = generate_sample(rng)
-        return (
-            ("Fun", ("Int",), ty),
-            ("Lam", "x", ("Int",), tm),
-        )
+        # Generate application - need to be careful about types
+        # For simplicity, apply a lambda to a literal
+        arg_ty, arg_tm = generate_sample(rng, depth - 1, context)
+        func_ty = ("Fun", arg_ty, arg_ty)
+        func_tm = ("Lam", "x", arg_ty, ("Var", "x"))
+        return (arg_ty, ("App", func_tm, arg_tm))
 # EVOLVE-BLOCK-END
 
 # This part remains fixed (not evolved)

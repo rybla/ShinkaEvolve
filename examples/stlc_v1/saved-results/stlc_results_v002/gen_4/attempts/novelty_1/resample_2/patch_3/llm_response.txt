@@ -1,26 +1,20 @@
-The previous edit wasn't successful. Let me try again with the correct format. I need to provide a SEARCH/REPLACE block that replaces the generate_sample function.
+The user is asking me to improve the lambda-calculus generator. Looking at the current program and the metrics, I need to make targeted improvements.
 
-Looking at the current code:
-```python
-def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
-    """
-    Generate a sample type and term using a random seed.
-    """
+Current metrics:
+- Combined score: 10.30
+- good_ratio: 1.00 (perfect - all well-typed)
+- tm_sizes_average: 1.35 (very small)
+- ty_sizes_average: 1.35 (very small)
+- used_vars_proportions_average: 0.00 (no variable usage)
+- applied_lambdas_proportions_average: 0.00 (no lambda applications)
+- unique_subterms_proportions_average: 0.15 (low uniqueness)
 
-    i = rng.randrange(0, 4 if depth > 0 else 3)
+The current implementation is very basic - it only generates simple literals or a trivial lambda wrapping a recursive call. It doesn't use depth control properly, doesn't maintain a context for variables, and doesn't generate applications.
 
-    if i == 0:
-        return (("Bool",), ("Bool", True))
-    elif i == 1:
-        return (("Int",), ("Int", 27))
-    elif i == 2:
-        return (("String",), ("String", "hello world"))
-    else:
-        ty, tm = generate_sample(rng)
-        return (
-            ("Fun", ("Int",), ty),
-            ("Lam", "x", ("Int",), tm),
-        )
-```
+I need to improve this to:
+1. Use depth control properly to generate larger types (up to 10 nodes) and terms (up to 100 nodes)
+2. Maintain a context of available variables
+3. Generate applications to apply lambdas
+4. Increase term size while maintaining type correctness
 
-I need to replace this with a better implementation. Let me write a complete new version.
+Let me write a SEARCH/REPLACE block with an improved implementation.

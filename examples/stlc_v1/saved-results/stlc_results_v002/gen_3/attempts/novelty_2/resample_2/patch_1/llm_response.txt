@@ -1,0 +1,35 @@
+Let me analyze the current program and the prior programs to understand what's happening.
+
+The current program generates very simple terms - it mostly generates literals (Bool, Int, String) and occasionally a simple lambda wrapping an existing term. This results in:
+- good_ratio: 1.00 (all terms are well-typed)
+- tm_sizes_average: 1.35 (very small terms)
+- ty_sizes_average: 1.35 (very small types)
+- used_vars_proportions_average: 0.00 (no variables used)
+- applied_lambdas_proportions_average: 0.00 (no lambda applications)
+- unique_subterms_proportions_average: 0.15 (low uniqueness)
+
+The prior program had:
+- good_ratio: 0.82 (not all terms are well-typed - this is a problem!)
+- tm_sizes_average: 4.89
+- ty_sizes_average: 2.90
+- used_vars_proportions_average: 0.03
+- applied_lambdas_proportions_average: 0.17
+- unique_subterms_proportions_average: 0.49
+
+The combined score is 10.30 for current vs 9.24 for prior. The current program has perfect good_ratio (1.00) but very small sizes. The prior had lower good_ratio but larger terms.
+
+Looking at the metrics:
+1. `tm_sizes_average` - should be maximized (max 100)
+2. `ty_sizes_average` - should be maximized (max 10)
+3. `used_vars_proportions_average` - should be higher (more variable usage)
+4. `applied_lambdas_proportions_average` - should be higher (more lambda applications)
+5. `unique_subterms_proportions_average` - should be higher
+
+The current program has a perfect good_ratio of 1.00, which is great. But the sizes are too small and it doesn't use variables or apply lambdas.
+
+
+I need to build on the prior approach while fixing its type soundness issues. The key is implementing proper context tracking to ensure variables are always well-typed when used. This means maintaining a type environment as I generate terms, checking that variable references match their declared types, and ensuring lambda bodies respect their parameter types. With proper context management, I can safely increase term complexity through more lambda abstractions and applications while maintaining type safety.
+
+The generator should recursively construct both types and terms with depth control, using the context to validate variable usage. For types, I'll recursively build function types when depth allows, otherwise fall back to base types. For terms, I'll decide between generating lambdas, applications, or literals based on the target type, always validating against the context to catch type errors before they occur.
+
+When generating at depth 0, I must produce only literals or variables. For function types, I can generate either a lambda or application. For base types, I generate literals or variables. To increase variable usage, I'll first check the context for type-matching variables before creating new literals—this ensures variables are properly typed and used more frequently. Applications will generate a function term and argument term at reduced depth to build more complex expressions.

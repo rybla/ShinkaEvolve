@@ -1,0 +1,30 @@
+I need to make an actual edit. Let me look at the current program in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END section and replace it with an improved version.
+
+The current code is:
+```python
+
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+
+```
+
+I need to replace this with improved code that:
+1. Uses a context to track variables
+2. Decrements depth properly
+3. Generates applications
+4. Uses variables from context
+
+Let me write the improved code:

@@ -1,16 +1,1 @@
-The user wants me to provide a complete new program code. Let me analyze the current program and the prior programs to create an improved version.
-
-Current program (Score: 10.31):
-- Simple depth-based recursion
-- Fixed literals (True, 27, "hello world")
-- Hardcoded "x" for lambda variable
-- No variable usage, no applications
-- good_ratio: 1.00, used_vars_proportions_average: 0.00, applied_lambdas_proportions_average: 0.00
-
-Key improvements needed:
-1. Track bound variables through recursion
-2. Use those variables in the body of lambdas
-3. Apply lambdas to arguments
-4. Use unique variable names
-
-Let me create a program that adds these features while maintaining the good_ratio of 1.00.
+Let me provide the complete program directly. I'll use the proper format with the markers.

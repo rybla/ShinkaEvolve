@@ -1,0 +1,46 @@
+Let me analyze the current program and the performance metrics to understand what needs to be improved.
+
+Current program analysis:
+- It generates simple types and terms with very small sizes (tm_sizes_average: 1.33, ty_sizes_average: 1.33)
+- It has good_ratio: 1.00 (all samples are well-formed and well-typed)
+- But it has very low used_vars_proportions_average: 0.00 (no variable usage)
+- And very low applied_lambdas_proportions_average: 0.00 (no lambda applications)
+- And low unique_subterms_proportions_average: 0.14
+
+The current program is very simple - it just generates:
+1. Bool literals
+2. Int literals  
+3. String literals
+4. Or wraps them in a function type (Int -> ty) with a lambda
+
+The key issues are:
+1. Term sizes are too small (max ~1.33 nodes)
+2. No variable usage at all
+3. No lambda applications
+4. Low unique subterms
+
+Looking at the first program in the prior programs list, it had better metrics:
+- tm_sizes_average: 4.89
+- used_vars_proportions_average: 0.03
+- applied_lambdas_proportions_average: 0.17
+- unique_subterms_proportions_average: 0.49
+
+But it had lower good_ratio: 0.82
+
+So I need to balance:
+1. Increase term sizes (target: up to 100 nodes)
+2. Increase type sizes (target: up to 10 nodes)
+3. Increase variable usage
+4. Increase lambda applications
+5. Increase unique subterms
+6. Keep good_ratio high (at least 0.82 or better)
+
+The key parameters to tune:
+- Depth control for type generation
+- Probability of generating lambdas vs applications vs literals
+
+
+- Probability of using variables from context
+- How to build up complexity while maintaining type safety
+
+I'll develop a more sophisticated generation strategy that carefully balances complexity with type correctness. The approach will involve nuanced probability distributions and recursive depth management to create more interesting and varied lambda calculus structures while maintaining type safety.

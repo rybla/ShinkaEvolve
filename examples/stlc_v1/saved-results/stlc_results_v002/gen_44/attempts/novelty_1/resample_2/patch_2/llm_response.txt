@@ -1,10 +1,5 @@
-The user is asking me to make an edit to improve the program, but my previous edit was not successful. Let me try again with a more targeted approach.
+The previous edit wasn't applied. Let me try again with the correct format.
 
-Looking at the current program, I need to modify the `generate_sample` function to:
-1. Add a `bound_vars` parameter to track bound variables
-2. Add variable usage (Var terms)
-3. Add application (App terms)
-4. Use unique variable names
-5. Implement type-safe application
+Looking at the current program, I need to modify the App branch to generate non-identity functions. Let me create a proper search/replace block.
 
-Let me create the edit properly.
+The key change is in the else branch (i == 4) where we generate an application. Currently it creates an identity function (λx.x). I need to change it to generate a more complex function.

@@ -1,20 +1,8 @@
-def generate_sample(rng: random.Random, depth=10, ctx: list[tuple[str, Ty]] = None) -> Tuple[Ty, Tm]:
-    if ctx is None:
-        ctx = []
-    
-    # At depth 0, generate simple literals
-    if depth <= 0:
-        i = rng.randrange(0, 3)
-        if i == 0:
-            return (("Bool",), ("Bool", True))
-        elif i == 1:
-            return (("Int",), ("Int", 27))
-        else:
-            return (("String",), ("String", "hello world"))
-    
-    # At deeper depths, we can create more complex terms
-    i = rng.randrange(0, 6)
-    
-    if i == 0:
-        # Generate a Bool literal
-        return (("Bool",), ("Bool", rng.choice([True, False])))
+elif i == 3:
+    # Generate lambda - with 30% chance to use a variable from context
+    if context and rng.random() < 0.3:
+        var_name = rng.choice(context)
+        return (("Fun", ("Int",), ("Int",)), ("Lam", "x", ("Int",), ("Var", var_name)))
+    else:
+        ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+        return (("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm))

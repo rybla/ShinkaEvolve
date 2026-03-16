@@ -1,13 +1,11 @@
-The user says the previous edit was not successful. Let me think about what happened. It seems like my response was just analysis and I didn't actually provide a valid SEARCH/REPLACE block.
+The user says my previous edit wasn't successful. Let me look at the current program in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END section and propose a proper edit.
 
-Let me provide the actual edit now. I need to modify the generate_sample function in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END section.
+Looking at the current program:
 
-Looking at the current code:
 ```python
 
 def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
     i = rng.randrange(0, 4 if depth > 0 else 3)
-
     if i == 0:
         return (("Bool",), ("Bool", True))
     elif i == 1:
@@ -15,7 +13,7 @@ def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
     elif i == 2:
         return (("String",), ("String", "hello world"))
     else:
-        ty, tm = generate_sample(rng)  # Note: depth is not decremented!
+        ty, tm = generate_sample(rng)
         return (
             ("Fun", ("Int",), ty),
             ("Lam", "x", ("Int",), tm),
@@ -23,6 +21,15 @@ def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
 
 ```
 
-I want to change it to use the variable in a type-safe way. The key change is to make the lambda return the same type as its argument, so `("Var", "x")` is type-correct.
+I need to use the exact SEARCH/REPLACE format. Let me propose a change that:
+1. Adds context tracking
+2. Uses variables from context
+3. Adds App constructor
+4. Maintains correctness
 
-Let me provide the edit:
+The key issue is that the current program:
+- Never uses the variable "x" in lambda bodies
+- Never creates App (function application)
+- Has no context tracking
+
+Let me write a proper edit with the exact format.

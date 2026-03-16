@@ -1,0 +1,51 @@
+Let me analyze the current program and the metrics we need to improve:
+
+Current metrics:
+- Combined score to maximize: 10.30
+- good_ratio: 1.00
+- tm_sizes_average: 1.38 (should be higher, max is 100)
+- ty_sizes_average: 1.38 (should be higher, max is 10)
+- used_vars_proportions_average: 0.00 (should be higher)
+- applied_lambdas_proportions_average: 0.00 (should be higher)
+- unique_subterms_proportions_average: 0.15 (should be higher)
+
+The issue with the current implementation is that:
+1. It only generates very small types and terms (size ~1.38)
+2. It doesn't generate lambda terms that use variables
+3. It doesn't apply lambdas to arguments
+4. It has very few unique subterms
+
+Looking at the `generate_sample` function:
+- It has a `depth` parameter but it's never actually used properly
+- It only generates literals or simple lambdas with Int type
+- It never generates variables or applications
+- It never generates nested function types
+
+I need to rewrite this to:
+1. Generate larger types (up to 10 nodes)
+2. Generate larger terms (up to 100 nodes)
+3. Actually use variables introduced by lambdas
+4. Apply lambdas to arguments
+5. Have more unique subterms
+
+Let me design a better generator:
+
+For types:
+- Start with base types (Bool, Int, String)
+- Build function types from smaller types
+- Use depth to control size
+
+For terms:
+- Need to track the type context to know what variables are available
+- Need to generate variables, lambdas, applications, and literals
+- Need to apply variables to arguments
+- Need to apply lambdas to arguments
+
+I'll need a more sophisticated approach that:
+1. Tracks available variables with their types
+2. Generates terms based on a target type
+
+
+3. Controls the size by using budget/depth
+
+I'll implement separate functions for generating types and terms with appropriate size limits, then use them together to build well-typed lambda calculus expressions that satisfy the metrics.

@@ -1,15 +1,14 @@
+The user is saying the previous edit was not successful. It seems my response was just a description of what I wanted to do, but I didn't actually provide a valid SEARCH/REPLACE block.
 
-Let me try to understand why the previous edit wasn't applied. The error says "No changes applied", which might mean there was an issue with the format or the SEARCH block didn't match exactly.
+Let me look at the current program again and provide an actual edit.
 
-Let me carefully look at what's in the current file and provide a proper diff.
-
-The current EVOLVE-BLOCK-START and EVOLVE-BLOCK-END section contains:
+The current EVOLVE-BLOCK-START and EVOLVE-BLOCK-END section is:
 
 ```python
 # EVOLVE-BLOCK-START
 def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
     i = rng.randrange(0, 4 if depth > 0 else 3)
-
+    
     if i == 0:
         return (("Bool",), ("Bool", True))
     elif i == 1:
@@ -17,7 +16,7 @@ def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
     elif i == 2:
         return (("String",), ("String", "hello world"))
     else:
-        ty, tm = generate_sample(rng)  # Note: depth is not decremented!
+        ty, tm = generate_sample(rng)
         return (
             ("Fun", ("Int",), ty),
             ("Lam", "x", ("Int",), tm),
@@ -25,4 +24,55 @@ def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
 # EVOLVE-BLOCK-END
 ```
 
-Let me try to create a proper diff with the exact text.
+I need to replace this with an improved version. Let me think about what changes would help:
+
+1. Add context tracking for variables
+2. Add occasional variable usage
+3. Keep correctness at 1.00
+
+The key insight from the analysis is that:
+- The current approach generates type and term together, which ensures type consistency
+- We need to add variable tracking without breaking this
+
+Here's my plan:
+- Add a `context` parameter (set of available variable names)
+- When generating a lambda, add the parameter to context for the body
+- When generating the body, occasionally use a variable from context
+
+Let me write the replacement:
+
+```python
+def generate_sample(rng: random.Random, depth=10, context: set = None) -> Tuple[Ty, Tm]:
+    if context is None:
+        context = set()
+    
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+    
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        param_ty = ("Int",)
+        # Add parameter to context for body generation
+        body_ty, body_tm = generate_sample(rng, depth - 1, context | {"x"})
+        
+        # Decide whether to use a variable from context or generate a new term
+        if context and rng.random() < 0.3:
+            # Use a variable from the context
+            var_name = rng.choice(list(context))
+            return (
+                ("Fun", param_ty, body_ty),
+                ("Lam", "x", param_ty, ("Var", var_name)),
+            )
+        else:
+            # Generate a new term
+            return (
+                ("Fun", param_ty, body_ty),
+                ("Lam", "x", param_ty, body_tm),
+            )
+```
+
+I'll modify the approach to incorporate context tracking while maintaining type consistency. The goal is to introduce variable usage without breaking the core generation logic.

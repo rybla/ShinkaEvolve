@@ -1,0 +1,8 @@
+Let me analyze the current program and propose an improvement. The key insight from the analysis is that the current program generates the argument term without ensuring its type matches the expected arg_type. This can lead to type mismatches.
+
+Let me create a novel approach that:
+1. Uses type-directed argument generation - passes the expected type to recursive calls
+2. Improves function variable selection with proper type checking
+3. Uses a slightly different probability distribution for better exploration
+
+Here's my proposed solution:

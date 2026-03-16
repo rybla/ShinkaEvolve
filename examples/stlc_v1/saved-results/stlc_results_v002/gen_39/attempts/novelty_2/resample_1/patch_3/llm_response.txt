@@ -1,1 +1,25 @@
-Let me try again with a proper response format. I need to provide a complete new program that improves upon the current implementation.
+The user is saying my edit was not successful. Let me try again with a more careful approach. I need to make sure I'm providing the exact code that needs to be replaced.
+
+Looking at the current program in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END, I need to find the exact lambda case and replace it.
+
+The current code has:
+```python
+    elif i == 3:
+        # Generate lambda - with 30% chance to use a variable from context
+        if context and rng.random() < 0.3:
+            var_name = rng.choice(context)
+            return (("Fun", ("Int",), ("Int",)), ("Lam", "x", ("Int",), ("Var", var_name)))
+        else:
+            ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+            return (("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm))
+```
+
+I want to replace it with:
+```python
+    elif i == 3:
+        # Generate lambda - always add parameter to context for deeper nesting
+        ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+        return (("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm))
+```
+
+Let me make sure the indentation is correct and the SEARCH block matches exactly.

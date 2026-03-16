@@ -1,0 +1,88 @@
+The user is asking me to improve the current program. Looking at the current code, it has a very simple generate_sample function that only generates 4 simple cases and doesn't use the depth parameter properly.
+
+Let me analyze what needs to change:
+
+1. The current `generate_sample` function doesn't properly use the `depth` parameter - it calls itself recursively without decrementing depth
+2. It doesn't generate complex types (function types) with proper depth control
+3. It doesn't generate variables from context
+4. It doesn't generate applications
+5. It doesn't generate lambdas with proper body generation
+
+I need to write a more sophisticated generator that:
+1. Generates larger types (up to 10 nodes)
+2. Generates larger terms (up to 100 nodes)
+3. Uses variables from context
+4. Applies lambdas to arguments
+5. Has unique subterms
+
+Let me write the improved code:
+
+```python
+from typing import Literal, Tuple, List
+import random
+import tqdm
+
+"""
+`Ty` and `Tm` define the shape of a simply-typed lambda-calculus deeply embedded in Python. 
+
+Each value, be it the encoding of a type or a term, is a tuple where the first component of the tuple is the "constructor" and the rest of the components are the arguments. For example, this value encodes the `Bool` type:
+
+    ('Bool',)
+
+As another example, this value encodes the function type from `Bool` to `Bool`, which is often written `Bool -> Bool`:
+
+    ('Fun', ('Bool',), ('Bool',))
+
+As another example, this value encodes the function term, which takes a single `String` input and just returns that input (also known as the identity function):
+
+    ('Lam', 'x', ('String',), ('Var', 'x'))
+
+Note that ALL lambda terms must have a type annotation as the 1st argument, where in the above example the type annotation was the ('String',).
+
+Closely read the above below type aliases to understand the complete structure of this deep embedding of the lambda calculus in Python.
+
+
+"""
+
+type Ty = BoolTy | IntTy | StringTy | FunTy
+type BoolTy = Tuple[Literal["Bool"]]
+type IntTy = Tuple[Literal["Int"]]
+type StringTy = Tuple[Literal["String"]]
+type FunTy = Tuple[Literal["Fun"], Ty, Ty]
+
+
+type Tm = LitTm | VarTm | LamTm | AppTm
+type LitTm = (
+    Tuple[Literal["Bool"], bool]
+    | Tuple[Literal["Int"], int]
+    | Tuple[Literal["String"], str]
+)
+type VarTm = Tuple[Literal["Var"], str]
+type LamTm = Tuple[Literal["Lam"], str, Ty, Tm]
+type AppTm = Tuple[Literal["App"], Tm, Tm]
+
+I'll continue analyzing the type definitions and their potential implications for generating complex lambda calculus structures. The type system provides a robust framework for representing different types of terms and their interactions.
+
+The next part involves defining a function to generate sample types and terms using a random number generator. This approach allows for creating diverse and potentially interesting lambda calculus examples.
+
+The function will systematically generate types with controlled complexity, using a depth parameter to manage the recursion. By leveraging probabilistic choices, it can create a wide range of type structures, from simple base types to more intricate function types.
+
+The implementation ensures that as depth increases, the likelihood of generating more complex function types grows, while maintaining a fallback mechanism for base types when depth is exhausted.
+
+I'll generate a random base type by selecting from Boolean, Integer, and String types using a random index. This provides a simple way to create fundamental type representations.
+
+The term generation strategy focuses on creating well-typed lambda calculus expressions with controlled complexity. It uses depth to manage recursion and considers the target type when constructing terms. The approach allows generating literals, variables, lambda abstractions, and function applications while maintaining type safety.
+
+The generation process carefully balances different term construction strategies, using probabilistic choices to introduce variability in the generated lambda calculus expressions. By tracking context and depth, it can create increasingly complex terms that respect the underlying type system.
+
+When generating literals or variables, the method first checks the context for potential variable reuse. If a matching variable exists and meets certain probability conditions, it can directly use that variable. Otherwise, it generates a type-specific literal, such as boolean values, integers, or strings, ensuring type consistency.
+
+For lambda generation, the approach creates a unique argument name, extracts argument and return types from the function type, and constructs a new context that includes the argument. This allows recursive term generation with an expanded type environment, enabling more complex lambda abstractions.
+
+The application generation strategy involves creating a function type with a randomly selected base type as the argument, then generating both the function and its argument using the current context and depth. This approach supports building more complex term structures through function application.
+
+The current implementation reveals a critical issue with recursive depth management. The recursive calls to generate_sample do not decrement the depth parameter, which could lead to infinite recursion or uncontrolled term generation. This suggests a need to modify the recursive approach to properly control depth and prevent potential runtime complications.
+
+The function attempts to generate increasingly complex types and terms by recursively building nested function types, but lacks a clear mechanism to limit the recursion depth. This could result in generating extremely complex or potentially unbounded type structures.
+
+The proposed solution involves implementing a more robust depth control strategy, ensuring that each recursive call reduces the available depth and prevents uncontrolled generation of complex types and terms.

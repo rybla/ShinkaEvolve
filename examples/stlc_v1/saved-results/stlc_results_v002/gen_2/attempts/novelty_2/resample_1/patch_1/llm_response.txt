@@ -1,42 +1,43 @@
+Let me analyze the current program and the performance metrics to understand what needs to be improved.
 
-Let me analyze the current program and understand what's happening:
+Current performance metrics:
+- Combined score to maximize: 10.30
+- good_ratio: 1.00 (all samples are well-typed)
+- tm_sizes_average: 1.35 (very small terms)
+- ty_sizes_average: 1.35 (very small types)
+- used_vars_proportions_average: 0.00 (no variable usage)
+- applied_lambdas_proportions_average: 0.00 (no lambda applications)
+- unique_subterms_proportions_average: 0.15 (low variety of subterms)
 
-1. The current `generate_sample` function is very simple and generates very small types and terms
-2. Looking at the metrics:
-   - `tm_sizes_average: 1.38` (very small, max is 100)
-   - `ty_sizes_average: 1.38` (very small, max is 10)
-   - `used_vars_proportions_average: 0.00` (no variables are being used!)
-   - `applied_lambdas_proportions_average: 0.00` (no lambdas are being applied!)
-   - `unique_subterms_proportions_average: 0.15` (very low)
+Looking at the current `generate_sample` function:
+1. It only generates base types (Bool, Int, String) and simple function types (Int -> ty)
+2. It only generates literal terms, not variables or applications
+3. It doesn't use the `depth` parameter properly to control complexity
+4. It doesn't generate any actual lambda abstractions that use their bound variables
+5. It doesn't generate any application terms
 
-The current implementation has several problems:
-1. It always generates literals most of the time (3 out of 4 chances when depth > 0)
-2. It never generates variable usage - the lambda always returns the term generated recursively
-3. No applications are being generated
-4. The depth parameter isn't really being used properly
+The key issues are:
+1. Terms are too small (avg 1.35 nodes)
+2. Types are too small (avg 1.35 nodes)
+3. No variable usage (0%)
+4. No lambda applications (0%)
+5. Low unique subterms (0.15)
 
-To improve this, I need to:
-1. Generate larger types (up to 10 nodes)
-2. Generate larger terms (up to 100 nodes)
-3. Actually use variables introduced by lambdas
-4. Apply lambdas to arguments
-5. Have more unique subterms
-
-Let me think about how to properly generate well-typed lambda calculus terms:
-
-For a term to be well-typed:
-- Literals have their corresponding types
-- Variables must be in scope with the right type
-- Lambda (λx:T. t) has type T -> type(t) where x is bound in t
-- Application (t1 t2) requires t1 : A -> B and t2 : A, result is B
-
-The key insight is that we need to track the type context (what variables are in scope with what types).
+To improve, I need to:
+1. Use the depth parameter to control size
+2. Generate more complex types (nested function types)
+3. Generate variables and applications
+4. Make sure lambdas are applied to arguments
+5. Use the variables that are introduced by lambdas
 
 Let me design a better generator:
 
-1. First, generate a type
+1. First, generate a type with a certain depth/size
+2. Then generate a term with that type
+
+For type generation:
+- Base types: Bool, Int, String
+- Function types: FunTy (ty1 -> ty2)
 
 
-2. Then generate a term with that type, maintaining a context of available variables
-
-I'll track available variables in a context mapping names to their types, and randomly decide between generating a literal, using a variable from context, creating a lambda, or applying a function. The depth parameter controls how large the generated structures can grow.
+- For term generation, I'll need to handle variables by tracking what's in scope, then build lambdas that apply their parameters, and construct applications that combine these pieces together.

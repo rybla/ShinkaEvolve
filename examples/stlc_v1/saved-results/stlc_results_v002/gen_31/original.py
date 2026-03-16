@@ -43,7 +43,6 @@ type AppTm = Tuple[Literal["App"], Tm, Tm]
 # EVOLVE-BLOCK-START
 def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
     i = rng.randrange(0, 4 if depth > 0 else 3)
-
     if i == 0:
         return (("Bool",), ("Bool", True))
     elif i == 1:

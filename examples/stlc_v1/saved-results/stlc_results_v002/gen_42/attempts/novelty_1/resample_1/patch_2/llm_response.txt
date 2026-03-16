@@ -1,13 +1,22 @@
-I need to propose an edit to improve the performance of the current program. Let me analyze what's missing:
+Let me analyze the programs more carefully and create a proper crossover.
 
-1. The current program doesn't use variables at all (used_vars_proportions_average: 0.00)
-2. It doesn't create applications (applied_lambdas_proportions_average: 0.00)
-3. The terms are very small (tm_sizes_average: 1.30)
+Looking at the current program (Score: 10.64):
+- Has depth-based termination (depth == 0 only generates literals)
+- Has App constructor
+- Doesn't use context for variables in Lam branch
 
-I need to add:
-1. A context/bound_vars parameter to track bound variables
-2. Ability to generate and use variables from context
-3. Ability to create applications
-4. Type-safe application with fallback
+Looking at the crossover inspiration (Score: 10.31):
+- Uses context with 30% chance to reference variables in Lam
+- But it doesn't use App constructor
+- It doesn't properly add parameters to context when recursing
 
-Let me craft an edit that incorporates these techniques from the best programs.
+The key insight from the best programs:
+1. Program 3 and 4 (scores 10.60 and 10.62) both have App and Lam with context
+2. The current program (10.64) has App but doesn't use context for variables
+
+Let me create a crossover that:
+1. Keeps the depth-based termination (essential for correctness)
+2. Keeps App constructor (helps with score)
+3. Adds context-based variable usage in Lam (from crossover inspiration)
+
+The crossover inspiration has a bug - it doesn't add "x" to context when recursing. I need to fix that while adding the 30% chance to use variables.

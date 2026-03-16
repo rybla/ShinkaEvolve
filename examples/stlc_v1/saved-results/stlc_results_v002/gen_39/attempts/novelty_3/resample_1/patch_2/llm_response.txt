@@ -1,10 +1,56 @@
-The user is saying my previous edit was not successful. Let me provide a complete new program that improves on the current implementation.
+Looking at the analysis more carefully, I need to understand what's happening. Let me re-examine the code and see what improvement can be made.
 
-Looking at the analysis, the key improvements needed are:
-1. Use `bound_vars` to track bound variables
-2. Use probabilistic variable selection
-3. Implement type-safe application with fallback
-4. Use unique variable names with f-strings
-5. Use probabilistic termination
+The current program has:
+- good_ratio: 1.00 (perfect correctness - this is the most important)
+- tm_sizes_average: 1.84
+- used_vars_proportions_average: 0.11
+- applied_lambdas_proportions_average: 0.11
+- unique_subterms_proportions_average: 0.23
 
-Let me write a complete new program with these improvements.
+The best prior program (program 3) has:
+- good_ratio: 1.00
+- tm_sizes_average: 1.87
+- used_vars_proportions_average: 0.11
+- applied_lambdas_proportions_average: 0.11
+- unique_subterms_proportions_average: 0.25
+
+So the key differences are:
+- tm_sizes_average: 1.84 vs 1.87 (current is lower)
+- unique_subterms_proportions_average: 0.23 vs 0.25 (current is lower)
+
+The current program has a 30% chance to use a variable from context in the lambda case. Looking at the third prior program, it doesn't have this 30% chance logic - it always generates a recursive call.
+
+Actually wait, looking at the third prior program more carefully:
+
+```python
+elif i == 3:
+    # Generate lambda - FIX: add parameter to context
+    ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+    return (("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm))
+```
+
+This always recurses with context + ["x"], no 30% chance.
+
+The second prior program (which performed worse) had:
+
+
+```python
+if context and rng.random() < 0.3:  # 30% chance to use a variable
+    var_name = rng.choice(context)
+    return (
+        ("Fun", ("Int",), ("Int",)),
+        ("Lam", "x", ("Int",), ("Var", var_name)),
+    )
+else:
+    ty, tm = generate_sample(rng, depth - 1, context)
+    return (
+        ("Fun", ("Int",), ty),
+        ("Lam", "x", ("Int",), tm),
+    )
+```
+
+This had the 30% chance but didn't add to context when recursing! So the issue is that the current version combines the 30% chance with adding to context, which might be creating a mismatch in how variables are tracked. The current implementation tries to use a variable from context 30% of the time, but then always adds "x" to context in the recursive call. This creates a problem where we're adding variables to context that might not actually be used, reducing the diversity of unique subterms.
+
+The better approach would be to either remove the 30% chance logic entirely and always recurse with the updated context (like the best prior program), or restructure how we handle variable usage to avoid this context pollution issue.
+
+Looking at the metrics, both the current and best prior programs show used_vars_proportions_average at 0.11, so the 30% chance isn't meaningfully improving variable usage. However, the best prior program achieves higher unique_subterms_proportions_average (0.25 vs 0.23) and tm_sizes_average (1.87 vs 1.84). The simplest path forward is removing the 30% chance logic to match the better-performing prior approach.

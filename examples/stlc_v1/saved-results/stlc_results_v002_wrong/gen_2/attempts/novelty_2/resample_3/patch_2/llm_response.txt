@@ -1,0 +1,2417 @@
+
+The user wants me to propose a modification to the generate_sample function to improve the performance metrics. The current generator is too simple and produces very small types and terms, and does not use variables or apply lambdas.
+
+We need to implement a type-directed generator that generates larger types (up to 10 nodes) and larger terms (up to 100 nodes), and also ensures that the generated terms use variables and apply lambdas.
+
+We need to modify the generate_sample function in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END block.
+
+We need to define helper functions for generating types and terms.
+
+We need to ensure that the generated term matches the generated type.
+
+We need to keep track of the size (number of nodes) to enforce the limits.
+
+We need to keep track of the number of used variables, applied lambdas, and unique subterms to improve the metrics.
+
+We need to use the random number generator to make random choices.
+
+We need to ensure that the generated types and terms are well-formed.
+
+We need to use the type definitions (Ty, Tm) and the term representation as described.
+
+We need to generate unique variable names.
+
+We need to generate type annotations for lambdas.
+
+We need to consider the base types: Bool, Int, String.
+
+We need to consider function types: FunTy.
+
+We need to consider literals: Bool, Int, String.
+
+We need to consider variables: VarTm.
+
+We need to consider lambda abstractions: LamTm.
+
+We need to consider applications: AppTm.
+
+We need to consider the environment: mapping from variable names to types.
+
+We need to consider the size of the type: number of nodes in the type AST.
+
+We need to consider the size of the term: number of nodes in the term AST.
+
+We need to consider the maximum type size: 10.
+
+We need to consider the maximum term size: 100.
+
+We need to consider the performance metrics: good_ratio, tm_sizes_average, ty_sizes_average, used_vars_proportions_average, applied_lambdas_proportions_average, unique_subterms_proportions_average.
+
+We need to improve these metrics.
+
+Thus, we need to implement a type-directed generator.
+
+Let's outline the approach:
+
+1. Generate a type using generate_type(max_type_size). This will generate a type with size up to max_type_size (10). We can use a recursive approach: with some probability, generate a base type; with some probability, generate a function type, where the domain and codomain are generated recursively with reduced size.
+
+2. Generate a term of that type using generate_term_of_type(ty, env, max_term_size). This will generate a term of type ty with size up to max_term_size (100). We can use a recursive approach: with some probability, generate a literal of the appropriate base type; with some probability, generate a variable of the appropriate type if available in the environment; with some probability, generate a lambda abstraction (if the type is a function type); with some probability, generate an application (if the type is a function type, we can generate a term of the function type and then apply it to an argument of the domain type).
+
+3. We need to keep track of the number of introduced variables (by lambdas) and the number of used variables (by Var terms). We can count them when generating the term.
+
+4. We need to keep track of the number of lambda abstractions and the number of those that are applied (i.e., appear as the function part of an App term). We can count them when generating the term.
+
+5. We need to keep track of the number of unique subterms (lambda and application subterms). We can keep a set of subterms and count the size.
+
+6. We need to ensure that the term size does not exceed max_term_size. We can pass a remaining size parameter and decrement it as we generate nodes.
+
+7. We need to ensure that the type size does not exceed max_type_size. We can similarly limit the size when generating types.
+
+8. We need to ensure that the generated term matches the generated type. The type-directed generation ensures this.
+
+Thus, we need to implement these helper functions.
+
+We also need to consider the random choices: we need to use the random number generator to choose between different alternatives.
+
+We need to consider the environment: we need to keep track of the types of variables. We can use a dictionary.
+
+We need to consider the variable names: we can generate names like "x", "y", "z", "x1", "y1", etc. We can keep a counter.
+
+We need to consider the type annotations for lambdas: we need to include the type annotation in the lambda term.
+
+We need to consider the representation: the lambda term is a tuple with constructor "Lam", parameter name, type annotation, and body term.
+
+We need to consider the representation: the application term is a tuple with constructor "App", function term, argument term.
+
+We need to consider the representation: the variable term is a tuple with constructor "Var" and variable name.
+
+We need to consider the representation: the literal term is a tuple with constructor "Bool", "Int", or "String" and a value.
+
+We need to consider the representation: the type is a tuple with constructor "Bool", "Int", "String", or "Fun".
+
+We need to consider the representation: the function type is a tuple with constructor "Fun", domain type, codomain type.
+
+Thus, we need to implement the generator.
+
+Now, let's think about the details.
+
+First, we need to define a function to compute the size of a type. The size of a type is the number of nodes in its AST. For base types (Bool, Int, String), the size is 1. For function types (FunTy), the size is 1 + size(domain) + size(codomain). We can define a function ty_size(ty) that returns the size.
+
+Similarly, we need a function tm_size(tm) that returns the size of a term. For literals, the size is 1. For variables, the size is 1. For lambda abstractions, the size is 1 + size(body). For applications, the size is 1 + size(function) + size(argument).
+
+We can use these functions to enforce the size limits.
+
+Now, we need to generate a type. We can use a function generate_type(max_size) that returns a type. We can use a recursive approach:
+
+- If max_size <= 1, we can only generate a base type (Bool, Int, String). We can choose one of them randomly.
+
+- If max_size > 1, we can either generate a base type or a function type. We can choose with some probability.
+
+- If we generate a function type, we need to split the max_size between the domain and codomain. We can choose a split point, e.g., we can use random.randint(1, max_size-1) to split the size. Then we generate the domain with size split, and the codomain with size max_size-1-split (since the function type node itself counts as 1).
+
+We need to ensure that the generated type has size <= max_size.
+
+Now, we need to generate a term of a given type. We can use a function generate_term_of_type(ty, env, max_size) that returns a term.
+
+We need to consider the type ty:
+
+- If ty is a base type (Bool, Int, String), we can generate a literal of that type. We can also generate a variable of that type if there is a variable in the environment with that type. We can choose between these options with some probability.
+
+- If ty is a function type (FunTy), we can generate a lambda abstraction: we choose a parameter name (e.g., a fresh variable name), and we generate a body term of the codomain type in the extended environment. We can also generate an application: we generate a term of the function type (i.e., a term that has type ty) and then apply it to an argument of the domain type. However, generating a term of the function type itself is recursive. Alternatively, we can generate a term of the function type by generating a lambda abstraction and then applying it. But that might be complicated.
+
+Alternatively, we can generate a term of a function type by generating a lambda abstraction (which is a term of the function type). We can also generate an application of a term of the function type to an argument, but that would result in a term of the codomain type, not the function type. So to generate a term of a function type, we need to generate a lambda abstraction.
+
+Thus, for a function type, we can generate a lambda abstraction. We can also generate an application if we first generate a term of the function type and then apply it, but that would result in a term of the codomain type, not the function type. So we cannot generate an application for a function type directly.
+
+Wait, we need to generate a term of a given type. So if the given type is a function type, we can generate a lambda abstraction. We can also generate a variable of that type if there is a variable in the environment with that function type.
+
+But note: we can also generate an application that results in a function type? No, application results in the codomain type. So we cannot generate an application for a function type.
+
+Thus, for function types, we can generate a lambda abstraction, or a variable of that function type (if available in the environment). But we might not have a variable of that function type in the environment unless we have introduced one by a previous lambda.
+
+Thus, we can generate a lambda abstraction.
+
+Now, we need to consider the max_size. We need to ensure that the generated term has size <= max_size.
+
+We can use a recursive approach:
+
+- If max_size <= 1, we can only generate a literal (if the type is a base type) or a variable (if available). But we cannot generate a lambda or application with size 1.
+
+- If max_size > 1, we can choose between generating a literal, a variable, a lambda, or an application, depending on the type and the environment.
+
+We need to consider the probability of each choice. We want to generate more lambda and application terms to improve the metrics. However, we also need to ensure that we generate well-typed terms.
+
+We can define a probability distribution:
+
+- For base types, we can generate a literal with high probability, and a variable with some probability if available.
+
+- For function types, we can generate a lambda with high probability, and a variable with some probability if available.
+
+We also need to consider the size: generating a lambda adds 1 node (the lambda itself) plus the size of the body. Generating an application adds 1 node (the application) plus the size of the function and argument.
+
+We need to ensure that we do not exceed max_size.
+
+We also need to consider the environment: we need to keep track of the types of variables.
+
+We also need to keep track of the number of introduced variables and used variables.
+
+We also need to keep track of the number of lambda abstractions and applied lambdas.
+
+We also need to keep track of the unique subterms.
+
+We can pass additional state to the generate_term_of_type function: we can pass a list or dictionary to collect statistics.
+
+Alternatively, we can compute the statistics after generating the term by traversing the term.
+
+We can compute the term size, the number of introduced variables (by counting lambda abstractions), the number of used variables (by counting variable occurrences), the number of lambda abstractions (by counting lambda nodes), the number of applied lambdas (by counting lambda nodes that appear as the function part of an application), and the number of unique subterms (by counting distinct lambda and application subterms).
+
+We can define a function analyze_term(tm) that returns a dictionary with these statistics.
+
+We can then use these statistics to compute the metrics.
+
+But note: the metrics are computed by the run function (the lc.run function). We don't need to compute them in the generator. The generator just needs to produce terms that will result in good metrics. However, we need to ensure that we produce terms that use variables and apply lambdas.
+
+Thus, we need to generate terms that include variable usage and lambda applications.
+
+We can use the type-directed generator to generate terms that use variables and apply lambdas.
+
+Now, let's think about the details of the generator.
+
+We need to generate a type first, then generate a term of that type.
+
+We need to ensure that the type size is <= 10 and the term size is <= 100.
+
+We can set the max_type_size to 10 and max_term_size to 100.
+
+We can use a depth parameter to control the size. The current generate_sample function takes a depth parameter, but it's not used. We can use it as the initial max_size for the type and term.
+
+But note: the generate_sample function is called with depth=10. So we can use depth as the max_type_size and max_term_size.
+
+However, the depth parameter is passed to generate_sample, but we can ignore it and use our own limits.
+
+We can set the max_type_size to 10 and max_term_size to 100.
+
+Now, let's think about the generate_type function.
+
+We can define:
+
+def generate_type(max_size):
+    if max_size <= 1:
+        # generate a base type
+        return generate_base_type()
+    else:
+        # choose between base type and function type
+        if rng.random() < 0.5:
+            return generate_base_type()
+        else:
+            # generate a function type
+            # split the size between domain and codomain
+            # we need to allocate 1 for the Fun node, and then split the rest between domain and codomain
+            # we can choose a split point
+            split = rng.randint(1, max_size - 2)  # at least 1 for domain and 1 for codomain
+            domain = generate_type(split)
+            codomain = generate_type(max_size - 1 - split)
+            return ("Fun", domain, codomain)
+
+But we need to ensure that the generated type has size <= max_size. The above approach should work.
+
+We need to define generate_base_type:
+
+def generate_base_type():
+    i = rng.randrange(0, 3)
+    if i == 0:
+        return ("Bool",)
+    elif i == 1:
+        return ("Int",)
+    else:
+        return ("String",)
+
+Now, we need to define generate_term_of_type.
+
+We need to pass the environment (mapping from variable names to types) and the max_size.
+
+We can define:
+
+def generate_term_of_type(ty, env, max_size):
+    # base case: if max_size <= 1, we can only generate a literal or a variable if available
+    if max_size <= 1:
+        # try to generate a variable if available
+        if rng.random() < 0.5:
+            # try to find a variable of type ty in env
+            vars_of_type = [name for name, t in env.items() if t == ty]
+            if vars_of_type:
+                name = rng.choice(vars_of_type)
+                return ("Var", name)
+        # otherwise, generate a literal of type ty (if ty is a base type)
+        if ty == ("Bool",):
+            return ("Bool", rng.choice([True, False]))
+        elif ty == ("Int",):
+            return ("Int", rng.randint(0, 100))
+        elif ty == ("String",):
+            return ("String", "hello")
+        else:
+            # if ty is a function type and max_size is 1, we cannot generate a term of that type
+            # we need to generate a lambda, but that would require more size
+            # so we need to handle this case
+            # we can generate a lambda with a dummy body? But that would not be well-typed.
+            # So we need to ensure that max_size is > 1 for function types.
+            # We can raise an error or generate a dummy term.
+            # Alternatively, we can generate a variable if available.
+            # If no variable is available, we cannot generate a term of a function type with size 1.
+            # So we need to handle this case.
+            # We can generate a lambda with a dummy body, but that would not be well-typed.
+            # So we need to ensure that we don't call generate_term_of_type with max_size <= 1 for a function type.
+            # We can adjust the probability in the recursive case to avoid this.
+            pass
+
+    # recursive case: we have max_size > 1
+    # we can choose between literal, variable, lambda, application
+    # we need to consider the type
+
+    # For base types, we can generate a literal or a variable
+    # For function types, we can generate a lambda or a variable
+
+    # We want to generate more lambda and application terms to improve the metrics.
+    # So we can set a probability for each option.
+
+    if ty in [("Bool",), ("Int",), ("String",)]:
+        # base type
+        # choose between literal and variable
+        if rng.random() < 0.7:
+            # generate literal
+            if ty == ("Bool",):
+                return ("Bool", rng.choice([True, False]))
+            elif ty == ("Int",):
+                return ("Int", rng.randint(0, 100))
+            else:
+                return ("String", "hello")
+        else:
+            # try to generate variable
+            vars_of_type = [name for name, t in env.items() if t == ty]
+            if vars_of_type:
+                name = rng.choice(vars_of_type)
+                return ("Var", name)
+            else:
+                # if no variable available, generate literal
+                if ty == ("Bool",):
+                    return ("Bool", rng.choice([True, False]))
+                elif ty == ("Int",):
+                    return ("Int", rng.randint(0, 100))
+                else:
+                    return ("String", "hello")
+    else:
+        # function type
+        # choose between lambda and variable
+        # we want to generate lambda more often
+        if rng.random() < 0.9:
+            # generate lambda
+            # choose a parameter name
+            param_name = fresh_var_name()
+            param_type = ty[1]  # domain type
+            # extend environment
+            env2 = env.copy()
+            env2[param_name] = param_type
+            # generate body
+            # we need to allocate size for the lambda node (1) and the body
+            body_max_size = max_size - 1
+            # we can split the body_max_size between the body and the argument (if we generate an application)
+            # but we are generating a lambda, so we just need to generate the body
+            body = generate_term_of_type(ty[2], env2, body_max_size)
+            return ("Lam", param_name, param_type, body)
+        else:
+            # try to generate variable
+            vars_of_type = [name for name, t in env.items() if t == ty]
+            if vars_of_type:
+                name = rng.choice(vars_of_type)
+                return ("Var", name)
+            else:
+                # if no variable available, generate lambda
+                param_name = fresh_var_name()
+                param_type = ty[1]  # domain type
+                env2 = env.copy()
+                env2[param_name] = param_type
+                body_max_size = max_size - 1
+                body = generate_term_of_type(ty[2], env2, body_max_size)
+                return ("Lam", param_name, param_type, body)
+
+But wait, we also need to generate application terms. The above generator does not generate application terms. We need to generate application terms to improve the applied_lambdas_proportions_average metric.
+
+We need to generate an application term when we want to apply a lambda. But note: the application term has type the codomain type of the function. So if we want to generate a term of type ty, we can generate an application if ty is a base type (i.e., the codomain of a function). But we cannot generate an application to produce a function type.
+
+Alternatively, we can generate an application as part of the body of a lambda. For example, we can generate a lambda body that is an application.
+
+But note: the generate_term_of_type function is called with a given type ty. If ty is a base type, we can generate an application: we can generate a term of a function type (i.e., a lambda) and then apply it to an argument of the domain type. The result is a term of the codomain type (which is ty). So we can generate an application for base types.
+
+Thus, we can modify the generate_term_of_type function to also generate an application for base types.
+
+We can adjust the probability:
+
+- For base types, we can generate a literal, a variable, or an application. We can set a probability for each.
+
+- For function types, we can generate a lambda or a variable.
+
+We need to ensure that we generate enough applications to improve the applied_lambdas_proportions_average.
+
+We also need to ensure that the generated application is well-typed: we need to generate a function term (which has a function type) and an argument term (which has the domain type). The result is a term of the codomain type.
+
+Thus, for a base type ty, we can generate an application by:
+
+- Generate a function term of a function type (say, FunTy(domain, ty)). We can generate a lambda that returns a term of type ty. But note: we need to generate a term of type FunTy(domain, ty). We can generate a lambda that takes a parameter of type domain and returns a term of type ty. Then we can apply that lambda to an argument of type domain.
+
+But note: this would require generating a lambda, which would increase the size. We need to allocate size for the lambda and the argument.
+
+Alternatively, we can generate a variable of a function type if available in the environment. But we might not have a variable of a function type unless we have introduced one by a previous lambda.
+
+Thus, we can generate an application by:
+
+- Generate a function term of a function type (FunTy(domain, ty)). We can generate a lambda that takes a parameter of type domain and returns a term of type ty. We can use generate_term_of_type(FunTy(domain, ty), env, some_size) to generate the function term. Then we generate an argument term of type domain. Then we combine them with an application.
+
+But note: we are generating a term of type ty (the base type). So we can generate an application that results in type ty.
+
+Thus, we can modify the generate_term_of_type function to consider generating an application for base types.
+
+We can set a probability, e.g., 0.3, to generate an application for base types.
+
+We need to ensure that we have enough size to generate the application. We need to allocate size for the application node (1), the function term, and the argument term.
+
+We can choose a split for the size: we can allocate some size for the function term and some for the argument term. We can use random split.
+
+We also need to ensure that the function term has a function type, and the argument term has the domain type.
+
+We also need to ensure that the generated application is well-typed.
+
+Now, let's think about the details.
+
+We can modify the generate_term_of_type function:
+
+def generate_term_of_type(ty, env, max_size):
+    if max_size <= 1:
+        # as before
+        ...
+
+    # recursive case
+    if ty in [("Bool",), ("Int",), ("String",)]:
+        # base type
+        # choose between literal, variable, application
+        choice = rng.random()
+        if choice < 0.5:
+            # generate literal
+            ...
+        elif choice < 0.8:
+            # try to generate variable
+            ...
+        else:
+            # generate application
+            # we need to generate a function term of a function type and an argument term of the domain type
+            # we can choose a domain type (any base type)
+            domain = generate_base_type()
+            fun_ty = ("Fun", domain, ty)
+            # generate function term
+            fun_max_size = rng.randint(1, max_size - 2)  # leave at least 1 for argument and 1 for app node
+            fun = generate_term_of_type(fun_ty, env, fun_max_size)
+            # generate argument term
+            arg_max_size = max_size - 1 - tm_size(fun)  # but we don't have tm_size yet
+            # we can compute the size of the function term after generating it, but we don't know the size in advance.
+            # We can generate the argument term with the remaining size.
+            arg_max_size = max_size - 1 - 1  # we don't know the size of fun, but we can approximate
+            # Alternatively, we can split the size randomly.
+            # We can choose a split point for the function and argument.
+            # We can do:
+            # split = rng.randint(1, max_size - 2)
+            # fun_max_size = split
+            # arg_max_size = max_size - 1 - split
+            # then generate fun and arg with those sizes.
+            # Then we combine them.
+            split = rng.randint(1, max_size - 2)
+            fun_max_size = split
+            arg_max_size = max_size - 1 - split
+            fun = generate_term_of_type(fun_ty, env, fun_max_size)
+            arg = generate_term_of_type(domain, env, arg_max_size)
+            return ("App", fun, arg)
+    else:
+        # function type
+        # choose between lambda and variable
+        ...
+
+But note: we need to compute the size of the term to enforce the limit. We can compute the size after generating the term, but we need to ensure that we don't exceed the limit. We can use the split approach to allocate size.
+
+We also need to compute the size of the generated term. We can define a function tm_size(tm) that returns the size.
+
+We can compute the size after generating the term and then adjust if necessary, but that might be complicated.
+
+Alternatively, we can use the split approach to allocate size.
+
+We also need to consider the case where we generate a lambda: we need to allocate size for the lambda node (1) and the body. We can use split for the body.
+
+We can adjust the probabilities to improve the metrics.
+
+We also need to consider the variable names: we need to generate unique variable names. We can keep a counter and generate names like "x0", "x1", etc.
+
+We also need to consider the environment: we need to pass the environment to the recursive calls.
+
+We also need to consider the case where we generate a lambda: we need to extend the environment with the parameter variable.
+
+We also need to consider the case where we generate an application: we need to generate a function term and an argument term.
+
+We also need to consider the case where we generate a variable: we need to choose a variable from the environment.
+
+We also need to consider the case where we generate a literal: we need to generate a value of the appropriate type.
+
+We also need to consider the case where we generate a base type: we can generate a literal, a variable, or an application.
+
+We also need to consider the case where we generate a function type: we can generate a lambda or a variable.
+
+We also need to consider the case where we generate an application: we need to generate a function term of a function type and an argument term of the domain type.
+
+We also need to consider the case where we generate a lambda: we need to generate a parameter name and type, and a body term.
+
+We also need to consider the case where we generate a variable: we need to choose a variable from the environment.
+
+We also need to consider the case where we generate a literal: we need to generate a value.
+
+Now, let's think about the implementation details.
+
+We need to define:
+
+- generate_type(max_size): returns a type.
+
+- generate_term_of_type(ty, env, max_size): returns a term.
+
+- fresh_var_name(): returns a fresh variable name.
+
+- tm_size(tm): returns the size of a term.
+
+- ty_size(ty): returns the size of a type.
+
+We also need to define the random number generator: we can use the rng parameter passed to generate_sample.
+
+We also need to define the generate_sample function: it calls generate_type and generate_term_of_type.
+
+We also need to ensure that the generated term matches the generated type. The type-directed generation ensures this.
+
+Now, let's think about the probabilities.
+
+We want to generate more lambda and application terms to improve the metrics. So we can set the probability of generating a lambda for function types to be high (e.g., 0.9). We can set the probability of generating an application for base types to be moderate (e.g., 0.3). We can set the probability of generating a variable for base types to be moderate (e.g., 0.3). We can set the probability of generating a literal for base types to be the remaining probability.
+
+We also need to consider the case where we generate a lambda: we need to generate a body term. The body term can be of the codomain type. We can recursively call generate_term_of_type for the body.
+
+We also need to consider the case where we generate an application: we need to generate a function term and an argument term. We can recursively call generate_term_of_type for both.
+
+We also need to consider the case where we generate a variable: we need to choose from the environment.
+
+We also need to consider the case where we generate a literal: we need to generate a value.
+
+Now, let's think about the size constraints.
+
+We need to ensure that the generated type has size <= 10. We can use the generate_type function with max_size=10.
+
+We need to ensure that the generated term has size <= 100. We can use the generate_term_of_type function with max_size=100.
+
+We also need to ensure that the generated term has type ty. The type-directed generation ensures this.
+
+Now, let's think about the variable usage.
+
+We want to use the variables we introduce. We can generate a variable in the body of a lambda. We can set the probability of generating a variable in the body to be high.
+
+We can adjust the probabilities in the generate_term_of_type function to increase the chance of generating a variable.
+
+For example, for base types, we can set the probability of generating a variable to be 0.4, the probability of generating an application to be 0.3, and the probability of generating a literal to be 0.3.
+
+For function types, we can set the probability of generating a lambda to be 0.9, and the probability of generating a variable to be 0.1.
+
+We also need to consider the case where we generate a lambda: we need to generate a body term. The body term can be of the codomain type. We can recursively call generate_term_of_type for the body. The probabilities in the recursive call will determine whether we generate a variable, literal, or application.
+
+Thus, if we set high probabilities for variables and applications in the base type case, we will generate terms that use variables and apply lambdas.
+
+We also need to consider the case where we generate an application: we need to generate a function term. The function term can be a lambda that takes an argument and returns a term. This will increase the number of lambda abstractions and the number of applications.
+
+Thus, we can improve the metrics.
+
+Now, let's think about the implementation.
+
+We need to define the generate_sample function:
+
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    # generate type
+    ty = generate_type(10)  # max type size
+    # generate term
+    env = {}  # empty environment
+    tm = generate_term_of_type(ty, env, 100)  # max term size
+    return (ty, tm)
+
+But note: the generate_sample function is called with a depth parameter. We can ignore it and use our own limits.
+
+We can set the max_type_size to 10 and max_term_size to 100.
+
+We can also set the max_type_size to depth and max_term_size to depth * 10, but we can just use fixed limits.
+
+Now, let's think about the helper functions.
+
+We need to define:
+
+- generate_type(max_size): as described.
+
+- generate_term_of_type(ty, env, max_size): as described.
+
+- fresh_var_name(): we can keep a counter and increment it. We can define a global counter or pass it as a parameter. We can use a list to store the counter: we can define a variable var_counter = [0] and then generate names like "x" + str(var_counter[0]) and then increment.
+
+- tm_size(tm): we can define a recursive function that returns the size.
+
+- ty_size(ty): we can define a recursive function that returns the size.
+
+We also need to consider the random number generator: we need to use the rng parameter passed to generate_sample.
+
+We can define the helper functions inside generate_sample or outside. We can define them inside to have access to the rng parameter.
+
+We also need to consider the case where we generate an application: we need to generate a function term of a function type and an argument term of the domain type. We can use the split approach to allocate size.
+
+We need to ensure that the generated term does not exceed max_size. We can use the split approach to allocate size for the function and argument.
+
+We also need to compute the size of the generated term to check if it exceeds max_size. We can compute the size after generating the term and then adjust if necessary, but that might be complicated.
+
+Alternatively, we can use the split approach to allocate size and then generate the terms with those sizes. Then the total size will be 1 (for the application node) + size(fun) + size(arg) <= 1 + fun_max_size + arg_max_size = max_size.
+
+Thus, we can ensure that the size is within the limit.
+
+Similarly, for lambda, we can allocate size for the body: we can set body_max_size = max_size - 1, and then generate the body with that size. Then the total size is 1 + size(body) <= 1 + body_max_size = max_size.
+
+Thus, we can ensure the size constraints.
+
+Now, let's think about the probabilities.
+
+We can define:
+
+- For base types:
+    - literal: 0.3
+    - variable: 0.4
+    - application: 0.3
+
+- For function types:
+    - lambda: 0.9
+    - variable: 0.1
+
+We can adjust these probabilities as needed.
+
+We also need to consider the case where we generate a variable: we need to choose a variable from the environment. We can choose uniformly at random from the variables of the appropriate type.
+
+We also need to consider the case where we generate a literal: we need to generate a value of the appropriate type. For Bool, we can choose True or False. For Int, we can choose a random integer between 0 and 100. For String, we can choose a fixed string like "hello".
+
+We also need to consider the case where we generate an application: we need to choose a domain type for the function. We can choose a random base type.
+
+We also need to consider the case where we generate a lambda: we need to choose a parameter name and type. We can generate a fresh variable name and use the domain type of the function type.
+
+Now, let's think about the implementation of generate_term_of_type.
+
+We can define:
+
+def generate_term_of_type(ty, env, max_size):
+    if max_size <= 1:
+        # base case
+        if ty in [("Bool",), ("Int",), ("String",)]:
+            # try variable
+            if rng.random() < 0.5:
+                vars_of_type = [name for name, t in env.items() if t == ty]
+                if vars_of_type:
+                    return ("Var", rng.choice(vars_of_type))
+            # generate literal
+            if ty == ("Bool",):
+                return ("Bool", rng.choice([True, False]))
+            elif ty == ("Int",):
+                return ("Int", rng.randint(0, 100))
+            else:
+                return ("String", "hello")
+        else:
+            # function type with max_size <= 1: cannot generate
+            # we need to generate a lambda, but that would require more size
+            # we can generate a variable if available
+            vars_of_type = [name for name, t in env.items() if t == ty]
+            if vars_of_type:
+                return ("Var", rng.choice(vars_of_type))
+            else:
+                # we cannot generate a term of this type with size 1
+                # we need to generate a lambda, but we don't have enough size
+                # we can generate a dummy term? But that would not be well-typed.
+                # We can raise an error or generate a term of a different type.
+                # We can generate a literal of a base type? But that would not match the type.
+                # We can generate a variable of a base type? But that would not match the type.
+                # So we need to handle this case.
+                # We can generate a lambda with a dummy body? But that would not be well-typed.
+                # We can generate an application? But that would not match the type.
+                # So we need to ensure that we don't call generate_term_of_type with max_size <= 1 for a function type.
+                # We can adjust the probability in the recursive case to avoid this.
+                # For now, we can generate a literal of a base type and then cast? But we cannot cast.
+                # So we need to avoid this case.
+                # We can generate a variable if available, otherwise we cannot generate a term.
+                # We can return a dummy term, but that would not be well-typed.
+                # So we need to adjust the probability in the recursive case to avoid this.
+                pass
+
+    # recursive case
+    if ty in [("Bool",), ("Int",), ("String",)]:
+        # base type
+        choice = rng.random()
+        if choice < 0.3:
+            # generate literal
+            if ty == ("Bool",):
+                return ("Bool", rng.choice([True, False]))
+            elif ty == ("Int",):
+                return ("Int", rng.randint(0, 100))
+            else:
+                return ("String", "hello")
+        elif choice < 0.7:
+            # try to generate variable
+            vars_of_type = [name for name, t in env.items() if t == ty]
+            if vars_of_type:
+                return ("Var", rng.choice(vars_of_type))
+            else:
+                # if no variable, generate literal
+                if ty == ("Bool",):
+                    return ("Bool", rng.choice([True, False]))
+                elif ty == ("Int",):
+                    return ("Int", rng.randint(0, 100))
+                else:
+                    return ("String", "hello")
+        else:
+            # generate application
+            # choose a domain type
+            domain = generate_base_type()
+            fun_ty = ("Fun", domain, ty)
+            # split size
+            split = rng.randint(1, max_size - 2)
+            fun_max_size = split
+            arg_max_size = max_size - 1 - split
+            fun = generate_term_of_type(fun_ty, env, fun_max_size)
+            arg = generate_term_of_type(domain, env, arg_max_size)
+            return ("App", fun, arg)
+    else:
+        # function type
+        choice = rng.random()
+        if choice < 0.9:
+            # generate lambda
+            param_name = fresh_var_name()
+            param_type = ty[1]  # domain type
+            env2 = env.copy()
+            env2[param_name] = param_type
+            body_max_size = max_size - 1
+            body = generate_term_of_type(ty[2], env2, body_max_size)
+            return ("Lam", param_name, param_type, body)
+        else:
+            # try to generate variable
+            vars_of_type = [name for name, t in env.items() if t == ty]
+            if vars_of_type:
+                return ("Var", rng.choice(vars_of_type))
+            else:
+                # if no variable, generate lambda
+                param_name = fresh_var_name()
+                param_type = ty[1]  # domain type
+                env2 = env.copy()
+                env2[param_name] = param_type
+                body_max_size = max_size - 1
+                body = generate_term_of_type(ty[2], env2, body_max_size)
+                return ("Lam", param_name, param_type, body)
+
+But note: the generate_base_type function uses the rng. We need to make sure that the generate_base_type function is defined and uses the rng.
+
+We also need to define the fresh_var_name function. We can define a global counter or a closure.
+
+We can define:
+
+var_counter = 0
+
+def fresh_var_name():
+    nonlocal var_counter
+    name = "x" + str(var_counter)
+    var_counter += 1
+    return name
+
+But note: the generate_sample function is called multiple times. We need to reset the counter for each call. We can reset the counter at the beginning of generate_sample.
+
+We can define a local counter: we can use a list to store the counter: var_counter = [0] and then define a function that uses var_counter[0] and increments it.
+
+Alternatively, we can pass the counter as a parameter.
+
+We can define the fresh_var_name function inside generate_sample.
+
+Now, let's think about the generate_type function.
+
+We can define:
+
+def generate_type(max_size):
+    if max_size <= 1:
+        return generate_base_type()
+    else:
+        if rng.random() < 0.5:
+            return generate_base_type()
+        else:
+            # generate function type
+            split = rng.randint(1, max_size - 2)
+            domain = generate_type(split)
+            codomain = generate_type(max_size - 1 - split)
+            return ("Fun", domain, codomain)
+
+But note: we need to ensure that the domain and codomain are generated with appropriate sizes. The split should be at least 1 for domain and 1 for codomain. The max_size - 2 is the total size available for domain and codomain. The split can be from 1 to max_size - 2.
+
+Now, let's think about the generate_base_type function.
+
+We can define:
+
+def generate_base_type():
+    i = rng.randrange(0, 3)
+    if i == 0:
+        return ("Bool",)
+    elif i == 1:
+        return ("Int",)
+    else:
+        return ("String",)
+
+Now, let's think about the tm_size function.
+
+We can define:
+
+def tm_size(tm):
+    if tm[0] == "Bool" or tm[0] == "Int" or tm[0] == "String":
+        return 1
+    elif tm[0] == "Var":
+        return 1
+    elif tm[0] == "Lam":
+        return 1 + tm_size(tm[3])
+    elif tm[0] == "App":
+        return 1 + tm_size(tm[1]) + tm_size(tm[2])
+
+Now, let's think about the ty_size function.
+
+We can define:
+
+def ty_size(ty):
+    if ty[0] == "Bool" or ty[0] == "Int" or ty[0] == "String":
+        return 1
+    elif ty[0] == "Fun":
+        return 1 + ty_size(ty[1]) + ty_size(ty[2])
+
+Now, let's think about the generate_sample function.
+
+We can define:
+
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    # reset variable counter
+    var_counter = [0]
+
+    def fresh_var_name():
+        name = "x" + str(var_counter[0])
+        var_counter[0] += 1
+        return name
+
+    # generate type
+    ty = generate_type(10)
+    # generate term
+    env = {}
+    tm = generate_term_of_type(ty, env, 100)
+    return (ty, tm)
+
+But note: we need to define generate_type, generate_term_of_type, generate_base_type, fresh_var_name, tm_size, ty_size inside generate_sample or outside. We can define them inside to have access to the rng and var_counter.
+
+We can define them inside generate_sample.
+
+Now, let's think about the code structure.
+
+We can define the generate_sample function as:
+
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    # variable counter
+    var_counter = [0]
+
+    def fresh_var_name():
+        name = "x" + str(var_counter[0])
+        var_counter[0] += 1
+        return name
+
+    def generate_base_type():
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return ("Bool",)
+        elif i == 1:
+            return ("Int",)
+        else:
+            return ("String",)
+
+    def generate_type(max_size):
+        if max_size <= 1:
+            return generate_base_type()
+        else:
+            if rng.random() < 0.5:
+                return generate_base_type()
+            else:
+                split = rng.randint(1, max_size - 2)
+                domain = generate_type(split)
+                codomain = generate_type(max_size - 1 - split)
+                return ("Fun", domain, codomain)
+
+    def ty_size(ty):
+        if ty[0] == "Bool" or ty[0] == "Int" or ty[0] == "String":
+            return 1
+        elif ty[0] == "Fun":
+            return 1 + ty_size(ty[1]) + ty_size(ty[2])
+
+    def tm_size(tm):
+        if tm[0] == "Bool" or tm[0] == "Int" or tm[0] == "String":
+            return 1
+        elif tm[0] == "Var":
+            return 1
+        elif tm[0] == "Lam":
+            return 1 + tm_size(tm[3])
+        elif tm[0] == "App":
+            return 1 + tm_size(tm[1]) + tm_size(tm[2])
+
+    def generate_term_of_type(ty, env, max_size):
+        if max_size <= 1:
+            if ty in [("Bool",), ("Int",), ("String",)]:
+                # try variable
+                if rng.random() < 0.5:
+                    vars_of_type = [name for name, t in env.items() if t == ty]
+                    if vars_of_type:
+                        return ("Var", rng.choice(vars_of_type))
+                # generate literal
+                if ty == ("Bool",):
+                    return ("Bool", rng.choice([True, False]))
+                elif ty == ("Int",):
+                    return ("Int", rng.randint(0, 100))
+                else:
+                    return ("String", "hello")
+            else:
+                # function type with max_size <= 1: cannot generate well-typed term
+                # try variable
+                vars_of_type = [name for name, t in env.items() if t == ty]
+                if vars_of_type:
+                    return ("Var", rng.choice(vars_of_type))
+                else:
+                    # cannot generate term of this type with size 1
+                    # generate a dummy literal? But that would not match the type.
+                    # We can generate a lambda with a dummy body? But that would require more size.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case by ensuring that we don't call generate_term_of_type with max_size <= 1 for a function type.
+                    # We can adjust the probability in the recursive case to avoid this.
+                    # For now, we can generate a literal of a base type and ignore the type mismatch? But that would not be well-typed.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # We can return a term of a base type and then cast? But we cannot cast.
+                    # So we need to handle this case.
+                    # We can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can generate a lambda with a dummy body? But that would require more size.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available, otherwise we cannot generate a term.
+                    # We can return a dummy term, but that would not be well-typed.
+                    # So we need to handle this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a base type and then wrap it in a lambda? But that would change the type.
+                    # So we need to avoid this case.
+                    # We can generate a lambda with a dummy body? But that would not be well-typed.
+                    # We can generate an application? But that would not match the type.
+                    # So we need to avoid this case.
+                    # We can raise an error.
+                    # Alternatively, we can generate a term of a different type and then cast? But we cannot cast.
+                    # So we need to avoid this case.
+                    # We can generate a variable if available

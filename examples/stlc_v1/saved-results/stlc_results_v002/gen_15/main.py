@@ -42,42 +42,18 @@ type AppTm = Tuple[Literal["App"], Tm, Tm]
 
 # EVOLVE-BLOCK-START
 def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
-    if depth <= 0:
-        # Base cases - return simple literals
-        i = rng.randrange(0, 3)
-        if i == 0:
-            return (("Bool",), ("Bool", True))
-        elif i == 1:
-            return (("Int",), ("Int", 27))
-        else:
-            return (("String",), ("String", "hello world"))
-    
-    i = rng.randrange(0, 5)  # Added more options
-    
+    i = rng.randrange(0, 4 if depth > 0 else 3)
     if i == 0:
-        # Return a boolean literal
-        return (("Bool",), ("Bool", rng.choice([True, False])))
+        return (("Bool",), ("Bool", True))
     elif i == 1:
-        # Return an integer literal
-        return (("Int",), ("Int", rng.randint(0, 100)))
+        return (("Int",), ("Int", 27))
     elif i == 2:
-        # Return a string literal
-        return (("String",), ("String", rng.choice(["hello", "world", "test"])))
-    elif i == 3:
-        # Create a lambda that references its bound variable
-        inner_ty, inner_tm = generate_sample(rng, depth - 1)
-        var_name = f"x{depth}"
-        return (
-            ("Fun", ("Int",), inner_ty),
-            ("Lam", var_name, ("Int",), ("Var", var_name))
-        )
+        return (("String",), ("String", "hello world"))
     else:
-        # Apply a lambda to an argument
-        func_ty, func_tm = generate_sample(rng, depth - 1)
-        arg_ty, arg_tm = generate_sample(rng, depth - 1)
+        ty, tm = generate_sample(rng)  # Note: depth is not passed!
         return (
-            ("Fun", arg_ty, func_ty),
-            ("App", func_tm, arg_tm)
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
         )
 # EVOLVE-BLOCK-END
 

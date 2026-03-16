@@ -41,7 +41,19 @@ type AppTm = Tuple[Literal["App"], Tm, Tm]
 
 
 # EVOLVE-BLOCK-START
-("Lam", "x", ("Int",), tm)
+else:
+    if context and rng.random() < 0.3:  # 30% chance to use a variable
+        var_name = rng.choice(context)
+        return (
+            ("Fun", ("Int",), ("Int",)),
+            ("Lam", "x", ("Int",), ("Var", var_name)),
+        )
+    else:
+        ty, tm = generate_sample(rng, depth - 1, context)  # BUG: context not updated!
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
 # EVOLVE-BLOCK-END
 
 # This part remains fixed (not evolved)

@@ -1,0 +1,14 @@
+{
+  "generation": 43,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "asymmetric_beta_spine_generator",
+  "patch_description": "The algorithm implements an extreme asymmetric budget splitting strategy (95/5) to force deep left-leaning application spines, which significantly boosts `tm_sizes_average`. To maximize `applied_lambdas_proportions`, it uses a \"Beta-Redex Injection\" technique: when generating an application, it frequently bypasses standard recursion for the function side and manually constructs a `LamTm`, ensuring an applied lambda exists in the spine. Variable reuse is maximized by a 95% bias toward selecting argument types that already exist in the context, allowing the argument branch to be immediately satisfied by a `VarTm`. High-entropy naming and literal generation ensure `unique_subterms_proportions` remain near-perfect.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:48:26.247083",
+  "llm_cost": 0.00636225,
+  "llm_model": null
+}

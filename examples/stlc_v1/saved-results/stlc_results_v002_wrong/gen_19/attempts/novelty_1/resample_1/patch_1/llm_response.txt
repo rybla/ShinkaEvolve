@@ -1,0 +1,38 @@
+Let me analyze the current situation carefully.
+
+Looking at the performance metrics:
+- good_ratio: 1.00 (perfect type correctness - this is great!)
+- tm_sizes_average: 1.38 (term sizes)
+- ty_sizes_average: 1.38 (type sizes)
+- used_vars_proportions_average: 0.00 (never use variables - this is a problem!)
+- applied_lambdas_proportions_average: 0.00 (never apply lambdas - this is a problem!)
+- unique_subterms_proportions_average: 0.15 (repetitive structures)
+
+The key issues are:
+1. `used_vars_proportions_average = 0.00` - The programs never use `Var` to reference bound variables
+2. `applied_lambdas_proportions_average = 0.00` - The programs never create `App` (function application) terms
+3. `unique_subterms_proportions_average = 0.15` - The structures are repetitive
+
+Looking at the current code:
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+The problem is clear: when creating a Lambda, it always uses `tm` (the body generated recursively) but never uses `("Var", "x")` to reference the bound variable. Also, it never creates `App` terms.
+
+
+The solution requires a more sophisticated approach. I need to introduce a helper function for generating diverse types, then modify the lambda creation logic to occasionally reference the bound variable using `Var`. For function application, I should add a case that creates `App` terms when depth permits, ensuring the function type matches the argument type. This will increase the proportion of used variables and applied lambdas while maintaining type correctness.

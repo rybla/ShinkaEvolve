@@ -1,0 +1,69 @@
+
+The user wants me to propose changes to improve the generator. Let me analyze the current state and the requirements more carefully.
+
+Looking at the metrics:
+- `tm_sizes_average: 1.38` - terms are very small (max 100)
+- `ty_sizes_average: 1.38` - types are very small (max 10)
+- `used_vars_proportions_average: 0.00` - no variable usage
+- `applied_lambdas_proportions_average: 0.00` - no lambda applications
+- `unique_subterms_proportions_average: 0.15` - low uniqueness
+
+The current `generate_sample` function is extremely primitive. It:
+1. Only generates literals (Bool, Int, String) most of the time
+2. When it does generate a lambda, it just wraps a recursive call without actually using the variable
+3. Never generates applications
+4. Doesn't properly use the depth parameter
+
+To improve this, I need to:
+1. Generate larger types (up to 10 nodes)
+2. Generate larger terms (up to 100 nodes)
+3. Track type context (variables in scope with their types)
+4. Actually USE variables from context
+5. Generate applications (apply terms to arguments)
+6. Use depth to control size
+
+Let me write a proper generator that:
+1. First generates a type (potentially large with nested functions)
+2. Then generates a term with that type, tracking variables in scope
+3. Uses the depth/budget to control size
+
+The key insight for well-typed terms:
+- To generate a term of type T, we need to know what variables are available
+- Variables can be used if they're in scope
+- Lambdas introduce new variables
+- Applications require a function type
+
+Let me design this:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    # First generate a target type
+    target_ty = generate_type(rng, depth)
+    
+    # Then generate a term with that type, with empty context
+    tm = generate_term(rng, target_ty, {}, depth)
+    
+    return (target_ty, tm)
+
+def generate_type(rng: random.Random, remaining_depth: int) -> Ty:
+    if remaining_depth <= 0:
+        # Base types only
+        return rng.choice([("Bool",), ("Int",), ("String",)])
+    
+    if rng.random() < 0.3:
+        # Base type
+        return rng.choice([("Bool",), ("Int",), ("String",)])
+    else:
+        # Function type: generate smaller domain and codomain
+        domain = generate_type(rng, remaining_depth - 1)
+        codomain = generate_type(rng, remaining_depth - 1)
+        return ("Fun", domain, codomain)
+```
+
+I'll recursively build function types by generating smaller domain and codomain types, using depth to control complexity. Base types appear with 30% probability when depth allows, otherwise I construct nested function types by decrementing the depth parameter.
+
+For term generation, I need a context mapping variable names to their types, and I'll use remaining_budget to bound the total size. When budget is exhausted, I can only produce literals or variables. Otherwise, I randomly choose between using a variable from context, generating a literal matching the target type, creating a lambda that binds a fresh variable, or applying a function to an argument.
+
+To apply a function, I require a function type A → B, then generate an argument of type A and combine them into an application node. For lambdas, I create a fresh variable name, add it to the context with its type, recursively generate the body, then wrap it in a lambda node. Variables are selected uniformly from what's available in context, and literals are chosen based on whether the target type is Bool, Int, or String.
+
+The current generator has fundamental problems: it ignores the depth parameter, produces trivial terms with no actual variable usage, never creates function applications, and constructs lambdas that don't reference their bound variables. A proper implementation would track type context to enable variable references, leverage the budget to control complexity, generate applications for non-trivial computation, and ensure lambdas actually use their parameters.

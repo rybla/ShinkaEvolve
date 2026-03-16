@@ -1,0 +1,77 @@
+The user is asking me to improve the current program. Let me analyze the current state and the prior programs to understand what improvements can be made.
+
+Looking at the current program:
+- It generates simple literals (Bool, Int, String) and lambda terms
+- The lambda terms always have the same structure: `("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm)`
+- It doesn't use variables from context
+- It doesn't create App terms (applications)
+- The tm_sizes_average is 1.35, which is quite low
+
+The key issue is that the current program:
+1. Doesn't use any bound variables (used_vars_proportions_average: 0.00)
+2. Doesn't create any applications (applied_lambdas_proportions_average: 0.00)
+3. Uses a fixed variable name "x"
+
+Looking at the best prior programs from the analysis:
+- The best program (score 10.8819) uses `bound_vars` parameter, probabilistic variable selection with `rng.random() < 0.35`, unique variable names with `f"x{rng.randint(0, 100)}"`, and type-safe application.
+
+I need to make targeted improvements. Let me create a SEARCH/REPLACE block that modifies the generate_sample function to include:
+1. A bound_vars parameter to track variables in scope
+2. Probabilistic choice to use variables from context
+3. Application terms (App)
+4. Unique variable names
+
+Let me write the edit:
+
+```python
+
+def generate_sample(rng: random.Random, depth=10, bound_vars: list = None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+
+    # Base case: when depth is 0, generate simple literals
+    if depth <= 0:
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", True))
+        elif i == 1:
+            return (("Int",), ("Int", 27))
+        else:
+            return (("String",), ("String", "hello world"))
+
+    # Probabilistic base case termination
+    if not bound_vars and rng.random() < 0.5:
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", True))
+        elif i == 1:
+            return (("Int",), ("Int", 27))
+        else:
+            return (("String",), ("String", "hello world"))
+
+    # With some probability, use a variable from context
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_ty = rng.choice(bound_vars)
+        return (var_ty, ("Var", var_name))
+
+    # Otherwise, generate a new term
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        # Create a lambda with a unique variable name
+        arg_ty = ("Int",)
+        var_name = f"x{rng.randint(0, 100)}"
+        ret_ty, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, arg_ty)])
+        return (
+            ("Fun", arg_ty, ret_ty),
+            ("Lam", var_name, arg_ty, body)
+        )
+```
+
+I'll focus on the key improvements: probabilistic variable selection, unique variable naming, and recursive term generation with depth control. The approach ensures more diverse and complex lambda calculus expressions while maintaining a controlled complexity.

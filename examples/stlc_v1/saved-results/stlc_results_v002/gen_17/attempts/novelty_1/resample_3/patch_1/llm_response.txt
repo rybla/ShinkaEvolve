@@ -1,0 +1,57 @@
+Let me analyze the current program and the prior programs to understand what improvements can be made.
+
+Current program performance:
+- Combined score: 10.30
+- good_ratio: 1.00 (perfect correctness)
+- tm_sizes_average: 1.35
+- ty_sizes_average: 1.35
+- used_vars_proportions_average: 0.00 (no variables used)
+- applied_lambdas_proportions_average: 0.00 (no lambda applications)
+- unique_subterms_proportions_average: 0.15
+
+Looking at the top-performing programs:
+1. They all have good_ratio = 1.00 (perfect correctness is crucial)
+2. They use a depth-limited recursive approach
+3. They generate type and term together to ensure type consistency
+4. They use a fixed parameter type ("Int",) for lambdas
+
+The current program already does most of this well. The key areas for improvement are:
+1. Variable usage (currently 0%) - the programs don't use `Var` to reference bound variables
+2. Lambda application (currently 0%) - no `App` constructor is used
+3. Unique subterms (currently 0.15) - could be improved
+
+Looking at the analysis provided in the system prompt, the key insight is:
+- The programs generate lambdas but never use the bound variable inside them
+- They need to track the lambda parameter and use it in the body
+
+The current code generates:
+```python
+ty, tm = generate_sample(rng)
+return (
+    ("Fun", ("Int",), ty),
+    ("Lam", "x", ("Int",), tm),
+)
+```
+
+This creates a lambda with parameter "x" but the body `tm` never references "x". This is why used_vars_proportions_average is 0.00.
+
+To improve, I should:
+1. Add context tracking - when generating a lambda, add the parameter to the context
+
+
+2. With some probability, reference that variable in the body using `Var`
+3. Possibly apply lambdas to arguments
+
+Let me design an improved version that:
+1. Tracks context (bound variables)
+2. Uses the bound variable in lambda bodies with some probability
+3. Applies lambdas to arguments
+
+The key is to maintain correctness (good_ratio = 1.00) while increasing complexity.
+
+I'll modify the generation strategy to incorporate variable usage and application. The approach involves:
+- Introducing a context parameter to track bound variables
+- Randomly deciding whether to use a bound variable in the lambda body
+- Generating lambda applications with controlled probability
+
+This strategy aims to increase the used_vars_proportions_average and applied_lambdas_proportions_average while preserving the core generation logic. The goal is to create more sophisticated lambda expressions that actually utilize their parameters and can be applied to arguments.

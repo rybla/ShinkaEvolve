@@ -1,0 +1,2 @@
+_, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+return (("Fun", var_type, _), ("Lam", var_name, var_type, body))

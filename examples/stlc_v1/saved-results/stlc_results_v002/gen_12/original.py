@@ -3,7 +3,7 @@ import random
 import tqdm
 
 """
-`Ty` and `Tm` define the shape of a simply-typed lambda-calculus deeply embedded in Python. 
+`Ty` and `Tm` define the shape of a simply-typed lambda-calculus deeply embedded in Python.
 
 Each value, be it the encoding of a type or a term, is a tuple where the first component of the tuple is the "constructor" and the rest of the components are the arguments. For example, this value encodes the `Bool` type:
 
@@ -41,15 +41,8 @@ type AppTm = Tuple[Literal["App"], Tm, Tm]
 
 
 # EVOLVE-BLOCK-START
-
-
 def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
-    """
-    Generate a sample type and term using a random seed.
-    """
-
     i = rng.randrange(0, 4 if depth > 0 else 3)
-
     if i == 0:
         return (("Bool",), ("Bool", True))
     elif i == 1:
@@ -62,8 +55,6 @@ def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
             ("Fun", ("Int",), ty),
             ("Lam", "x", ("Int",), tm),
         )
-
-
 # EVOLVE-BLOCK-END
 
 # This part remains fixed (not evolved)

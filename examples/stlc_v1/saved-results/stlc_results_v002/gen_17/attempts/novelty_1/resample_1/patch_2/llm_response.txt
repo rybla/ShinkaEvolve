@@ -1,49 +1,13 @@
-The user is saying the previous edit was not successful. Let me re-read the current program and propose a targeted improvement.
+The user is asking me to rewrite a program to improve its performance. Let me analyze the situation and provide a complete new program.
 
-Looking at the current program:
-```python
-def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
-    i = rng.randrange(0, 4 if depth > 0 else 3)
+Looking at the metrics:
+- Current score: 10.28
+- Best prior: 10.30
+- Good ratio is 1.00 (perfect) - this is most important
+- used_vars_proportions_average: 0.00
+- applied_lambdas_proportions_average: 0.00  
+- unique_subterms_proportions_average: 0.14
 
-    if i == 0:
-        return (("Bool",), ("Bool", True))
-    elif i == 1:
-        return (("Int",), ("Int", 27))
-    elif i == 2:
-        return (("String",), ("String", "hello world"))
-    else:
-        ty, tm = generate_sample(rng)
-        return (
-            ("Fun", ("Int",), ty),
-            ("Lam", "x", ("Int",), tm),
-        )
-```
+The current algorithm uses depth-limited recursion with a 3:1 ratio of literals to functions. To improve, I need to maintain good_ratio=1.00 while increasing the other metrics.
 
-The issues:
-1. `depth` parameter is never used - the recursive call doesn't pass `depth-1`
-2. No `Var` terms are ever created
-3. No `App` terms are ever created
-
-I need to make targeted changes. Let me think about what specific change to make.
-
-The key insight is that to improve `used_vars_proportions_average`, I need to create `Var` terms. And to improve `applied_lambdas_proportions_average`, I need to create `App` terms.
-
-Let me propose a change that:
-1. Fixes the depth parameter usage
-2. Adds some cases that create Var terms
-3. Adds some cases that create App terms
-
-But I need to be careful about type correctness. Let me think about the simplest valid changes:
-
-For Var: When I create `("Lam", "x", ("Int",), ("Var", "x"))`, this is type-correct: the lambda has type `Int -> Int`.
-
-For App: This is trickier. To create `("App", func, arg)`, I need:
-
-
-- func to have a function type `A -> B`
-- arg to have type `A`
-- The result will have type `B`
-
-A simple example: `("App", ("Lam", "x", ("Int",), ("Var", "x")), ("Int", 42))` applies the identity function to 42, giving type `Int`.
-
-The simplest approach is to add cases that create lambdas returning their bound variable, and then apply those lambdas to arguments. This maintains type correctness while introducing both Var and App terms.
+A different approach: Instead of fixed depth-based recursion, I'll use an iterative approach that builds up complexity gradually, while ensuring type safety by generating type and term together.

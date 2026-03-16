@@ -1,0 +1,45 @@
+Let me analyze the current program and the metrics to understand what needs to be improved.
+
+Current metrics:
+- good_ratio: 1.00 (perfect - all generated terms are type-correct)
+- tm_sizes_average: 1.34 (small terms)
+- ty_sizes_average: 1.34 (small types)
+- used_vars_proportions_average: 0.00 (variables are NEVER used)
+- applied_lambdas_proportions_average: 0.00 (lambdas are NEVER applied)
+- unique_subterms_proportions_average: 0.14 (very low uniqueness)
+
+The current program:
+1. Returns literals (Bool, Int, String) most of the time
+2. When depth > 0, it sometimes creates a lambda that wraps a recursive call
+3. The lambda always has the same structure: `("Lam", "x", ("Int",), tm)` where `tm` is from the recursive call
+
+The key problems:
+1. **Variables never used**: The lambda creates a variable "x" but never uses `Var` to reference it
+2. **Lambdas never applied**: There's no `App` term being created
+3. **Low uniqueness**: The same nested structure is repeated
+
+Looking at the type system:
+- `LamTm = Tuple[Literal["Lam"], str, Ty, Tm]` - lambda with name, type annotation, and body
+- `VarTm = Tuple[Literal["Var"], str]` - variable reference
+- `AppTm = Tuple[Literal["App"], Tm, Tm]` - application (function, argument)
+
+To improve:
+1. When creating a lambda, sometimes use `Var` to reference the bound variable in the body
+2. Create `App` terms to apply functions
+3. Use weighted randomness to control depth and increase term complexity
+
+Let me think about how to maintain type correctness while improving these metrics:
+
+For a lambda `("Lam", "x", ty, body)`:
+
+
+- The body must have type `ty` (the return type of the function)
+- The full type is `("Fun", arg_ty, ty)` where arg_ty is the type of the bound variable
+
+For an application `("App", fn, arg)`:
+- If fn has type `("Fun", arg_ty, ret_ty)`, then arg must have type `arg_ty`
+- The result has type `ret_ty`
+
+The current approach always creates `("Lam", "x", ("Int",), tm)` which is a function from Int to whatever `tm` produces. To improve, I need to occasionally use `Var` in the lambda body to reference the bound variable, and create `App` terms to apply functions to arguments.
+
+I'll implement weighted random selection where the probability of choosing recursive constructors decreases as depth increases, ensuring termination while allowing deeper and more complex terms. This maintains the good_ratio of 1.00 by guaranteeing termination.

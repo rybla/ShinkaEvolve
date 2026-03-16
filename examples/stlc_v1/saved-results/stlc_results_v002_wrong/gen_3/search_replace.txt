@@ -1,0 +1,50 @@
+The user is asking me to improve the performance of the lambda calculus generator. Let me analyze the current state and propose improvements.
+
+Looking at the current `generate_sample` function:
+1. It has a `depth` parameter but it's never actually used in the recursive calls
+2. It only generates literals (Bool, Int, String) or simple lambdas wrapping recursive calls
+3. There's no way to generate applications (which would use variables)
+4. There's no way to generate variable references
+5. There's no way to generate larger types
+
+The metrics show:
+- tm_sizes_average: 1.38 (very small, max is 100)
+- ty_sizes_average: 1.38 (very small, max is 10)
+- used_vars_proportions_average: 0.00 (variables never used!)
+- applied_lambdas_proportions_average: 0.00 (lambdas never applied!)
+
+I need to rewrite the generator to:
+1. Actually use depth to control size
+2. Generate larger types (up to 10 nodes)
+3. Generate larger terms (up to 100 nodes)
+4. Generate applications to use variables
+5. Generate variable references
+6. Make sure terms are well-typed
+
+Let me write a better generator that addresses all these issues.
+
+The SEARCH/REPLACE format requires me to find the exact text in the file and replace it. Let me look at the current code block:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+I need to replace this entire function with a better implementation that actually uses the depth parameter, generates larger types and terms, and properly handles variables and applications while maintaining well-typedness.

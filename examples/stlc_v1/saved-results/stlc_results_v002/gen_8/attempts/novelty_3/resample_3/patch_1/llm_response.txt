@@ -1,0 +1,38 @@
+Let me analyze the current program and the performance metrics to understand what needs to be improved.
+
+Current performance:
+- Combined score: 10.30
+- good_ratio: 1.00 (all generated samples are well-formed and well-typed)
+- tm_sizes_average: 1.35 (very small terms)
+- ty_sizes_average: 1.35 (very small types)
+- used_vars_proportions_average: 0.00 (no variable usage)
+- applied_lambdas_proportions_average: 0.00 (no lambda applications)
+- unique_subterms_proportions_average: 0.15 (not many unique subterms)
+
+Looking at the prior programs, they achieved:
+- Combined score: 9.24
+- tm_sizes_average: 4.89
+- ty_sizes_average: 2.90
+- used_vars_proportions_average: 0.03
+- applied_lambdas_proportions_average: 0.17
+- unique_subterms_proportions_average: 0.49
+
+The current program has:
+- Higher good_ratio (1.00 vs 0.82) - all samples are well-typed
+- Much smaller terms and types (1.35 vs 4.89 and 2.90)
+- Zero variable usage and lambda applications
+- Lower unique subterms proportion (0.15 vs 0.49)
+
+So the current program is very conservative - it generates trivial, small terms that are always well-typed but don't exercise the system much.
+
+To improve, I need to:
+1. Generate larger types (up to 10 nodes in AST)
+2. Generate larger terms (up to 100 nodes in AST)
+3. Use variables from context more
+4. Apply lambdas to arguments more
+5. Create more unique subterms
+
+Looking at the current `generate_sample` function, it's very simple and doesn't use the depth parameter properly. It mostly generates trivial literals.
+
+
+The prior program shows a more sophisticated approach that actually uses depth to control complexity. It builds function types with nested structure, generates lambdas with proper contexts, applies functions to arguments, and uses variables from the available context. This is exactly what I need to implement to increase term and type sizes while also getting more variable usage and lambda applications.

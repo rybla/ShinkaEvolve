@@ -1,69 +1,21 @@
-The user is asking me to make changes to the program. Let me look at the current program and understand what modifications I can make to improve the performance.
+The user is asking me to improve the program. Let me analyze the current state and provide a complete improved program.
 
-Looking at the program, I need to identify the exact code to modify. Let me focus on making a targeted improvement.
+Looking at the current program:
+- It has good_ratio = 1.00 (perfect correctness)
+- But tm_sizes_average = 1.32, ty_sizes_average = 1.32 (low)
+- used_vars_proportions_average = 0.00 (no variables!)
+- applied_lambdas_proportions_average = 0.00 (no applications!)
+- unique_subterms_proportions_average = 0.13
 
-The key areas to improve based on the analysis:
-1. Type-safe application - check if func_type[0] == "Fun" before applying
-2. Increase term sizes by reducing random base case probability
+The best programs from the prior analysis had:
+- Score: 10.6365
+- used_vars_proportions_average: 0.1103
+- applied_lambdas_proportions_average: 0.1140
 
-Let me create the SEARCH/REPLACE blocks for these changes.
+Key improvements needed:
+1. Add App generation (to increase applied_lambdas_proportions_average)
+2. Add context tracking and variable usage (to increase used_vars_proportions_average)
+3. Use proper depth-limited recursion (5 options at depth > 0, 3 at depth = 0)
+4. Generate types and terms together for consistency
 
-Looking at the current code:
-
-```python
-def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
-    if bound_vars is None:
-        bound_vars = []
-    
-    # Base case: generate literals when depth is exhausted or randomly at top level
-    if depth <= 0 or (not bound_vars and rng.random() < 0.5):
-        i = rng.randrange(0, 3)
-        if i == 0:
-            return (("Bool",), ("Bool", rng.choice([True, False])))
-        elif i == 1:
-            return (("Int",), ("Int", rng.randint(0, 100)))
-        else:
-            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
-    
-    # When we have bound variables, use them with some probability
-    if bound_vars and rng.random() < 0.35:
-        var_name, var_type = rng.choice(bound_vars)
-        return (var_type, ("Var", var_name))
-    
-    # Choose between lambda and application
-    i = rng.randrange(0, 2)
-    if i == 0 and depth > 1:
-        # Create a lambda with a fresh variable
-        var_name = f"x{rng.randint(0, 100)}"
-        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
-        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
-        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
-    else:
-        # Create an application - need type-correct function and argument
-        # First generate a function type
-        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
-        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
-        func_type = ("Fun", arg_type, ret_type)
-        
-        # Generate function term - could be a lambda or variable
-        if rng.random() < 0.5 and bound_vars:
-            # Use an existing variable of function type
-            for var_name, var_type in bound_vars:
-                if var_type[0] == "Fun":
-                    func_term = ("Var", var_name)
-                    break
-            else:
-                # No function variable available, create a lambda
-                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
-        else:
-            # Create a lambda
-            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
-        
-        # Generate argument term matching the function's input type
-        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
-        
-        return (ret_type, ("App", func_term, arg_term))
-
-I'll focus on two key improvements: reducing the base case probability and implementing type-safe application. The current implementation has a high probability of terminating at the base case, which limits term complexity. By lowering the random base case probability, I can encourage more diverse and complex term generation.
-
-The type-safe application requires careful type checking. I'll ensure the function type is valid before creating an application, preventing potential type mismatches. This means verifying the function type's structure and handling cases where the type might not be a proper function type.
+Let me write an improved program with these features.

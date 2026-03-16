@@ -1,0 +1,77 @@
+The user is asking me to improve the code, but it seems my previous response didn't include any actual changes. Let me analyze the current state and provide a proper SEARCH/REPLACE block.
+
+Looking at the current code in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END section:
+
+```python
+# EVOLVE-BLOCK-START
+
+
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+
+
+# EVOLVE-BLOCK-END
+```
+
+I need to replace this with a more sophisticated generator that:
+1. Generates larger types (up to 10 nodes)
+2. Generates larger terms (up to 100 nodes)
+3. Uses variables from lambda bindings
+4. Applies lambdas to arguments
+5. Has more unique subterms
+
+Let me write a new implementation:
+
+```python
+# EVOLVE-BLOCK-START
+
+# Type aliases for context
+type Context = list[Tuple[str, Ty]]  # List of (variable name, type) pairs
+
+
+def generate_type(rng: random.Random, max_nodes: int, context: Context) -> Ty:
+    """Generate a random type with at most max_nodes AST nodes."""
+    if max_nodes <= 1:
+        # Base types only
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return ("Bool",)
+        elif i == 1:
+            return ("Int",)
+        else:
+            return ("String",)
+    
+    # Decide whether to create a function type or base type
+    if rng.random() < 0.7:
+        # Generate function type: FunTy with two subtypes
+        # Split nodes between domain and codomain
+        left_nodes = rng.randrange(1, max_nodes - 1)
+        right_nodes = max_nodes - 1 - left_nodes
+        domain = generate_type(rng, left_nodes, context)
+        codomain = generate_type(rng, right_nodes, context)
+        return ("Fun", domain, codomain)
+    else:
+        # Generate base type
+        return generate_type(rng, 1, context)
+```
+
+For types, I'm using a recursive approach that decides between function types and base types based on a 70% probability for functions. When creating a function type, I split the available node budget between the domain and codomain to ensure the total stays within max_nodes.
+
+Now for term generation, I need to handle the complexity of tracking bound variables and ensuring type correctness. The function takes a target type, maximum nodes, and context to manage variable scope. When we have no nodes available, we can only generate literals. Otherwise, we have several options: variables if we have bound variables in context and the target type is known, lambdas when we want to build function types, applications when we need to apply functions to arguments, or literals as a fallback. The key is maintaining type consistency throughout the generation process. The current approach has fundamental issues: it generates lambdas without ensuring the body type matches the codomain, creates variables without verifying they exist in context, and produces applications without confirming the function type aligns with the argument type. I need to build a proper type-directed generator that maintains a context of available variables and their types, then generates terms that are guaranteed to be well-typed relative to that context.

@@ -1,0 +1,46 @@
+Let me analyze the current program and the performance metrics to understand what improvements can be made.
+
+Current program analysis:
+- The generator produces well-typed terms (good_ratio: 1.00)
+- But the terms are very small (tm_sizes_average: 1.35)
+- The types are also small (ty_sizes_average: 1.35)
+- No variables are used (used_vars_proportions_average: 0.00)
+- No lambdas are applied (applied_lambdas_proportions_average: 0.00)
+- Low unique subterms (unique_subterms_proportions_average: 0.14)
+
+Looking at the code:
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)  # Note: depth is not decremented!
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+Issues:
+1. The depth parameter is not being decremented in the recursive call, which could lead to infinite recursion
+2. No bound_vars tracking - can't use variables
+3. No App (application) constructor - can't apply lambdas to arguments
+4. Always uses the same variable name "x"
+5. Always uses ("Int",) as the type annotation
+
+The key improvements needed:
+1. Track bound variables so we can use Var to reference them
+
+
+2. Add App constructor to apply functions to arguments
+3. Decrement depth properly to control term size
+4. Use more diverse variable names
+5. Generate more complex types (FunTy)
+
+I need to implement proper variable tracking and type inference. The current approach doesn't maintain a context of bound variables, which prevents generating meaningful lambda applications. I'll need to pass bound_vars as a parameter and use it to decide when to generate Var nodes or apply functions. Additionally, I should decrement depth in each recursive call to prevent infinite recursion and control the complexity of generated terms.

@@ -1,11 +1,18 @@
+The user says the previous edit was not successful and there was an error "No changes applied". This is confusing because I haven't actually submitted any edit yet. Let me re-read the task.
 
-Let me try again. I need to provide a valid SEARCH/REPLACE block that will actually improve the code.
+Looking at the task again, I need to provide a SEARCH/REPLACE block to modify the code in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END section.
 
-Looking at the current code:
+Let me provide the edit now. I need to output the exact format with <NAME>, <DESCRIPTION>, and <DIFF> tags.
+
+The current code in the evolve block is:
 
 ```python
 
 def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
     i = rng.randrange(0, 4 if depth > 0 else 3)
 
     if i == 0:
@@ -15,7 +22,7 @@ def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
     elif i == 2:
         return (("String",), ("String", "hello world"))
     else:
-        ty, tm = generate_sample(rng)  # Note: depth is not decremented!
+        ty, tm = generate_sample(rng)
         return (
             ("Fun", ("Int",), ty),
             ("Lam", "x", ("Int",), tm),
@@ -23,19 +30,17 @@ def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
 
 ```
 
-The issue is:
-1. `depth` is never decremented - this causes infinite recursion
-2. Always uses the same literal values
-3. Always uses the same variable name "x"
+I'll replace it with an improved version that:
+1. Tracks bound variables in context
+2. Has a chance to use variables from context (Var)
+3. Can apply lambdas (App)
+4. Maintains correctness
 
-To improve the score, I need to:
-1. Decrement depth to prevent infinite recursion and generate larger terms
-2. Use varied literal values
-3. Use varied variable names
+The new approach:
+- Add context parameter to track bound variables
+- At each step, have a small chance to use a variable from context
+- When creating a lambda, add the parameter to context for recursive call
+- Have a chance to apply lambdas to arguments
 
-Let me propose a change that:
-1. Decrements depth properly
-2. Uses random literal values (Bool, Int, String)
-3. Uses unique variable names based on depth
 
-This should increase tm_sizes_average and unique_subterms_proportions_average while maintaining good_ratio at 1.00.
+I'll carefully extract the exact code block to ensure precise replacement. The goal is to maintain the core logic while introducing context tracking and variable usage.

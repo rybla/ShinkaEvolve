@@ -1,0 +1,42 @@
+Looking at the performance metrics, I can see that:
+
+1. `good_ratio`: 1.00 (perfect - this is great, we want to maintain this)
+2. `tm_sizes_average`: 1.34 (small terms)
+3. `ty_sizes_average`: 1.34 (small types)
+4. `used_vars_proportions_average`: 0.00 (ZERO - this is a major problem!)
+5. `applied_lambdas_proportions_average`: 0.00 (ZERO - another major problem!)
+6. `unique_subterms_proportions_average`: 0.13 (low diversity)
+
+The current program always creates a lambda that returns the generated sub-term, but never actually uses the bound variable `x`. The lambda always ignores its argument and just returns the sub-term directly.
+
+This is the core issue:
+```python
+("Lam", "x", ("Int",), tm)  # Always ignores "x" in the body
+```
+
+The lambda binds `x` but the body `tm` doesn't contain `Var("x")`. That's why `used_vars_proportions_average` is 0.00.
+
+To improve this, I need to:
+1. Make the lambda actually USE the bound variable (either return it directly or apply it)
+2. This will increase `used_vars_proportions_average` and potentially `applied_lambdas_proportions_average`
+3. Increase term diversity by using different variable names or structures
+
+The key insight is that when we create a lambda, we should sometimes:
+1. Return the variable directly: `("Lam", "x", ("Int",), ("Var", "x"))` - identity function
+2. Apply the variable to something: `("Lam", "x", ("Int",), ("App", ("Var", "x"), some_term))`
+
+Let me design a solution that:
+
+
+1. Keeps good_ratio at 1.00 by maintaining type safety
+2. Increases used_vars_proportions_average by actually using the bound variable in lambda bodies
+3. Increases applied_lambdas_proportions_average by creating function applications
+4. Increases unique_subterms_proportions_average through more varied term structures
+
+I'll modify the approach to probabilistically decide whether to use the bound variable or generate a fresh term, then apply it or return it directly depending on the case.
+
+When depth is exhausted, I'll select from Bool, Int, or String literals. Otherwise, I'll use random choices with depth-dependent probabilities—favoring literals at shallow depths and more complex constructions like lambdas and applications as depth increases.
+
+The lambda case generates a recursive term, applies it to an argument, or uses the bound variable. The application case recursively generates a function term and applies it to an argument while ensuring type consistency.
+
+I need to be careful about maintaining `good_ratio` at 1.00. The original approach of always wrapping in `("Lam", "x", ("Int",), tm)` works because the sub-term's type becomes the return type, making `("Fun", ("Int",), ty)` valid. For type safety when using the bound variable, I must ensure the return type matches—either returning `("Var", "x")` directly for `("Int",)` type, or applying it to another term of compatible type. The simplest fix that preserves correctness is using the identity function when deciding to use the variable, which guarantees the types align properly.

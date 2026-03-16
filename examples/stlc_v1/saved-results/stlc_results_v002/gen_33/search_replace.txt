@@ -1,9 +1,47 @@
-I need to make an actual edit. Let me look at the current program in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END section and replace it with an improved version.
+The error says "No changes applied" which means my SEARCH block didn't match the current code exactly. Let me look at the current code in the "Current program" section very carefully:
 
-The current code is:
 ```python
 
 def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)  # Note: depth is not passed!
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+
+```
+
+I need to match this exactly. Let me try a different approach - I'll try to improve the program by making it generate slightly larger terms while maintaining correctness.
+
+Looking at the best program (score 10.30), it has:
+- good_ratio: 1.00
+- tm_sizes_average: 1.35
+
+Current program has:
+- good_ratio: 1.00
+- tm_sizes_average: 1.32
+
+The difference is in tm_sizes_average. To get larger terms, I could:
+1. Pass depth-1 to the recursive call (but this might cause issues with correctness)
+2. Add more variety in the literals
+3. Use different argument types for lambdas
+
+Actually, let me look at the best program more carefully:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
     i = rng.randrange(0, 4 if depth > 0 else 3)
 
     if i == 0:
@@ -18,13 +56,8 @@ def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
             ("Fun", ("Int",), ty),
             ("Lam", "x", ("Int",), tm),
         )
-
 ```
 
-I need to replace this with improved code that:
-1. Uses a context to track variables
-2. Decrements depth properly
-3. Generates applications
-4. Uses variables from context
+The key difference is that the best program includes a docstring and uses `generate_sample(rng)` without passing depth, which is identical to what I have. The structure is the same, so the scoring difference must come from something subtle in how the recursion or random selection behaves.
 
-Let me write the improved code:
+Looking at the metrics, both achieve perfect correctness (good_ratio: 1.00), but the best program produces slightly larger terms on average (tm_sizes_average: 1.35 vs 1.32). This suggests the scoring might be sensitive to term complexity. I should try adding a docstring to see if that alone closes the gap, or explore other ways to increase term size without sacrificing correctness.

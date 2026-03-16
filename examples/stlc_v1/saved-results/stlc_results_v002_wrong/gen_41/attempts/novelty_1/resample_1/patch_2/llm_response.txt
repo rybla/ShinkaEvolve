@@ -1,0 +1,118 @@
+The user is asking me to improve the current program. Let me analyze the issue and provide a valid edit.
+
+Looking at the current code in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END, I need to propose a modification that improves the performance metrics.
+
+The current code has these issues:
+1. Always uses "x" as the variable name - no uniqueness
+2. Never uses the bound variable in the body
+3. Never applies lambdas to arguments
+4. Depth parameter is not being used effectively
+
+I need to propose a SEARCH/REPLACE block that modifies the code between EVOLVE-BLOCK-START and EVOLVE-BLOCK-END.
+
+Let me craft a better implementation that:
+1. Uses bound_vars to track bound variables
+2. Can return Var terms that reference bound variables
+3. Can apply lambdas to arguments
+4. Uses depth properly for termination
+5. Uses unique variable names
+
+The SEARCH block should match exactly what's in the file. Let me look at it:
+
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+# EVOLVE-BLOCK-END
+```
+
+I need to replace this with an improved version. Let me write the new code:
+
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Base case: return simple literals when depth exhausted
+    if depth <= 0:
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", True))
+        elif i == 1:
+            return (("Int",), ("Int", 27))
+        else:
+            return (("String",), ("String", "hello world"))
+    
+    # Probabilistic base case even when depth > 0
+    if not bound_vars and rng.random() < 0.3:
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", True))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["hello", "world", "test"])))
+    
+    # With some probability, return a bound variable if available
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+    
+    i = rng.randrange(0, 5)
+    
+    if i == 0:
+        # Boolean literal
+        return (("Bool",), ("Bool", rng.choice([True, False])))
+    elif i == 1:
+        # Integer literal
+        return (("Int",), ("Int", rng.randint(0, 100)))
+    elif i == 2:
+        # String literal
+        return (("String",), ("String", rng.choice(["hello", "world", "test"])))
+    elif i == 3:
+        # Lambda with unique variable name and proper type annotation
+        var_name = f"x{rng.randint(0, 100)}"
+        var_type = ("Int",)
+        inner_ty, inner_tm = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+        return (
+            ("Fun", var_type, inner_ty),
+            ("Lam", var_name, var_type, inner_tm)
+        )
+    else:
+        # Application - ensure type consistency
+        func_ty, func_tm = generate_sample(rng, depth - 1, bound_vars)
+        arg_ty, arg_tm = generate_sample(rng, depth - 1, bound_vars)
+        
+        # Validate function type before applying
+        if func_ty[0] == "Fun":
+            return (
+                func_ty,
+                ("App", func_tm, arg_tm)
+            )
+        else:
+            # Fallback: return argument if function type is invalid
+            return (arg_ty, arg_tm)
+```
+
+I'm introducing probabilistic termination to prevent infinite recursion and ensure termination. The approach uses depth-based and random stopping conditions, allowing more flexible term generation while maintaining type safety and structural complexity.
+
+The key improvements include:
+- Bounded recursion depth
+- Random termination probability
+- Controlled term size and complexity
+
+I'll carefully track variable bindings and type constraints to generate well-formed lambda calculus terms systematically.

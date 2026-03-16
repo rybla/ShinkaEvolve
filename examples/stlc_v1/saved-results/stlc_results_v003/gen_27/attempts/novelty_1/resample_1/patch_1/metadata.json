@@ -1,0 +1,14 @@
+{
+  "generation": 27,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 2,
+  "patch_name": "spine_depth_offset_and_frequency_weighting",
+  "patch_description": "This update introduces two key optimizations to maximize term size and variable reuse. \n\n1. **Spine Depth Offset**: Instead of splitting the budget purely as a percentage, we introduce a fixed offset to the argument side (e.g., `budget - split_f - 2`). This, combined with a slightly higher starting budget (to hit the 100-node limit precisely), ensures the function spine remains extremely deep while the argument branches stay shallow but non-trivial.\n2. **Frequency-Weighted Type Selection**: Instead of a uniform choice from the context, we weight the selection of `arg_ty` toward types that appear most frequently in the environment. This significantly increases the mathematical probability that the argument branch can be satisfied using a terminal variable rather than a literal, pushing the `used_vars_proportions_average` higher.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:45:52.454186",
+  "llm_cost": 0.0086715,
+  "llm_model": null
+}

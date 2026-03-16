@@ -1,10 +1,29 @@
-The user is saying my previous edit was not successful. Let me check what happened. It seems like I didn't actually provide a valid edit block. Let me look at the current program again and provide a proper SEARCH/REPLACE block.
+The user is asking me to improve the performance of the lambda calculus generator. Let me analyze the current state and propose a targeted improvement.
 
-The current program has:
-- No bound_vars tracking
-- No App constructor
-- No proper depth decrementing
-- Always uses "x" as variable name
-- Always uses ("Int",) as type annotation
+Looking at the current implementation:
+1. It only generates base types (Bool, Int, String) and simple function types (Int -> ty)
+2. It only generates literal terms or simple lambda terms that wrap other terms
+3. It never generates variables (Var), applications (App), or complex function types
 
-I need to provide a proper edit that addresses these issues. Let me create a SEARCH/REPLACE block that replaces the generate_sample function with an improved version.
+The key issues based on the metrics:
+- tm_sizes_average: 1.33 (very small, max is 100)
+- ty_sizes_average: 1.33 (very small, max is 10)
+- used_vars_proportions_average: 0.00 (no variables used!)
+- applied_lambdas_proportions_average: 0.00 (no lambda applications!)
+- unique_subterms_proportions_average: 0.14 (low uniqueness)
+
+I need to create a more sophisticated generator that:
+1. Generates larger types (up to 10 nodes)
+2. Generates larger terms (up to 100 nodes)
+3. Uses variables introduced by lambdas
+4. Applies lambdas to arguments
+5. Has more unique subterms
+
+Let me write a better generator that tracks the context (bound variables with their types) and can generate:
+- Variables (Var) that reference bound variables
+- Applications (App) that apply terms to arguments
+- More complex function types
+
+I'll need to modify the generate_sample function to accept and use a context.
+
+Let me propose a SEARCH/REPLACE block that replaces the current generate_sample function with a more sophisticated version.

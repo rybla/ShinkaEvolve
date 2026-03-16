@@ -1,2 +1,23 @@
+The user is asking me to make changes to improve the lambda calculus generator. Let me analyze the current state and propose a better solution.
 
-I need to be more careful about the format. Let me look at the exact code that needs to be replaced and make sure I copy it exactly.
+Looking at the performance metrics:
+- Combined score to maximize: 10.30
+- good_ratio: 1.00 (all samples are well-formed and well-typed)
+- tm_sizes_average: 1.35 (very small terms)
+- ty_sizes_average: 1.35 (very small types)
+- used_vars_proportions_average: 0.00 (no variables are used)
+- applied_lambdas_proportions_average: 0.00 (no lambdas are applied)
+- unique_subterms_proportions_average: 0.15 (few unique subterms)
+
+The current generator is very basic. I need to propose a replacement for the `generate_sample` function.
+
+Let me write a better generator that:
+1. Generates larger types (up to 10 nodes)
+2. Generates larger terms (up to 100 nodes)
+3. Uses variables from the environment
+4. Applies lambdas to arguments
+5. Has more unique subterms
+
+I need to use the exact diff format shown in the instructions. The block to replace is between the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END markers.
+
+Let me write the diff properly.

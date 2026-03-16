@@ -7,8 +7,8 @@
   "num_applied": 0,
   "patch_name": "none",
   "patch_description": "none",
-  "error_msg": "Could not extract code from patch string",
-  "timestamp": "2026-03-15T06:37:22.093485",
-  "llm_cost": 0.0031127499999988,
+  "error_msg": "No changes applied",
+  "timestamp": "2026-03-15T15:07:01.841685",
+  "llm_cost": 0.0024621,
   "llm_model": null
 }

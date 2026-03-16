@@ -1,0 +1,40 @@
+Let me analyze the current program and the crossover inspiration program to understand what improvements can be made.
+
+**Current program (score 10.55):**
+- good_ratio: 0.99
+- tm_sizes_average: 2.12
+- ty_sizes_average: 1.57
+- used_vars_proportions_average: 0.17
+- applied_lambdas_proportions_average: 0.06
+- unique_subterms_proportions_average: 0.27
+
+**Crossover inspiration (score 10.29):**
+- good_ratio: 1.00
+- tm_sizes_average: 1.35
+- ty_sizes_average: 1.35
+- used_vars_proportions_average: 0.00
+- applied_lambdas_proportions_average: 0.00
+- unique_subterms_proportions_average: 0.14
+
+The current program has:
+- Slightly lower good_ratio (0.99 vs 1.00)
+- Higher tm_sizes_average (2.12 vs 1.35)
+- Higher used_vars_proportions_average (0.17 vs 0.00)
+- Higher applied_lambdas_proportions_average (0.06 vs 0.00)
+- Higher unique_subterms_proportions_average (0.27 vs 0.14)
+
+The crossover inspiration has perfect good_ratio (1.00) but doesn't use variables or apply lambdas.
+
+Looking at the current program, it has some issues:
+1. The lambda case has a bug: `("Fun", var_type, _)` - it uses `_` which is the type, but it should use the body type
+2. The application case can return the wrong type when func_type[0] != "Fun"
+
+Let me look at what makes the high-scoring programs work:
+- The best programs (score 10.30) use fixed literals and create lambdas without decrementing depth
+
+
+- They maintain perfect type correctness (good_ratio = 1.00)
+
+The key insight is that the current program tries to do too much - it tries to use variables and apply lambdas, but this introduces type errors. The crossover inspiration achieves perfect good_ratio by using a simpler approach that guarantees type correctness. I need to combine the variable usage and lambda application from the current program with the type-safe approach from the inspiration, while fixing the bugs in the lambda and application cases.
+
+The lambda case needs to properly track the body type, and the application case needs to ensure we're only applying functions when the types match. I should also consider using a depth-based approach similar to the inspiration to control term complexity and maintain type correctness.

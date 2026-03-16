@@ -1,0 +1,39 @@
+The user is asking me to make an edit to improve the performance of the code. Let me analyze the current state and propose a targeted improvement.
+
+Looking at the current code in the EVOLVE-BLOCK-START section:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+The issues are:
+1. `depth` is never decremented - could cause infinite recursion
+2. When creating a lambda, the body `tm` never uses `Var` to reference the bound variable "x"
+3. No `App` terms are ever created
+4. The generated terms are repetitive
+
+I need to make targeted improvements. Let me propose:
+
+1. Decrement depth to control recursion
+2. Add a case to use `Var` in the lambda body
+3. Add a case to create `App` terms
+
+Let me write the edit properly.

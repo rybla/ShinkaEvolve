@@ -1,43 +1,42 @@
-Let me analyze the current program and the performance metrics to understand what needs to be improved.
+Let me analyze the current performance metrics and the goal:
 
-Current performance metrics:
-- Combined score to maximize: 10.30
-- good_ratio: 1.00 (all generated samples are well-formed and well-typed)
-- tm_sizes_average: 1.38 (very small terms)
-- ty_sizes_average: 1.38 (very small types)
-- used_vars_proportions_average: 0.00 (no variables are being used)
-- applied_lambdas_proportions_average: 0.00 (no lambdas are being applied)
+Current metrics:
+- Combined score: 10.30
+- good_ratio: 1.00 (all terms are well-typed)
+- tm_sizes_average: 1.35 (very small terms)
+- ty_sizes_average: 1.35 (very small types)
+- used_vars_proportions_average: 0.00 (no variable usage)
+- applied_lambdas_proportions_average: 0.00 (no lambda applications)
 - unique_subterms_proportions_average: 0.15 (low uniqueness)
 
-The key issues I see:
-1. Terms are very small (1.38 nodes on average, max allowed is 100)
-2. Types are very small (1.38 nodes on average, max allowed is 10)
-3. No variables are being used (0%)
-4. No lambdas are being applied (0%)
-5. Low unique subterms
+Prior program metrics (which were better in some ways):
+- Combined score: 9.24
+- good_ratio: 0.82 (lower!)
+- tm_sizes_average: 4.89 (bigger terms)
+- ty_sizes_average: 2.90 (bigger types)
+- used_vars_proportions_average: 0.03 (some variable usage)
+- applied_lambdas_proportions_average: 0.17 (some lambda applications)
+- unique_subterms_proportions_average: 0.49 (more unique)
 
-Looking at the current `generate_sample` function:
-- It only generates literals (Bool, Int, String) or simple lambdas with Int type
-- It doesn't generate applications
-- It doesn't use variables
-- It doesn't generate larger types (Fun types are limited)
-- The depth parameter is not being used effectively
+Wait, the current program has a HIGHER combined score (10.30 vs 9.24), but the metrics look worse in terms of term size, variable usage, etc. Let me re-read the problem.
 
-The current implementation:
-1. Uses `depth` parameter but doesn't really use it to control complexity
-2. Only generates 4 types of things: Bool literal, Int literal, String literal, or a simple lambda
-3. The lambda always has type ("Int",) and wraps another sample
-4. No application terms are generated
-5. No variable references are generated
-
-To improve, I need to:
-1. Use the depth parameter to control the size of generated types and terms
-2. Generate larger types (up to 10 nodes) using Fun types recursively
-3. Generate larger terms (up to 100 nodes) using App and Lam
+The problem says:
+- A generated type is better the bigger it is, where its size is measured by the number of nodes in its AST. The maximum allowed number of nodes in the generated type's AST is 10.
+- A generated term is better the bigger it is, where its size is measured by the number of nodes in its AST. The maximum allowed number of nodes in the generated term's AST is 100.
+- A generated term is better the more it uses its variables (which are introduced by lambdas), by applying those variables to arguments or using them as arguments in applications.
 
 
-4. Introduce variable bindings through lambdas and reference them with Var terms
-5. Apply lambdas to arguments to create App terms
-6. Ensure all generated terms are well-typed by maintaining a type context
+- A generated term is better the more it applies its lambdas to arguments.
+- A generated term is better the more unique sub-terms it has. Only application and lambda sub-terms count toward this.
 
-I'll need a helper function to generate types based on depth, then build terms that respect those types while tracking variable bindings in a context.
+So the current program has:
+- good_ratio: 1.00 (perfect - all terms are well-typed)
+- But tm_sizes_average: 1.35 (too small - should be up to 100)
+- ty_sizes_average: 1.35 (too small - should be up to 10)
+- used_vars_proportions_average: 0.00 (should be higher)
+- applied_lambdas_proportions_average: 0.00 (should be higher)
+- unique_subterms_proportions_average: 0.15 (should be higher)
+
+The current implementation only generates 4 simple cases and has no depth control. I need to build a more sophisticated generator that tracks depth, manages a context of available variables, and constructs larger, more complex terms with proper variable usage and lambda applications.
+
+The prior approach used depth control to manage complexity, generated function types with 70% probability, and had helper functions for generating terms, literals/variables, lambdas, and applications. However, it had issues: it didn't fully leverage the context for variables, the application generator created arbitrary function types rather than using context, and it lacked proper depth management for type generation. I should create an improved version that maintains depth tracking, properly utilizes the context to reference bound variables, and generates more complex terms with better lambda application patterns.

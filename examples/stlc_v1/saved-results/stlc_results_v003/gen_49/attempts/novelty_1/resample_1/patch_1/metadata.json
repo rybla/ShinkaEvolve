@@ -1,0 +1,14 @@
+{
+  "generation": 49,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "AsymmetricSpineBetaInjector",
+  "patch_description": "The redesigned generator implements an extreme 98/2 asymmetric budget split to force the creation of massive functional spines, aiming for an average term size of 110-115 nodes. It utilizes a dedicated 'Beta-Redex Injection' branch within the `AppTm` constructor, which manually synthesizes a `LamTm` on the function side with 35% probability to maximize the `applied_lambdas_proportions`. To ensure high variable reuse (>0.78), the generator uses context-aware argument synthesis, where 95% of application arguments are typed based on existing variables in the context, allowing the 2% budget branch to be satisfied immediately by a `VarTm`. Shadowing is enforced by always selecting the most recently bound variable.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:49:32.156839",
+  "llm_cost": 0.010423499999999999,
+  "llm_model": null
+}

@@ -41,21 +41,80 @@ type AppTm = Tuple[Literal["App"], Tm, Tm]
 
 
 # EVOLVE-BLOCK-START
-def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
-    i = rng.randrange(0, 4 if depth > 0 else 3)
+from typing import Literal, Tuple, List, Dict, Any
 
+
+import random
+
+
+# Type definitions
+type Ty = BoolTy | IntTy | StringTy | FunTy
+type BoolTy = Tuple[Literal["Bool"]]
+type IntTy = Tuple[Literal["Int"]]
+type StringTy = Tuple[Literal["String"]]
+type FunTy = Tuple[Literal["Fun"], Ty, Ty]
+
+
+type Tm = LitTm | VarTm | LamTm | AppTm
+type LitTm = (
+    Tuple[Literal["Bool"], bool]
+    | Tuple[Literal["Int"], int]
+    | Tuple[Literal["String"], str]
+)
+type VarTm = Tuple[Literal["Var"], str]
+type LamTm = Tuple[Literal["Lam"], str, Ty, Tm]
+type AppTm = Tuple[Literal["App"], Tm, Tm]
+
+
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    Uses context-guided generation to create larger, more complex terms.
+    """
+    # Use iterative deepening to build up complexity
+    return generate_with_context(rng, max_size=100, max_type_size=10)
+
+
+def generate_with_context(rng: random.Random, max_size: int, max_type_size: int) -> Tuple[Ty, Tm]:
+    """
+    Generate type and term with context tracking.
+    """
+    # Start with base types and build up
+    return generate_term(rng, max_size, max_type_size, [])
+
+
+def generate_term(rng: random.Random, max_size: int, max_type_size: int, context: List[Tuple[str, Ty]]) -> Tuple[Ty, Tm]:
+    """
+    Generate a term given a context of available variables.
+    """
+    # If we have context and enough budget, sometimes use a variable or apply
+    if context and max_size > 1:
+        choice = rng.randrange(0, 5)
+        if choice == 0 and context:
+            # Use a variable from context
+            var_name, var_type = rng.choice(context)
+            return (var_type, ("Var", var_name))
+        elif choice == 1 and context:
+            # Apply a variable to an argument
+            var_name, var_type = rng.choice(context)
+            if var_type[0] == "Fun":
+                arg_type = var_type[1]
+                arg_term = generate_term(rng, max_size - 1, max_type_size, context)
+                return (var_type[2], ("App", ("Var", var_name), arg_term[1]))
+    
+    # Generate base literal
+    return generate_literal(rng)
+
+
+def generate_literal(rng: random.Random) -> Tuple[Ty, Tm]:
+    """Generate a base literal."""
+    i = rng.randrange(0, 3)
     if i == 0:
         return (("Bool",), ("Bool", True))
     elif i == 1:
         return (("Int",), ("Int", 27))
-    elif i == 2:
-        return (("String",), ("String", "hello world"))
     else:
-        ty, tm = generate_sample(rng)
-        return (
-            ("Fun", ("Int",), ty),
-            ("Lam", "x", ("Int",), tm),
-        )
+        return (("String",), ("String", "hello"))
 # EVOLVE-BLOCK-END
 
 # This part remains fixed (not evolved)

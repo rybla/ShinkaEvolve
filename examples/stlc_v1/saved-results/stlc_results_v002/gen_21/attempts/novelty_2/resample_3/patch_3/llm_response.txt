@@ -1,0 +1,25 @@
+The user is saying my previous edit was not successful. Let me try again with a cleaner approach. I need to provide the complete new program code with the proper format.
+
+Let me analyze the current program and think about improvements:
+
+Current metrics:
+- Combined score: 10.30
+- good_ratio: 1.00 (perfect - this is most important)
+- tm_sizes_average: 1.35
+- used_vars_proportions_average: 0.00
+- applied_lambdas_proportions_average: 0.00
+- unique_subterms_proportions_average: 0.15
+
+The analysis suggests:
+1. Keep correctness as priority (good_ratio = 1.00)
+2. Add variable usage - need to track context of bound variables
+3. Add lambda application - need to generate App terms
+4. Increase unique_subterms - more structural diversity
+
+Strategy:
+- Add a context parameter to track bound variables
+- With some probability, use a variable from context instead of generating new term
+- When generating a function body, sometimes reference the parameter
+- Add App constructor usage
+
+Let me write the complete code:

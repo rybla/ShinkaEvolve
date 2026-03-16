@@ -1,12 +1,48 @@
-The user is asking me to provide a complete new program code. Let me think about this more carefully and provide the full code in the correct format.
+The previous edit was not successful. Let me re-read the current program and understand what I need to do.
 
-Looking at the requirements:
-1. Generate types up to 10 nodes
-2. Generate terms up to 100 nodes
-3. Use variables (from lambdas)
-4. Apply lambdas to arguments
-5. Have more unique subterms
+Looking at the current program in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END:
 
-The current implementation is too simple. I need to create a completely different algorithm.
+```python
+# EVOLVE-BLOCK-START
 
-Let me write the full code:
+
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+
+
+# EVOLVE-BLOCK-END
+```
+
+The issue is that the current code has a bug - when `i == 3`, it calls `generate_sample(rng)` without passing the `depth` parameter. This would cause an error or infinite recursion.
+
+Also, the current code generates very simple terms - just base types or a simple lambda wrapping a term.
+
+Looking at the performance metrics:
+- Current: Combined score 10.30, good_ratio 1.00, tm_sizes_average 1.35
+- Prior: Combined score 9.24, good_ratio 0.82, tm_sizes_average 4.89
+
+The current program has a higher combined score because it has perfect good_ratio (1.00), but it generates very small terms.
+
+The goal is to increase term sizes while maintaining good_ratio = 1.00.
+
+Let me propose a more sophisticated generator that:
+
+
+I'll design a recursive approach to generate more complex lambda calculus terms while ensuring type safety. The generator will carefully construct terms with increasing depth, using type annotations and context tracking to maintain well-typedness. By systematically exploring different term constructions, I can create larger, more interesting lambda expressions without compromising type correctness.

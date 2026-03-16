@@ -1,21 +1,41 @@
-Let me analyze the current program and think about what changes to make.
+The user is saying my previous edit wasn't successful. Let me look at the current program again and make sure I'm targeting the right code block.
 
-Looking at the current program:
-- It generates simple literals (Bool, Int, String) and lambda terms
-- It has a score of 10.29
-- Key metrics: good_ratio=1.00, used_vars_proportions_average=0.00, applied_lambdas_proportions_average=0.00, unique_subterms_proportions_average=0.14
+The current program has this in the EVOLVE-BLOCK-START section:
 
-The current program doesn't generate Var terms or App terms. To improve, I need to:
-1. Add variable tracking (bound_vars context)
-2. Add probability to use variables from context
-3. Add application (AppTm) terms
-4. Use unique variable names
+```python
+def generate_sample(rng: random.Random, depth=10, context=None) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    Uses context to track bound variables for potential Var usage.
+    """
+    if context is None:
+        context = []
+    
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+    
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        # Generate function type and term
+        # Use context to potentially reference bound variables
+        if context and rng.random() < 0.3:  # 30% chance to use a variable
+            var_name = rng.choice(context)
+            return (
+                ("Fun", ("Int",), ("Int",)),
+                ("Lam", "x", ("Int",), ("Var", var_name)),
+            )
+        else:
+            ty, tm = generate_sample(rng, depth - 1, context)
+            return (
+                ("Fun", ("Int",), ty),
+                ("Lam", "x", ("Int",), tm),
+            )
+```
 
-Let me create an improved version that incorporates these elements while maintaining a high good_ratio.
+The issue is in the `else` branch - when generating a lambda, we need to add "x" to the context before recursing. Currently it just passes `context` unchanged.
 
-I need to make sure:
-- The SEARCH block exactly matches the current code
-- The changes are valid Python
-- The type system is maintained
-
-Let me write the edit:
+Let me create the correct diff:

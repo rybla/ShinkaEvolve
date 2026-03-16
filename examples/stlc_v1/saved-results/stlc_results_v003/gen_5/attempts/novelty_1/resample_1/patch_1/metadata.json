@@ -1,0 +1,14 @@
+{
+  "generation": 5,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 2,
+  "patch_name": "improve_stlc_generator_logic",
+  "patch_description": "The current generator has a low `good_ratio` (0.87) likely due to missing imports (`Dict`) and potential recursion depth issues. I will:\n1. Fix the missing `Dict` import.\n2. Improve the `gen_type` logic to more consistently reach the target size of 10 nodes.\n3. Refine `gen_term` to prioritize variable usage and application of lambdas.\n4. Ensure the budget management is more robust to prevent small terms and ensure we stay under the 100-node limit while maximizing size.\n5. Increase the probability of generating `App` nodes where the left side is a `Lam` to boost `applied_lambdas_proportions`.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:42:27.250198",
+  "llm_cost": 0.0073215,
+  "llm_model": null
+}

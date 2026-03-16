@@ -1,81 +1,54 @@
-Let me analyze the current program and the metrics to understand what needs to be improved.
+Let me analyze the current program and the performance metrics to understand what needs to be improved.
 
 Current metrics:
-- Combined score: 10.28
-- good_ratio: 1.00 (all terms are well-typed)
-- tm_sizes_average: 1.34 (term sizes are very small, max is 100)
-- ty_sizes_average: 1.34 (type sizes are very small, max is 10)
-- used_vars_proportions_average: 0.00 (variables are never used!)
-- applied_lambdas_proportions_average: 0.00 (lambdas are never applied!)
-- unique_subterms_proportions_average: 0.13 (low uniqueness)
+- Combined score: 10.30
+- good_ratio: 1.00 (all samples are well-typed)
+- tm_sizes_average: 1.35 (term sizes are very small)
+- ty_sizes_average: 1.35 (type sizes are very small)
+- used_vars_proportions_average: 0.00 (no variables are used)
+- applied_lambdas_proportions_average: 0.00 (no lambdas are applied)
+- unique_subterms_proportions_average: 0.15 (very few unique subterms)
 
-The main issues I see:
-1. Term and type sizes are very small - need to generate bigger terms/types
-2. Variables are never used - the generated lambdas just return the recursive result without using the variable
-3. Lambdas are never applied - need to add App nodes
-4. Low uniqueness - need more varied subterms
+Looking at the prior program (the "improved" version that got 9.24), it had:
+- good_ratio: 0.82
+- tm_sizes_average: 4.89
+- ty_sizes_average: 2.90
+- used_vars_proportions_average: 0.03
+- applied_lambdas_proportions_average: 0.17
+- unique_subterms_proportions_average: 0.49
 
-Looking at the current implementation:
-- It generates literals (Bool, Int, String) or a function type
-- When generating a function, it creates a lambda that takes Int and returns the recursive result
-- The problem is that the lambda body (`tm`) doesn't use the variable `x` at all!
+So the current program has perfect good_ratio but very low sizes and no variable usage or lambda applications.
 
-To improve:
-1. Increase the depth to generate bigger types/terms
-2. Make sure variables are used - either as-is or applied to arguments
-3. Apply lambdas to arguments to increase applied_lambdas_proportions
-4. Use different variable names and types to increase uniqueness
+The current implementation generates very simple terms - it just generates literals or simple lambdas. It doesn't generate applications, variables, or complex types.
 
-Let me rewrite the generator:
+I need to design a completely different algorithm approach. Let me think about this...
 
-```python
-def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
-    # Base case: when depth is 0, generate simple literals
-    if depth <= 0:
-        i = rng.randrange(0, 3)
-        if i == 0:
-            return (("Bool",), ("Bool", True))
-        elif i == 1:
-            return (("Int",), ("Int", 27))
-        else:
-            return (("String",), ("String", "hello world"))
-    
-    # For larger depths, create more complex types and terms
-    i = rng.randrange(0, 5)
-    
-    if i == 0:
-        # Generate a Bool literal
-        return (("Bool",), ("Bool", rng.choice([True, False])))
-    elif i == 1:
-        # Generate an Int literal
-        return (("Int",), ("Int", rng.randint(0, 100)))
-    elif i == 2:
-        # Generate a String literal
-        return (("String",), ("String", rng.choice(["hello", "world", "test"])))
-    elif i == 3:
-        # Create a function type with a lambda that uses its variable
-        arg_ty = ("Int",)
-        ret_ty, body = generate_sample(rng, depth - 1)
-        return (
-            ("Fun", arg_ty, ret_ty),
-            ("Lam", "x", arg_ty, ("Var", "x"))
-        )
-    else:
-        # Create a function type with a lambda that applies the variable to an argument
-        arg_ty = ("Int",)
-        ret_ty, body = generate_sample(rng, depth - 1)
-        return (
-            ("Fun", arg_ty, ret_ty),
-            ("Lam", "x", arg_ty, ("App", ("Var", "x"), ("Int", 42)))
-        )
-```
+Key improvements needed:
+1. Increase term sizes (target: up to 100 nodes in AST)
+2. Increase type sizes (target: up to 10 nodes in AST)
+3. Use variables more (introduce them in lambdas and use them in applications)
+4. Apply lambdas to arguments
+5. Have more unique subterms
 
-The key improvements are:
-1. Using depth to control complexity
-2. Making lambdas actually use their variables (either returning them directly or applying them)
-3. Creating function types that use the variable in different ways
-4. Adding more varied literals and types I need to complete the recursive case and ensure proper type checking. The current approach has a critical flaw: when generating a lambda, I'm using the wrong variable name. I should use the same variable consistently, and I need to ensure the body actually uses the lambda's parameter rather than creating a disconnected term.
+The current approach is too simplistic. It uses a recursive approach but generates mostly trivial terms.
 
-The solution involves generating a fresh variable name for each lambda, then creating a body that properly references it. This means either using the variable directly in the body or applying it to arguments. When constructing the function type, I need to match the parameter type with the lambda's type annotation to maintain type consistency.
+Let me think of a completely different approach:
 
-For the recursive case, I'll generate a parameter type and return type, create a fresh variable name, build the body using that variable, and then construct both the function type and lambda term together. This ensures each lambda has a unique parameter and the body correctly uses it.
+**Approach: Grammar-based generation with explicit size tracking**
+
+Instead of depth-based generation, I'll use a grammar-based approach that:
+
+
+1. Explicitly tracks the size of the generated type and term
+2. Uses a grammar that can produce larger, more complex structures
+3. More aggressively introduces variables and applications
+4. Uses context tracking to ensure well-typedness
+
+I'll develop a method that builds complexity by carefully constructing lambda terms. The strategy involves creating a robust context management system that tracks variable types and allows more sophisticated term generation. By expanding the context and carefully managing type information, I can create more intricate and meaningful lambda calculus expressions that increase the overall complexity of the generated terms.
+
+The core of my approach will be a flexible generation mechanism that:
+- Tracks variable contexts with type information
+- Generates complex type structures
+- Creates lambda terms with meaningful variable usage
+- Applies lambda terms to arguments strategically
+- Ensures type safety throughout the generation process

@@ -1,0 +1,9 @@
+The user is asking me to make changes to the program. Let me look at the current program and understand what modifications I can make to improve the performance.
+
+Looking at the program, I need to identify the exact code to modify. Let me focus on making a targeted improvement.
+
+The key areas to improve based on the analysis:
+1. Type-safe application - check if func_type[0] == "Fun" before applying
+2. Increase term sizes by reducing random base case probability
+
+Let me create the SEARCH/REPLACE blocks for these changes.

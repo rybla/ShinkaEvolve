@@ -1,0 +1,26 @@
+The user is asking me to provide a complete new program code. Let me re-read the task and provide the full code in the correct format.
+
+I need to output:
+1. <NAME> - a short name
+2. <DESCRIPTION> - description of the changes
+3. <CODE> - the full code
+
+Let me analyze what changes could improve the score:
+
+Current program: 10.60
+Best prior: 10.62
+
+The key metrics are:
+- good_ratio: 1.00 (most important - must maintain this)
+- tm_sizes_average: 1.84 (try to increase)
+- unique_subterms_proportions_average: 0.23 (try to increase to 0.25)
+
+Improvements to try:
+1. Add more literal variety (different bool values, different integers, different strings)
+2. Adjust probabilities - currently 5 options at depth > 0, I could try different weights
+3. Ensure context is properly used for variables
+
+Let me create a new version that:
+1. Uses different literal values for variety (True/False, different ints, different strings)
+2. Adjusts the probability distribution slightly
+3. Maintains correctness

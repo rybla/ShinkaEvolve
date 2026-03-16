@@ -1,0 +1,33 @@
+The edit is still not going through. Let me think about why this might be happening.
+
+The error says "No changes applied", which typically means the SEARCH block doesn't match exactly what's in the file. 
+
+Let me carefully look at what's in the current program. The issue might be:
+1. Different whitespace/indentation
+2. The comment "# Note: depth is not passed!" might not be in the actual file
+3. Something else subtle
+
+Let me try a more minimal change - just the single line that needs to change.
+
+Actually wait - I should check if perhaps the current program already has the fix applied? Let me look at the current program text again:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)  # Note: depth is not passed!
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+The comment says "Note: depth is not passed!" which is an instruction to the human reader, not actual code. The actual issue is that `generate_sample(rng)` should be `generate_sample(rng, depth - 1)`.
+
+Maybe the issue is that I need to NOT include the comment in my SEARCH block? Let me try without the comment.

@@ -1,0 +1,19 @@
+The user is asking me to improve the performance of a lambda calculus generator. Let me analyze the current state and provide a complete new program.
+
+Looking at the metrics:
+- tm_sizes_average: 1.31 (max 100) - terms are tiny
+- ty_sizes_average: 1.31 (max 10) - types are tiny  
+- used_vars_proportions_average: 0.01 - almost no variable usage
+- applied_lambdas_proportions_average: 0.00 - no lambda applications
+- unique_subterms_proportions_average: 0.13 - low
+
+The current code only generates literals or simple lambdas with Int->Int. It never generates AppTm (applications).
+
+I need to write a new algorithm that:
+1. Generates much larger terms (closer to 100 nodes)
+2. Generates larger types (closer to 10 nodes)
+3. Uses variables from context
+4. Applies lambdas to arguments (generates AppTm)
+5. Has more unique subterms
+
+Let me write the complete new program:

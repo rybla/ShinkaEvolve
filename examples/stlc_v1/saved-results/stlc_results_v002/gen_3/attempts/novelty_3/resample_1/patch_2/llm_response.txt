@@ -1,0 +1,47 @@
+The user is asking me to improve the current program. Let me analyze what's happening:
+
+1. The current program has a perfect good_ratio (1.00) but generates very small terms (tm_sizes_average: 1.35)
+2. The prior programs had larger terms but lower good_ratio (0.82)
+
+I need to make targeted improvements that:
+1. Increase term and type sizes
+2. Add variable usage
+3. Add lambda applications
+4. Maintain good_ratio at 1.00
+
+Let me look at the current code more carefully:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+The issue is:
+1. The recursive call `generate_sample(rng)` doesn't pass depth, so it uses default depth=10
+2. There's no proper depth decrementing
+3. No variables are ever used
+4. No applications are generated
+
+I need to improve this by:
+1. Properly passing and decrementing depth
+2. Adding variable usage from context
+3. Adding application terms
+
+Let me write an improved version that maintains good_ratio=1.00 while generating larger terms.

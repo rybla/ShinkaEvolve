@@ -1,0 +1,45 @@
+Let me analyze the prior programs and their performance metrics to understand what techniques led to higher scores.
+
+Looking at the programs:
+
+1. **First program (Score: 7.11)** - Lowest score
+   - Uses depth parameter in recursion
+   - Has more options (5 choices)
+   - Tries to create lambdas that reference bound variables
+   - Has App term generation
+   - But has low good_ratio (0.68) - meaning many generated terms are invalid
+
+2. **Programs 2-5 (Score: ~10.28-10.31)** - Higher scores
+   - All use the same simple approach: just literals and simple lambdas
+   - No depth decrementing (depth stays at 10)
+   - No variable usage (used_vars_proportions_average: 0.00)
+   - No applications (applied_lambdas_proportions_average: 0.00)
+   - good_ratio: 1.00 - all terms are valid
+
+3. **Current program (Score: 10.28)**
+   - Same simple approach as programs 2-5
+   - good_ratio: 1.00
+   - tm_sizes_average: 1.33
+   - No variable usage, no applications
+
+The key insight is that the first program tried to do more complex things (variables, applications) but had a low good_ratio (0.68), meaning many generated terms were invalid. The simpler programs that just generated literals and simple lambdas had perfect good_ratio (1.00) and higher scores.
+
+However, there's a ceiling around 10.30-10.31. To break through this ceiling, I need to:
+1. Maintain good_ratio at 1.00 (or close to it)
+2. Increase tm_sizes_average (term complexity)
+3. Increase used_vars_proportions_average (variable usage)
+4. Increase applied_lambdas_proportions_average (function applications)
+
+
+5. Increase unique_subterms_proportions_average (uniqueness)
+
+The best prior program (score 10.31) has:
+- good_ratio: 1.00
+- tm_sizes_average: 1.41
+- used_vars_proportions_average: 0.00
+- applied_lambdas_proportions_average: 0.00
+- unique_subterms_proportions_average: 0.16
+
+I need to find a way to introduce variables and applications while maintaining type safety. Looking at the first program more carefully, it had the right ideas but the implementation was flawed. The key is to track bound variables and ensure type consistency when generating lambda terms and applications.
+
+The approach should involve passing bound_vars through recursive calls, using rng.choice to select from bound variables when generating Var terms, and implementing type-safe application fallbacks. I should also use unique variable names with f-strings and probabilistic termination based on both depth and random chance. Let me design a new program that builds on these insights.

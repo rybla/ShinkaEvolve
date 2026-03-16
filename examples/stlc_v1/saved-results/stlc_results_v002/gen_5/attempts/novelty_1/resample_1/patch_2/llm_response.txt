@@ -1,17 +1,16 @@
-The user wants me to rewrite the program to improve its performance on the specified metrics. Let me analyze the current program and design a better generator.
+The user is asking me to improve the performance of the code. Looking at the current program, it generates very simple terms (size 1.35 on average) with no variable usage and no lambda applications. 
 
-The current implementation has these issues:
-1. Term sizes are too small (1.38 vs max 100)
-2. Type sizes are too small (1.38 vs max 10)
-3. No variables are being used (0%)
-4. No lambdas are being applied (0%)
-5. Few unique subterms (0.15)
+The current generate_sample function only generates:
+1. Bool literals
+2. Int literals  
+3. String literals
+4. A simple lambda wrapping a recursive call
 
-I need to design a new algorithm that:
+This is too simple and doesn't produce useful test cases. I need to implement a more sophisticated generator that:
 1. Generates larger types (up to 10 nodes)
 2. Generates larger terms (up to 100 nodes)
-3. Uses variables introduced by lambdas
+3. Uses variables from context
 4. Applies lambdas to arguments
 5. Has more unique subterms
 
-Let me write a complete new implementation.
+Let me write a proper generator that achieves this while maintaining well-typedness.

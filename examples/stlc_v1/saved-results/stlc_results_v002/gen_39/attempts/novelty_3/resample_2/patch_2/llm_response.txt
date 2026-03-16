@@ -1,26 +1,42 @@
-The user is saying the previous edit was not successful. Let me re-read the task and provide a proper SEARCH/REPLACE block.
+The user is saying the previous edit was not successful. Let me look at the current program again and think about what changes to make.
 
-Looking at the current program in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END, I need to modify it to improve performance.
+Looking at the current program:
+- It has good_ratio: 1.00 (perfect)
+- It uses depth-limited recursion
+- It adds "x" to context when generating lambdas
+- But it never actually uses variables from context (no Var constructor generated)
+- It generates App but only with identity functions
 
-The current code is:
+The key insight is that in the lambda case (i==3), it always recurses with context + ["x"], but there's no code path that actually uses a variable from context.
+
+Looking at the prior programs, Program 3 had a 30% chance to use a variable from context:
 ```python
-# EVOLVE-BLOCK-START
-def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
-    i = rng.randrange(0, 4 if depth > 0 else 3)
-
-    if i == 0:
-        return (("Bool",), ("Bool", True))
-    elif i == 1:
-        return (("Int",), ("Int", 27))
-    elif i == 2:
-        return (("String",), ("String", "hello world"))
-    else:
-        ty, tm = generate_sample(rng)
-        return (
-            ("Fun", ("Int",), ty),
-            ("Lam", "x", ("Int",), tm),
-        )
-# EVOLVE-BLOCK-END
+if context and rng.random() < 0.3:
+    var_name = rng.choice(context)
+    return (("Fun", ("Int",), ("Int",)), ("Lam", "x", ("Int",), ("Var", var_name)))
+else:
+    ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+    return (("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm))
 ```
 
-I need to replace this with an improved version. Let me create a proper diff.
+This should improve used_vars_proportions_average.
+
+Also, the App case could be improved to generate more interesting functions, not just identity functions.
+
+Let me propose a change that:
+1. Adds 30% chance to use a variable from context in lambda case
+2. Makes the App case generate more interesting functions
+
+Actually, I need to make sure I output something. Let me check what the current state is and propose a targeted edit.
+
+The current lambda case is:
+```python
+elif i == 3:
+    # Generate lambda - FIX: add parameter to context
+    ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+    return (("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm))
+
+
+```
+
+I could modify this to sometimes reference a variable from context instead of always recursing. This would directly address the issue of not using variables from context and potentially improve the used_vars_proportions_average.

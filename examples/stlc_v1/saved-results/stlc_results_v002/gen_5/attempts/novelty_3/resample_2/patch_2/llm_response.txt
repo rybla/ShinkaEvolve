@@ -1,1 +1,18 @@
-Let me try again with a different approach. I'll provide the complete code directly.
+The user is saying the previous edit was not successful. Let me re-read the task and provide a proper edit.
+
+Looking at the current program in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END, I need to modify it to improve the performance metrics while maintaining the good_ratio of 1.00.
+
+The current implementation is very simple and generates:
+- Base types (Bool, Int, String) with literals
+- A recursive case that creates ("Fun", ("Int",), ty) and ("Lam", "x", ("Int",), tm)
+
+This gives very small sizes and no variable usage or lambda applications.
+
+I need to write a more sophisticated generator that:
+1. Generates larger types (up to 10 nodes)
+2. Generates larger terms (up to 100 nodes)
+3. Uses variables from context
+4. Applies lambdas to arguments
+5. Maintains type correctness (good_ratio = 1.00)
+
+Let me write the SEARCH/REPLACE block properly.

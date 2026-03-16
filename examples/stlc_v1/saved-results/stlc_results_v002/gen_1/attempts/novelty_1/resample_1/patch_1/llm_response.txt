@@ -1,36 +1,43 @@
-Let me analyze the current program and the performance metrics to understand what needs to be improved.
+Let me analyze the current state of the code and the performance metrics:
 
-Current performance metrics:
-- Combined score to maximize: 10.30
-- good_ratio: 1.00 (all terms are well-typed)
-- tm_sizes_average: 1.38 (terms are very small, max is 100)
-- ty_sizes_average: 1.38 (types are very small, max is 10)
-- used_vars_proportions_average: 0.00 (no variables are being used!)
-- applied_lambdas_proportions_average: 0.00 (no lambdas are being applied!)
-- unique_subterms_proportions_average: 0.15 (very few unique subterms)
-
-The main issues I can see:
-1. Types are very small (1.38 average, max 10) - need to generate bigger types
-2. Terms are very small (1.38 average, max 100) - need to generate bigger terms
-3. No variables are being used (0.00) - need to use variables introduced by lambdas
-4. No lambdas are being applied (0.00) - need to apply lambdas to arguments
-5. Few unique subterms (0.15) - need more unique subterms
+Current performance:
+- Combined score: 10.30
+- good_ratio: 1.00 (all samples are well-typed)
+- tm_sizes_average: 1.35 (very small terms)
+- ty_sizes_average: 1.35 (very small types)
+- used_vars_proportions_average: 0.00 (no variable usage)
+- applied_lambdas_proportions_average: 0.00 (no lambda applications)
+- unique_subterms_proportions_average: 0.15 (few unique subterms)
 
 Looking at the current `generate_sample` function:
-- It only generates base types (Bool, Int, String) or simple function types (Int -> ty)
-- It only generates literal terms or simple lambda terms
-- There's no recursion to build larger terms
-- There's no way to use variables (no VarTm is generated)
-- There's no way to apply terms (no AppTm is generated)
-- The depth parameter is not being used properly
+1. It only generates base types (Bool, Int, String) with literal values
+2. When depth > 0, it can generate function types, but the term is just a lambda wrapping the recursive result
+3. The lambda always has parameter type "Int" 
+4. There's no application of terms
+5. There's no variable usage beyond the single bound variable
+6. The depth parameter isn't being used properly to control complexity
 
-To improve, I need to:
-1. Use the depth parameter to control the size of generated types and terms
-2. Generate more complex types (nested function types)
-3. Generate variables and use them
+To improve this, I need to:
+1. Use the `depth` parameter properly to control the size of generated types/terms
+2. Generate larger types (up to 10 nodes)
+3. Generate larger terms (up to 100 nodes)
+4. Create actual variable usage by applying lambdas to arguments
+5. Create more applications
+6. Increase unique subterms
+
+Let me design a better generator:
+
+1. Track size budget for types and terms
+2. Generate base types and function types with proper size control
+3. Generate variables from a pool
+4. Generate lambdas with proper type annotations
+5. Generate applications to use variables and lambdas
+6. Recursively build larger terms
+
+I'll need to:
+- Maintain a context of available variables with their types
+- Use depth/size to limit recursion
+- Build terms that actually use the variables they introduce
 
 
-4. Apply lambdas to arguments to create more complex term structures
-5. Build up larger terms through recursive generation
-
-The key insight is that I need to track available variables (from lambda binders) and use them in the generation process. I'll need to modify the generation to recursively build up types and terms while maintaining the type system constraints, ensuring that when I introduce a lambda, I can reference its variable in the body and when applying functions, I can pass appropriate arguments.
+- A recursive approach where each recursive call decrements the remaining size budget, allowing me to control term depth and complexity while ensuring well-typedness by tracking variable types in context.

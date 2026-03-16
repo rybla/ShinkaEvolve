@@ -1,35 +1,50 @@
-The user is asking me to propose an edit to improve the performance of the code. Let me analyze the situation more carefully.
+The user is asking me to make an edit to improve the performance metrics of the lambda calculus generator. Let me analyze the current state and the recommendations.
 
-Looking at the current program and the prior programs, I can see that:
+Looking at the current code:
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10, context=None) -> Tuple[Ty, Tm]:
+    if context is None:
+        context = []
+    
+    # At depth 0, only generate literals
+    if depth == 0:
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", True))
+        elif i == 1:
+            return (("Int",), ("Int", 27))
+        else:
+            return (("String",), ("String", "hello world"))
+    
+    # At depth > 0, choose from literals, Lam, and App
+    i = rng.randrange(0, 5)  # 5 options
+    
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    elif i == 3:
+        # Generate lambda - FIX: add parameter to context
+        ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+        return (("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm))
+    else:
+        # Generate application - need to be careful about types
+        # For simplicity, apply a lambda to a literal
+        arg_ty, arg_tm = generate_sample(rng, depth - 1, context)
+        func_ty = ("Fun", arg_ty, arg_ty)
+        func_tm = ("Lam", "x", arg_ty, ("Var", "x"))
+        return (arg_ty, ("App", func_tm, arg_tm))
+# EVOLVE-BLOCK-END
+```
 
-1. The best scores (10.29-10.30) are achieved by programs that:
-   - Have good_ratio = 1.00 (perfect type correctness)
-   - Have used_vars_proportions_average = 0.00 (no variable usage)
-   - Have applied_lambdas_proportions_average = 0.00 (no lambda applications)
-   - Have tm_sizes_average around 1.34-1.38
-   - Have unique_subterms_proportions_average around 0.13-0.15
+I'll modify the lambda generation to incorporate the new parameter into the context, ensuring the FIX is properly implemented. I'll use the new parameter to potentially generate more diverse and context-aware lambda expressions.
 
-2. The current program has:
-   - Score: 10.28
-   - good_ratio: 1.00
-   - tm_sizes_average: 1.34
-   - used_vars_proportions_average: 0.00
-   - applied_lambdas_proportions_average: 0.00
-   - unique_subterms_proportions_average: 0.13
+When generating a lambda, I'll randomly decide whether to use an existing context variable or create a new variable recursively. This approach allows for more flexible lambda generation, increasing the chances of using variables from the current context.
 
-The current program is already very close to the best performing ones. The key difference between the current program (score 10.28) and the best programs (10.29-10.30) seems to be very slight - likely just random variation in the generated terms.
-
-Looking at the best programs, they all have:
-- Simple base cases returning fixed literals
-- A recursive case that creates lambda functions without decrementing depth
-
-The key insight from the analysis is that to improve further, we need to either:
-1. Keep good_ratio at 1.00 and increase tm_sizes_average or unique_subterms_proportions_average
-2. Or find a way to incorporate variable usage without breaking type correctness
-
-One approach that hasn't been tried much is varying the types more. Let me try a different approach:
-
-Instead of always using ("Int",) as the argument type, I can vary it. Also, instead of always using the same literals, I can vary them more.
-
-
-I need to look at what's actually in the EVOLVE-BLOCK-START section to make my edit.
+The key modifications will focus on:
+- Expanding context usage
+- Randomly selecting between context variables and recursive generation
+- Maintaining the existing type and term generation logic

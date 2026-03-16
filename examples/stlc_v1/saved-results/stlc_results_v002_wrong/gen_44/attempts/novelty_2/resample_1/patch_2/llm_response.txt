@@ -1,0 +1,32 @@
+The user is saying my previous edit wasn't applied. Let me look at the current program again and make a targeted improvement.
+
+Current program:
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+The issue is that:
+1. It doesn't track bound variables
+2. It doesn't use variables in the body
+3. It doesn't create App nodes
+
+I need to add:
+1. A `bound_vars` parameter to track variables in scope
+2. Use those variables (return Var nodes)
+3. Create App nodes that apply variables
+
+Let me make a targeted edit that adds context tracking and variable usage.

@@ -1,0 +1,14 @@
+{
+  "generation": 39,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "spine_expert_beta_redex_injector",
+  "patch_description": "This algorithm maximizes term size and variable utilization by implementing a \"Beta-Redex Injection\" strategy. It specifically targets the `applied_lambdas_proportions` by forcing the function side of an application to be a lambda abstraction when the budget is high. This ensures that every application level introduces a new variable into the context, which is then immediately available for reuse in the function body. \n\nKey improvements:\n1. **Beta-Redex Forcing**: When generating an `AppTm` at high budget, we bypass the standard `gen_term` for the function branch and directly create a `('Lam', ...)` if possible, or increase the probability that the function branch resolves to a lambda.\n2. **Context-Driven Goal Selection**: Instead of randomly splitting the budget, we use 95% of the fuel for the functional spine to reach the ~100 node limit.\n3. **Variable Saturation**: By picking argument types strictly from the context with high probability, we guarantee that the argument branch of an application is frequently a `VarTm`, saving budget for the deeper functional spine.\n4. **Unique Hash Literals**: Using `rng.getrandbits(32)` for literals ensuring `unique_subterms_proportions` stays near 1.0.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:47:45.403971",
+  "llm_cost": 0.0103675,
+  "llm_model": null
+}

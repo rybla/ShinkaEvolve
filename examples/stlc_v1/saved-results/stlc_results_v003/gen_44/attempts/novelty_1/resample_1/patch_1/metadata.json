@@ -1,0 +1,14 @@
+{
+  "generation": 44,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "ultra_high_fuel_and_beta_injection",
+  "patch_description": "To maximize `tm_sizes_average` and `applied_lambdas_proportions`, I am implementing the \"Ultra-High Initial Fuel\" (500) and \"95/5 Asymmetric Splitting\" strategy. Additionally, I'm introducing \"Beta-Redex Injection\" which manually constructs a `LamTm` on the function side of an `AppTm` with 30% probability when the budget is high. This forces applied lambdas into the spine even when the target type doesn't naturally require one. I've also increased the context-driven argument selection to 95% to ensure the small argument branch is almost always satisfied by a `VarTm`, boosting variable reuse.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:48:34.961555",
+  "llm_cost": 0.0107515,
+  "llm_model": null
+}

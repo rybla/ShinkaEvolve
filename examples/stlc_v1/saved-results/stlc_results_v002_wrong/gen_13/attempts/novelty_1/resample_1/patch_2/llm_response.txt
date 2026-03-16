@@ -1,0 +1,50 @@
+The user is asking me to improve the performance of the code. Let me analyze the current program and propose a modification.
+
+Looking at the current code in the EVOLVE-BLOCK-START section:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+The problem is that:
+1. `used_vars_proportions_average: 0.00` - variables are never used (the lambda creates "x" but never references it with `Var`)
+2. `applied_lambdas_proportions_average: 0.00` - lambdas are never applied (no `App` terms created)
+3. `unique_subterms_proportions_average: 0.14` - low uniqueness
+
+The issue is that when we create a lambda `("Lam", "x", ("Int",), tm)`, the body `tm` is just a recursive call that doesn't reference the variable "x". We need to:
+1. Sometimes use `Var("x")` in the lambda body to actually use the bound variable
+2. Create `App` terms to apply functions
+
+Let me think about how to maintain type correctness:
+
+For a lambda `("Lam", var_name, arg_ty, body_ty, body)`:
+
+
+- The type is `("Fun", arg_ty, body_ty)`
+- The body must have type `body_ty`
+
+For a variable `("Var", name)`:
+- It must refer to a bound variable
+
+For application `("App", fn, arg)`:
+- fn must have type `("Fun", arg_ty, result_ty)`
+- arg must have type `arg_ty`
+- The result has type `result_ty`
+
+The main issue is that the current code creates lambdas but never uses the bound variable. I need to modify the lambda case to sometimes reference the variable with `Var`, and also add application cases to actually apply the functions being created.
+
+A simpler approach would be to keep the current lambda structure but vary the body - sometimes using the variable directly, sometimes creating nested applications. This way I can gradually increase complexity while maintaining type correctness.

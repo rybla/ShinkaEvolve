@@ -1,16 +1,11 @@
-The user is asking me to make changes to the code in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END section. Let me look at what the current code looks like and propose a better generator.
+The user is saying my edit wasn't applied. Let me look at the exact code in the EVOLVE-BLOCK-START section and make sure I copy it exactly.
 
-Looking at the current code:
-- It generates very simple types and terms
-- It never generates variables or applications
-- The terms are tiny (average 1.38 nodes)
-- No variables are used, no lambdas are applied
+Looking at the current program in the message:
 
-I need to propose a SEARCH/REPLACE block that replaces the current generate_sample function with a better one.
+```
+# EVOLVE-BLOCK-START
 
-Let me write the exact code that needs to be replaced. The current code is:
 
-```python
 def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
     """
     Generate a sample type and term using a random seed.
@@ -30,6 +25,7 @@ def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
             ("Fun", ("Int",), ty),
             ("Lam", "x", ("Int",), tm),
         )
+# EVOLVE-BLOCK-END
 ```
 
-I need to replace this with a better generator. Let me write the diff properly.
+I need to copy this EXACTLY including the blank lines. Let me try again with the exact text.

@@ -1,0 +1,32 @@
+Let me analyze the current state:
+
+**Current program (best so far with score 10.30):**
+- Uses fixed primitive literals: `True`, `27`, "hello world"
+- Creates lambdas with "x" variable but NEVER uses Var to reference it
+- No App terms are created
+- `good_ratio=1.00` (perfect type correctness)
+- Very low on all other metrics: `used_vars_proportions_average=0.00`, `applied_lambdas_proportions_average=0.00`, `unique_subterms_proportions_average=0.15`
+
+**Key insights from prior programs:**
+1. First programs tried to use variables and applications but had lower `good_ratio` (0.72, 0.87)
+2. The simple fixed literal approach achieved `good_ratio=1.00` but poor other metrics
+3. The current approach creates lambdas but never references the bound variables
+
+**What's missing:**
+- The programs create lambdas like `("Lam", "x", ("Int",), tm)` but never use `Var` to reference "x"
+- They never create `App` terms to apply functions
+- The unique subterms is low because they use the same literals repeatedly
+
+**Goal:** Increase `used_vars_proportions_average`, `applied_lambdas_proportions_average`, and `unique_subterms_proportions_average` while maintaining `good_ratio` as close to 1.00 as possible.
+
+**Strategy:**
+1. Keep generating lambdas with typed parameters (for type correctness)
+2. With some probability, have the lambda body actually USE the bound variable (Var)
+3. With some probability, create applications where we apply functions to arguments
+4. Vary the primitive values more to increase unique subterms
+
+However, looking at the scores, the weight of `good_ratio` is clearly very high. 
+
+The challenge is that generating variables and applications risks type mismatches. I need a careful approach: maintain the lambda structure but occasionally make the body reference the bound variable directly, create applications only when types align properly, and diversify the primitive values chosen. Starting with variable references inside lambdas seems safer—wrapping the bound variable in a Var constructor should preserve type correctness since the variable's type is already known.
+
+The key insight is that each lambda needs its own unique parameter name. If I always use "x", nested lambdas create shadowing issues. By tracking bound variables and selecting among them with different probability weights, I can generate more diverse terms while maintaining type safety.

@@ -1,1 +1,48 @@
-The user is asking me to provide a complete new program. Let me write the full code properly.
+The user says my previous edit was not successful. Let me look at the current program more carefully and provide a valid edit.
+
+Looking at the current program in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END:
+
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10, context=None) -> Tuple[Ty, Tm]:
+    if context is None:
+        context = []
+    
+    # At depth 0, only generate literals
+    if depth == 0:
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", True))
+        elif i == 1:
+            return (("Int",), ("Int", 27))
+        else:
+            return (("String",), ("String", "hello world"))
+    
+    # At depth > 0, choose from literals, Lam, and App
+    i = rng.randrange(0, 5)  # 5 options
+    
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    elif i == 3:
+        # Generate lambda - FIX: add parameter to context
+        ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+        return (("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm))
+    else:
+        # Generate application - need to be careful about types
+        # For simplicity, apply a lambda to a literal
+        arg_ty, arg_tm = generate_sample(rng, depth - 1, context)
+        func_ty = ("Fun", arg_ty, arg_ty)
+        func_tm = ("Lam", "x", arg_ty, ("Var", "x"))
+        return (arg_ty, ("App", func_tm, arg_tm))
+# EVOLVE-BLOCK-END
+```
+
+The issue might be that I'm trying to make an edit but there's something wrong with my diff format. Let me check what I actually tried to do. Oh wait, I see - I keep saying I'll make an edit but I'm not actually providing the edit block! Let me provide a valid SEARCH/REPLACE block.
+
+I need to improve the lambda parameter types by randomizing them, which will increase ty_sizes_average and unique_subterms_proportions_average. Here's my proposed change:
+
+I'll randomly select parameter types for lambdas to create more diverse type structures and increase the average type size.

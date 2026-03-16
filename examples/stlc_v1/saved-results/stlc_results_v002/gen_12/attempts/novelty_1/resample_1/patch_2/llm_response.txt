@@ -1,18 +1,11 @@
-The previous edit wasn't applied. Let me re-read the instructions and make sure I'm providing the correct format. I need to use the SEARCH/REPLACE block format exactly as specified.
+The user is asking me to make an edit to improve the performance of the lambda calculus generator. Let me look at the current program and the error message.
 
-Looking at the current program, I need to replace the generate_sample function. Let me check the exact code in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END section:
+The error says "No changes applied" which means my previous edit wasn't actually different from the current code. Let me re-read the current program in the EVOLVE-BLOCK-START section:
 
 ```python
 # EVOLVE-BLOCK-START
-
-
 def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
-    """
-    Generate a sample type and term using a random seed.
-    """
-
     i = rng.randrange(0, 4 if depth > 0 else 3)
-
     if i == 0:
         return (("Bool",), ("Bool", True))
     elif i == 1:
@@ -25,14 +18,24 @@ def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
             ("Fun", ("Int",), ty),
             ("Lam", "x", ("Int",), tm),
         )
-
-
 # EVOLVE-BLOCK-END
 ```
 
-Now I need to create a better version that:
-1. Uses variables in lambda bodies
-2. Applies lambdas to arguments
-3. Creates more unique subterms
+This is a very simple generator that:
+1. Returns base types with literals (Bool, Int, String)
+2. Occasionally wraps in a lambda with Int argument
 
-Let me make sure the diff format is correct.
+The metrics show:
+- good_ratio: 1.00 (perfect)
+- tm_sizes_average: 1.29 (very small, max is 100)
+- ty_sizes_average: 1.29 (very small, max is 10)
+- used_vars_proportions_average: 0.00 (no variable usage)
+- applied_lambdas_proportions_average: 0.00 (no lambda applications)
+- unique_subterms_proportions_average: 0.13 (low)
+
+I need to make changes that increase term and type sizes while maintaining type safety. Let me propose a more sophisticated generator.
+
+Looking at the prior programs, the first one had better metrics but lower good_ratio (0.82). The second had perfect good_ratio but small sizes.
+
+
+I'll craft a nuanced approach to expand the generator's capabilities. The strategy involves creating more complex type structures and term generation while preserving type safety. I'll design a method that introduces nested function types, variable references, and controlled term complexity. The goal is to incrementally increase the generator's sophistication without compromising its core type-checking principles.

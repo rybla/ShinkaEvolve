@@ -1,0 +1,14 @@
+{
+  "generation": 13,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "TypeDirectedAsymmetricGenerator",
+  "patch_description": "This implementation optimizes the STLC term generation by using a strictly type-directed approach with asymmetric budget splitting. \n\n1. **Lambda Forcing**: When the target type is a function, we generate a `Lam` term with 70% probability. This ensures structural alignment and creates variables in the context.\n2. **Context-Driven Application**: When generating an `App` node, the intermediate type `A` is pulled from the existing context 70% of the time. This significantly increases `used_vars_proportions_average`.\n3. **Asymmetric Budgeting**: We allocate 70% of the budget to the function side of an application. This creates deep, left-heavy ASTs, pushing `tm_sizes_average` higher while maintaining a high `applied_lambdas_proportions_average`.\n4. **Unique Literals**: Literals are generated using unique strings and values based on the current context length and budget to ensure `unique_subterms_proportions_average` remains near 1.0.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:43:34.653548",
+  "llm_cost": 0.0095315,
+  "llm_model": null
+}

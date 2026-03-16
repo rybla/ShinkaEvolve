@@ -1,0 +1,15 @@
+The user is saying my previous edit wasn't successful. Let me re-read the instructions and provide a proper edit.
+
+Looking at the current program, I need to make targeted improvements. The key metrics are:
+- good_ratio: 1.00 (already perfect)
+- used_vars_proportions_average: 0.00 (can improve)
+- applied_lambdas_proportions_average: 0.00 (can improve)
+
+The current code doesn't use the depth parameter in recursive calls and doesn't track context for variables.
+
+Let me create a proper edit that:
+1. Passes depth to recursive calls
+2. Adds context tracking for variables
+3. Uses variables from context when generating lambda bodies
+
+I'll make a targeted change to add variable usage while maintaining correctness.

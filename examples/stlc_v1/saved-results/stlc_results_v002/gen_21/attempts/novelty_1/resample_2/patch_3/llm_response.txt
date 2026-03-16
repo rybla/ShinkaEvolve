@@ -1,0 +1,34 @@
+It seems my edit wasn't applied. Let me try again with a proper SEARCH/REPLACE block. I need to make sure I'm copying the exact text from the current file.
+
+Let me look at what the current generate_sample function looks like in the file and make a targeted edit.
+
+The current function is:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+I want to make a change that:
+1. Fixes the depth decrementing (currently it doesn't decrement!)
+2. Uses a random parameter type for lambdas
+3. Maybe adds some variable usage
+
+Let me try a simple change first - just fix the depth decrementing and use a random parameter type.

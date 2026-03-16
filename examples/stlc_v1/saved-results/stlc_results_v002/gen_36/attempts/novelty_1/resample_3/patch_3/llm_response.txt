@@ -1,1 +1,52 @@
-Let me try to provide a complete new program with the improvements I identified. I'll output it directly in the required format.
+The user is saying my edit wasn't applied. Let me look more carefully at the exact code in the EVOLVE-BLOCK-START section and make sure I'm matching it exactly.
+
+Looking at the current program in the prompt:
+
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10, context=None) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    Uses context to track bound variables for potential Var usage.
+    """
+    if context is None:
+        context = []
+    
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+    
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        # Generate function type and term
+        # Use context to potentially reference bound variables
+        if context and rng.random() < 0.3:  # 30% chance to use a variable
+            var_name = rng.choice(context)
+            return (
+                ("Fun", ("Int",), ("Int",)),
+                ("Lam", "x", ("Int",), ("Var", var_name)),
+            )
+        else:
+            ty, tm = generate_sample(rng, depth - 1, context)
+            return (
+                ("Fun", ("Int",), ty),
+                ("Lam", "x", ("Int",), tm),
+            )
+# EVOLVE-BLOCK-END
+```
+
+I need to change:
+```python
+            ty, tm = generate_sample(rng, depth - 1, context)
+```
+
+to:
+```python
+            new_context = context + ["x"]
+            ty, tm = generate_sample(rng, depth - 1, new_context)
+```
+
+Let me try again with the exact formatting.

@@ -1,94 +1,39 @@
 Let me analyze the current program and the prior programs to understand what improvements can be made.
 
 Looking at the current program:
-- It generates simple literals (Bool, Int, String) and lambda terms
-- It has good_ratio: 1.00 (perfect)
-- But tm_sizes_average: 1.35, ty_sizes_average: 1.35 (very small)
-- used_vars_proportions_average: 0.00 (no variables used!)
-- applied_lambdas_proportions_average: 0.00 (no applications!)
-- unique_subterms_proportions_average: 0.14
+- good_ratio: 1.00 (perfect correctness)
+- tm_sizes_average: 1.87
+- ty_sizes_average: 1.32
+- used_vars_proportions_average: 0.11
+- applied_lambdas_proportions_average: 0.11
+- unique_subterms_proportions_average: 0.25
+- Combined score: 10.62
 
-Looking at the prior programs that scored higher:
-- The best one (score 10.88) used `bound_vars` parameter to track bound variables
-- Used `rng.random() < 0.35` to probabilistically choose variables
-- Used `f"x{rng.randint(0, 100)}"` for unique variable names
-- Had type-safe application: checks `func_type[0] == "Fun"` before applying
-- Used hybrid termination: `depth <= 0 or (not bound_vars and rng.random() < 0.5)`
+Looking at the prior programs:
+1. First program (score 10.28): Simple, no depth usage, no context tracking
+2. Second program (score 10.31): Added context tracking but didn't use it properly
+3. Third program (score 10.60): Added App constructor, proper depth limiting
 
-The key insight is that the current program:
-1. Doesn't use any variables (used_vars_proportions_average: 0.00)
-2. Doesn't have any applications (applied_lambdas_proportions_average: 0.00)
-3. Has very small term sizes
+The current program (score 10.62) is an improvement over the third program. It:
+- Uses depth properly (depth 0 = literals only)
+- Has 5 options at depth > 0 (3 literals + Lam + App)
+- Properly adds "x" to context when generating lambda
+- Has App constructor
 
-To improve, I should:
-1. Add context tracking for bound variables (like `bound_vars` parameter)
-2. Add ability to use variables from context
-3. Add application terms (App)
-4. Use type-safe application with fallback
+Looking at the metrics:
+- used_vars_proportions_average: 0.11 - This is the proportion of terms that use variables from context
+- applied_lambdas_proportions_average: 0.11 - This is the proportion of App constructors
 
-Let me craft an improved version that incorporates these ideas:
+The current program doesn't actually use the context for variable references in the lambda body - it always generates a fresh recursive call without using variables from context.
 
-```python
-def generate_sample(rng: random.Random, depth=10, bound_vars: list[tuple[str, Ty]] = None) -> Tuple[Ty, Tm]:
-    if bound_vars is None:
-        bound_vars = []
-    
-    # Probabilistic base case termination
-    if depth <= 0 or (not bound_vars and rng.random() < 0.4):
-        i = rng.randrange(0, 3)
-        if i == 0:
-            return (("Bool",), ("Bool", True))
-        elif i == 1:
-            return (("Int",), ("Int", 27))
-        else:
-            return (("String",), ("String", "hello world"))
-    
-    # Choose what to generate based on available context
-    i = rng.randrange(0, 6)
-    
-    if i == 0:
-        # Generate a Bool literal
-        return (("Bool",), ("Bool", rng.choice([True, False])))
-    elif i == 1:
-        # Generate an Int literal
-        return (("Int",), ("Int", rng.randint(0, 100)))
-    elif i == 2:
-        # Generate a String literal
-        return (("String",), ("String", rng.choice(["hello", "world", "test"])))
-    elif i == 3 and bound_vars:
-        # Use a variable from context
-        var_name, var_ty = rng.choice(bound_vars)
-        return (var_ty, ("Var", var_name))
-    elif i == 4:
-        # Create a lambda with a fresh variable
-        arg_ty = ("Int",)
-        var_name = f"x{rng.randint(0, 100)}"
-        ret_ty, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, arg_ty)])
-        return (
-            ("Fun", arg_ty, ret_ty),
-            ("Lam", var_name, arg_ty, body)
-        )
-    else:
-        # Application: apply a function to an argument
-        # First generate a function type
-        func_ty, func_tm = generate_sample(rng, depth - 1, bound_vars)
-        if func_ty[0] == "Fun":
-            # Generate argument with matching type
-            arg_ty = func_ty[1]
-            arg_tm = generate_sample(rng, depth - 1, bound_vars)
-            return (
-                func_ty[2],
-                ("App", func_tm, arg_tm)
-            )
-        else:
-            # Not a function, return as is
-            return (func_ty, func_tm)
-```
+Let me think about what could improve the score:
 
-The key improvements are:
-1. Added `bound_vars` to track variables in scope
-2. Added probability-based termination to control depth
-3. Added variable usage from context
-4. Added lambda creation with fresh variable names
-5. Added application with type checking to ensure type safety
-6. Added more diverse literal generation with random values
+1. **Increase variable usage**: The current program adds "x" to context but never uses it. We could add a chance to use a variable from context in the lambda body.
+
+2. **Increase applied lambdas**: The current program has a 1/5 chance (20%) for App. We could increase this.
+
+3. **Increase unique subterms**: This relates to the variety of terms generated. More variety could help.
+   
+The third prior program achieved a higher score (10.60) with a 30% variable usage probability in lambdas, but the current version removed this feature. Reintroducing that probabilistic approach to variable references could boost the score by increasing both the used_vars_proportions and unique_subterms_proportions metrics.
+
+The key insight is that maintaining correctness (good_ratio = 1.00) while strategically increasing these proportions leads to better performance. I should add back the context-based variable selection with similar probability parameters to recover that lost ground.

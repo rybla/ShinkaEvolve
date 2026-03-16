@@ -1,0 +1,166 @@
+# INDIVIDUAL PROGRAM SUMMARIES
+
+The following are summaries of individual programs evaluated since the last meta update:
+
+**Program Name: Recursive Random Term Generator with Depth-Limited Function Abstraction**
+- **Implementation**: The generator uses a recursive approach to construct terms, employing a depth counter to switch between base literal types (Bool, Int, String) and recursive function abstractions (`Lam`).
+- **Performance**: Achieved a combined score of 10.28 with a 1.00 good_ratio, but maintained very low average term and type sizes (1.34).
+- **Feedback**: While the program is perfectly valid, the implementation produces highly repetitive, shallow structures and fails to utilize variables or application terms, leading to a `used_vars_proportions_average` of 0.00.
+**Program Identifier:** Generation 0 - Patch Name initial_program - Correct Program: True
+
+**Program Name: Recursive Budget-Based Simply-Typed Lambda Calculus Generator**
+- **Implementation**: The generator uses a recursive budget-splitting approach to construct types and terms, prioritizing lambda abstractions for function types and utilizing a context list to track and inject bound variables.
+- **Performance**: Combined score: 2.51; characterized by a very low `good_ratio` (0.03) and low variable usage (0.11), despite high subterm uniqueness (0.96).
+- **Feedback**: The program is marked incorrect because the `AppTm` logic frequently generates intermediate types that the recursive calls fail to satisfy within budget, leading to a high failure rate in generating valid well-typed terms.
+**Program Identifier:** Generation 1 - Patch Name stlc_recursive_generator - Correct Program: False
+
+**Program Name: Recursive Type-Driven Term Generator with Context-Aware Variable Selection**
+- **Implementation**: The generator uses a recursive approach to build well-typed terms, maintaining a typing context (`gamma`) to prioritize variable usage and employing a budget-based system to balance `App`, `Lam`, and `Lit` constructors.
+- **Performance**: Achieved a combined score of 8.32 with a 64% validity ratio and high subterm uniqueness (0.96), but relatively low variable usage (0.25).
+- **Feedback**: The program fails validation because it lacks a robust mechanism to ensure all generated terms are well-typed, particularly when the budget is depleted or when generating complex function applications.
+**Program Identifier:** Generation 2 - Patch Name stlc_generator_with_context - Correct Program: False
+
+**Program Name: Recursive Type-Directed STLC Generator with Budget-Based AST Construction**
+- **Implementation**: The generator uses a recursive approach with a node budget to construct terms matching a target type, utilizing a variable counter for unique naming and a context dictionary to track available variables. It prioritizes lambda abstractions for function types and applications for complex terms to ensure type-correctness and structural depth.
+- **Performance**: Achieved a combined score of 10.29 with a high `good_ratio` of 0.87 and an average term size of 8.10.
+- **Feedback**: The strategy successfully balances type-safety with structural complexity, though the low `used_vars_proportions_average` (0.13) suggests that the budget-based recursion often hits terminal literal cases before fully utilizing the variable context.
+**Program Identifier:** Generation 3 - Patch Name stateful_contextual_stlc_generator - Correct Program: True
+
+**Program Name: Context-Aware Recursive Generator for Simply-Typed Lambda Calculus**
+- **Implementation**: The generator uses a budget-based recursive approach with a symbol table (context) to track variable types, prioritizing variable reuse and lambda abstraction to satisfy target types. It handles function application by generating intermediate argument types and splitting the remaining budget between the function and its argument.
+- **Performance**: Achieved a combined score of 12.64 with a 100% validity ratio and an average term size of 80.91.
+- **Feedback**: The implementation is highly effective at producing valid, complex terms; however, the low variable usage proportion (0.21) suggests that the generator favors creating new literals or nested applications over referencing the existing context.
+**Program Identifier:** Generation 4 - Patch Name stlc_random_generator - Correct Program: True
+
+**Program Name: Budget-Based Recursive STLC Generator with Contextual Variable Tracking**
+- **Implementation**: The generator uses a recursive budget-based approach to construct types and terms, maintaining a variable context to ensure type-safe `Var` and `Lam` generation. It prioritizes function types and applications to increase term depth and utilizes a counter for unique variable naming.
+- **Performance**: Achieved a combined score of 8.11, with a high unique subterm proportion (0.98) and strong applied lambda frequency (0.57), though average term size (17.07) remained well below the maximum budget.
+- **Feedback**: The strategy successfully ensures correctness (0.59 good ratio) and structural variety, but the budget distribution logic often terminates early with literals, limiting the average term and type complexity.
+**Program Identifier:** Generation 5 - Patch Name improve_stlc_generator_logic - Correct Program: True
+
+**Program Name: Budget-Based Recursive STLC Generator with Context-Aware Variable Selection**
+- **Implementation**: The generator uses a recursive budget-splitting strategy to build terms, prioritizing lambda abstractions for function types and application nodes to increase term depth. It maintains a variable context to ensure type-safe variable selection and uses a counter for unique identifier generation.
+- **Performance**: Achieved a combined score of 10.84 with a high unique subterm proportion (0.99) and strong applied lambda frequency (0.64), though average term size remained moderate at 16.89.
+- **Feedback**: The approach successfully balances correctness (0.85 good ratio) with structural complexity, though the budget-splitting logic and small argument type generation favor term variety over massive term growth.
+**Program Identifier:** Generation 6 - Patch Name fix_dict_and_refine_generation - Correct Program: True
+
+**Program Name: Budgeted Recursive Term Generator for Simply-Typed Lambda Calculus**
+- **Implementation**: The generator uses a budget-based recursive approach with asymmetric budget splitting to favor deeper function application chains and a context-aware variable selection mechanism. It ensures type safety by passing target types down the recursion tree and generating matching literals or lambda abstractions.
+- **Performance**: Achieved a perfect 1.00 validity ratio with a combined score of 12.71, producing terms with an average size of 61.28 and high structural uniqueness (0.99).
+- **Feedback**: The strategy of allocating 70% of the budget to the function side of applications successfully increased term complexity and application depth. The high `applied_lambdas_proportions_average` (0.48) indicates the generator effectively creates meaningful redexes rather than just terminal literals.
+**Program Identifier:** Generation 7 - Patch Name asymmetric_budget_splitting_and_var_prioritization - Correct Program: True
+
+**Program Name: Context-Aware Recursive Term Generator with Budget-Based Partitioning**
+- **Implementation**: The generator uses a budget-driven recursive approach to build types and terms, employing a context list to track variable types and prioritize variable reuse or lambda abstraction. It specifically targets function application by generating compatible argument types and splitting the remaining budget between the function and its argument.
+- **Performance**: Achieved a combined score of 12.40 with a 100% validity ratio, an average term size of 46.05, and a high unique subterm proportion of 0.90.
+- **Feedback**: The strategy of prioritizing variables from the context and using a 60/40 budget split for applications successfully balanced term complexity with structural validity. The high applied lambda proportion (0.43) indicates the generator effectively creates functional structures rather than just deep trees of literals.
+**Program Identifier:** Generation 8 - Patch Name context_aware_application_types - Correct Program: True
+
+**Program Name: Budget-Based Recursive Generator for Simply-Typed Lambda Calculus**
+- **Implementation**: The generator uses a recursive budget-splitting strategy to construct terms, prioritizing lambda abstractions for function types and utilizing a context list to track and select valid variables for leaf nodes. It employs a dynamic split ratio (60-80%) favoring the function side of applications to encourage deeper term structures.
+- **Performance**: Achieved a combined score of 7.21 with a high applied lambda proportion (0.78) and excellent subterm uniqueness (0.97), though average term size remained relatively low at 17.51.
+- **Feedback**: The strategy effectively maximizes lambda applications and term uniqueness, but the aggressive budget consumption in the recursive calls likely limited the average term size compared to the target.
+**Program Identifier:** Generation 10 - Patch Name dynamic_budget_and_lambda_prioritization - Correct Program: True
+
+**Program Name: Budget-Based Recursive Generator for Simply-Typed Lambda Calculus**
+- **Implementation**: The generator uses a budget-driven recursive approach with a context-aware `gen_term` function that prioritizes lambda abstractions for function types and splits remaining budget between application branches. It employs a heuristic to select argument types from the existing context to increase the likelihood of successful term generation.
+- **Performance**: Achieved a combined score of 7.92, with a 55% success ratio and a high unique subterm proportion of 0.95.
+- **Feedback**: The strategy of prioritizing lambdas and context-based variable selection effectively produces complex terms, though the relatively low average type size (3.20) suggests the budget for type generation could be more aggressively utilized.
+**Program Identifier:** Generation 9 - Patch Name depth_controlled_recursion_and_higher_order_types - Correct Program: True
+
+**Program Name: Budgeted Recursive STLC Generator with Asymmetric Application Splitting**
+- **Implementation**: The generator uses a budget-based recursive approach that prioritizes lambda abstractions for function types and employs an asymmetric budget split (70/30) in applications to favor deep function chains. It tracks a typing context to maximize variable reuse and falls back to literals or identity-like lambdas to ensure type safety.
+- **Performance**: Achieved a combined score of 12.44 with a 1.00 validity ratio, 18.66 average term size, and a high 0.62 applied lambda proportion.
+- **Feedback**: The strategy of biasing the budget toward the left side of applications successfully increased the frequency of applied lambdas, while the context-aware variable selection maintained a healthy balance of variable usage.
+**Program Identifier:** Generation 11 - Patch Name asymmetric_budget_stlc_generator - Correct Program: True
+
+**Program Name: Budget-Based Recursive Term Generator with Asymmetric Application Splitting**
+- **Implementation**: The generator uses a budget-driven recursion that prioritizes `Lam` terms for function types and employs an 80/20 asymmetric budget split in `App` terms to favor function-side depth. It includes a dynamic variable selection mechanism that increases the probability of using context variables as the environment grows.
+- **Performance**: Achieved a combined score of 12.21 with a high `applied_lambdas_proportions_average` of 0.86 and a `good_ratio` of 0.94.
+- **Feedback**: The strategy of inventing small intermediate types for applications effectively maximizes term complexity, while the high variable usage probability ensures deep integration of the context. The asymmetric budget allocation successfully drives the generation of complex, nested applied lambdas.
+**Program Identifier:** Generation 12 - Patch Name dynamic_budget_reallocation_and_context_prioritization - Correct Program: True
+
+**Program Name: Type-Directed Asymmetric Budget Splitting for STLC Generation**
+- **Implementation**: The generator uses a type-directed approach with a 70/30 asymmetric budget split to favor deep left-leaning application trees and high variable reuse from the context. It enforces lambda abstractions when the target is a function type and utilizes unique string/integer generation to ensure subterm diversity.
+- **Performance**: Achieved a combined score of 12.49 with a 100% validity ratio, 18.53 average term size, and a high 0.70 applied lambda proportion.
+- **Feedback**: The strategy of favoring types already present in the context for application arguments successfully boosted variable usage and term complexity while maintaining perfect type safety.
+**Program Identifier:** Generation 13 - Patch Name TypeDirectedAsymmetricGenerator - Correct Program: True
+
+**Program Name: Asymmetric Recursive STLC Generator with Context-Aware Type Selection**
+- **Implementation**: The generator uses a budget-based recursive strategy that prioritizes lambda abstractions for function types and employs asymmetric budget splitting (75/25) in applications to create deep AST spines. It maintains a variable context to maximize variable reuse and ensures type safety by falling back to literals or minimal lambdas when the budget is exhausted.
+- **Performance**: Achieved a combined score of 12.67 with a perfect 1.00 validity ratio and high structural complexity (0.78 applied lambdas and 0.98 unique subterms).
+- **Feedback**: The approach successfully balances term depth and variable density, though the relatively low average type size (3.36) suggests the budget-splitting logic favors term complexity over type complexity.
+**Program Identifier:** Generation 14 - Patch Name asymmetric_context_aware_generator - Correct Program: True
+
+**Program Name: Type-Directed STLC Generator with Asymmetric Budgeting and Shadowing Preference**
+- **Implementation**: The generator uses a recursive type-directed approach with a 70/30 asymmetric budget split for applications and a weighted variable selection strategy that favors local scope shadowing. It forces lambda abstractions for function types and utilizes a high term budget (100) to drive structural complexity.
+- **Performance**: Achieved a combined score of 12.43 with a 1.00 validity ratio, 18.19 average term size, and a high 0.75 applied lambda proportion.
+- **Feedback**: The strategy of biasing variable selection toward the most recent context entries and using asymmetric branching effectively maximizes term depth and the utilization of abstractions. The high unique subterm proportion (0.97) indicates that the budget distribution prevents repetitive structural patterns.
+**Program Identifier:** Generation 15 - Patch Name TypeDirected_Asymmetric_Shadowing_Generator - Correct Program: True
+
+**Program Name: Budgeted Recursive Generator for Simply-Typed Lambda Calculus**
+- **Implementation**: The generator uses a budget-based recursive approach with asymmetric budget splitting and a "Lambda Forcing" mechanism to ensure structural alignment between function types and terms. It prioritizes selecting argument types from the existing context during application generation to increase variable usage.
+- **Performance**: Achieved a combined score of 12.54 with a 100% validity ratio and a high applied lambda proportion of 0.71.
+- **Feedback**: The strategy of pulling argument types from the context effectively boosted variable utilization, while the asymmetric budget split successfully encouraged the creation of deep, unique AST structures.
+**Program Identifier:** Generation 16 - Patch Name type_directed_alignment_and_stricter_bounds - Correct Program: True
+
+**Program Name: Type-Directed STLC Generator with Asymmetric Budget Splitting**
+- **Implementation**: The generator uses a recursive type-directed approach with a 70% bias toward lambda abstraction for function types and an 80/20 asymmetric budget split in applications to favor deep, left-heavy expression trees. It incorporates context-aware type selection by picking application arguments from existing variable types to increase variable usage.
+- **Performance**: Achieved a combined score of 12.60 with a 1.00 validity ratio and an average term size of 27.12.
+- **Feedback**: The strategy successfully maximizes structural variety and variable integration, though the actual average term size (27.12) fell significantly short of the targeted budget (120), suggesting that base-case triggers or recursion depth limits pruned the trees earlier than expected.
+**Program Identifier:** Generation 17 - Patch Name structural_alignment_and_deep_spines - Correct Program: True
+
+**Program Name: Context-Aware Recursive Term Generator for Simply-Typed Lambda Calculus**
+- **Implementation**: The generator uses a budget-based recursive approach with a 75% bias toward selecting argument types from the existing context and an 80/20 asymmetric budget split for applications to favor deep left-leaning spines. It prioritizes lambda generation for function types and uses a dynamic variable selection probability that increases as the context grows.
+- **Performance**: Achieved a combined score of 12.71 with a perfect 1.00 validity ratio and high unique subterm diversity (0.96).
+- **Feedback**: The strategy of prioritizing recent variables and favoring existing context types for applications successfully balanced term complexity with high variable usage (0.49) and application density (0.72).
+**Program Identifier:** Generation 18 - Patch Name dynamic_budget_reallocation_and_context_prioritization - Correct Program: True
+
+**Program Name: Asymmetric Budget Splitting for Deep Application Spines**
+- **Implementation**: The generator uses a recursive budget-based approach with a 75/25 asymmetric split in applications to favor deep function spines and forces lambda abstractions for function types. It prioritizes variable reuse by selecting the most recently added matching types from the context and occasionally selecting argument types based on existing context variables.
+- **Performance**: Achieved a combined score of 12.75 with a 1.00 validity ratio, 22.60 average term size, and 0.75 applied lambda proportion.
+- **Feedback**: The strategy of biasing application branches effectively increases term depth and size, while the variable selection logic successfully maintains a high used-variable proportion (0.53). The high unique subterm proportion (0.96) indicates that the budget-driven recursion avoids repetitive structures despite the variable reuse.
+**Program Identifier:** Generation 19 - Patch Name spine_heavy_context_recycler - Correct Program: True
+
+# GLOBAL INSIGHTS SCRATCHPAD
+
+The following are global insights about optimization approaches and their effectiveness:
+
+## Successful Algorithmic Patterns
+
+*   **Asymmetric Budget Splitting (75/25 Ratio) for Deep Spines**: The current best program (**Generation 19**, score 12.75) and **Generation 18** (score 12.71) utilize a 75/25 or 80/20 budget split in `AppTm` nodes. By allocating 75% of the budget to the function side of an application, these generators create deep, left-heavy "spines" that maximize term size and complexity. This is a refinement of the 70/30 split used in earlier successful versions like **Generation 7**.
+*   **Context-Aware Argument Type Selection**: A major driver for the high `used_vars_proportions_average` (0.53 in **Generation 19**) is the strategy of picking `arg_ty` from the existing context during application generation. **Generation 18** and **Generation 19** both implement a 60-75% probability of selecting a type already present in the context, ensuring that the subsequent `gen_term` call for the argument can actually find and use a variable.
+*   **Shadowing Preference in Variable Selection**: Favoring the most recently added variables (the end of the context list) has proven highly effective. **Generation 15** (score 12.43) and **Generation 19** (score 12.75) both use `matches[-1]` to select variables. This "shadowing" preference increases the likelihood of using local variables created by recent `LamTm` nodes, boosting the `applied_lambdas_proportions_average` to 0.75.
+*   **Forced Lambda Generation for Function Types**: Consistently across the top-performing programs (**Generations 15-19**), if the `target_ty` is a `FunTy`, the generator forces a `LamTm` with high probability (80%). This ensures that the structural requirements of the type are met and maximizes the density of abstractions.
+
+## Ineffective Approaches
+
+*   **Unconstrained Argument Type Generation**: As seen in the feedback for **Generation 17**, even with a high budget (120), the average term size (27.12) often falls short of the target if the argument types generated for applications are too complex. **Generation 19** corrected this by using `gen_type(1)` for "invented" types, preventing the recursion from hitting base-case triggers too early.
+*   **Symmetric Budgeting**: Earlier iterations and the feedback from **Generation 5** confirm that 50/50 budget splits produce "bushy" but shallow trees. This limits `tm_sizes_average` and prevents the formation of the deep application spines necessary to break the 12.70 score threshold.
+*   **Random Variable Selection**: Programs that select variables randomly from the context rather than prioritizing recent ones (shadowing) or matching types specifically (as seen in the failure of **Generation 1**) result in lower variable utilization and higher rates of invalid terms.
+
+## Implementation Insights
+
+*   **The "Hard Floor" Logic**: The current best program (**Generation 19**) uses a strict `budget <= 2` check to trigger terminal cases. By combining this with a 95% preference for variable reuse over literals, it maintains a 1.00 `good_ratio` while maximizing the `used_vars_proportions_average`.
+*   **Discrepancy between Type and Term Budgets**: Effective programs (**Generation 19**, **Generation 7**) use a small budget for `gen_type` (8-10) and a large budget for `gen_term` (100-120). This ensures the "goal" (the type) is simple enough to be inhabited, while the "solution" (the term) has enough "fuel" to become complex and unique.
+*   **Dynamic Variable Naming**: Using `f"v{len(ctx)}"` (seen in **Generations 18 and 19**) ensures unique variable names that scale with recursion depth. This contributes to the high `unique_subterms_proportions_average` (0.96), as it prevents structural repetition caused by name collisions.
+
+## Performance Analysis
+
+*   **The Ceiling of Variable Usage**: **Generation 19** achieved the highest score (12.75) primarily by pushing `used_vars_proportions_average` to 0.53. This is a significant improvement over **Generation 7** (0.30), demonstrating that context-aware type selection for applications is the most effective way to increase variable reuse.
+*   **Size vs. Validity Tradeoff**: While **Generation 17** targeted a budget of 120, it only achieved a size of 27.12. **Generation 19** achieved a size of 22.60 with the same budget but a higher overall score due to better variable integration (0.53 vs 0.49). This suggests that after a certain point, increasing term size yields diminishing returns compared to increasing variable usage and lambda density.
+*   **Consistency of Unique Subterms**: Across all top programs (**Generations 15-19**), the `unique_subterms_proportions_average` remains extremely high (0.96-0.97). This indicates that asymmetric budgeting and dynamic naming are highly effective at preventing the generator from falling into repetitive structural patterns, regardless of the specific split ratio (70/30 vs 80/20).
+
+# META RECOMMENDATIONS
+
+The following are actionable recommendations for the next program generations:
+
+1. **Implement "Context-Aware" Application Probability**: Currently, the generator uses a fixed 75/25 budget split for applications. To further increase `used_vars_proportions_average`, modify the `AppTm` logic to only trigger an application if the context contains at least one variable that could serve as a function or an argument, otherwise defaulting to a `LamTm` or `LitTm`. This ensures that the "deep spines" created by the asymmetric split are populated with meaningful variable references rather than just more literals.
+
+2. **Introduce "Type-Inhabitant" Caching for Arguments**: In the `AppTm` case, when selecting an `arg_ty` from the context (the 60% branch), prioritize types that have appeared multiple times in the `ctx`. By selecting a "popular" type for the argument, you increase the likelihood that the `gen_term` call for the argument side can select from multiple variable options, further pushing the `used_vars_proportions_average` beyond the current 0.53 ceiling.
+
+3. **Dynamic Asymmetric Splitting based on Depth**: While the 75/25 split is successful, it can be refined by making the ratio dynamic based on the current recursion depth. At low depths (near the root), use a 90/10 split to force an extremely deep spine; as depth increases, shift toward a 60/40 split to allow the "leaves" of the spine to develop more complexity. This "tapered" approach could break the current `tm_sizes_average` plateau of 22.60 without sacrificing validity.
+
+4. **Implement "Beta-Redex" Injection**: To boost `applied_lambdas_proportions_average` (currently 0.75), explicitly force the function side of an `AppTm` to be a `LamTm` with a 20-30% probability. When this occurs, the generator should create a `LamTm` whose body is then generated with the remaining function budget, creating immediate `((\v. body) arg)` structures that increase both structural density and the complexity of the term's data flow.
+
+5. **Refine the "Hard Floor" with Type-Specific Literals**: The current "Hard Floor" logic (budget <= 2) uses a small set of fixed strings like `["x", "y", "z"]`. To maintain the high `unique_subterms_proportions_average` (0.96) as terms grow, replace these with a generator that produces unique literals based on the current budget or context length (e.g., `f"s_{len(ctx)}_{budget}"`). This prevents structural collisions in the leaf nodes of the deep spines, ensuring every branch of the large term remains unique.

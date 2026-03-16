@@ -3,12 +3,12 @@
   "novelty_attempt": 1,
   "resample_attempt": 1,
   "patch_attempt": 1,
-  "success": true,
-  "num_applied": 1,
+  "success": false,
+  "num_applied": 0,
   "patch_name": "none",
   "patch_description": "none",
-  "error_msg": null,
-  "timestamp": "2026-03-15T06:46:34.031729",
-  "llm_cost": 0.00408665,
+  "error_msg": "Could not extract code from patch string",
+  "timestamp": "2026-03-15T15:15:55.867229",
+  "llm_cost": 0.0030483000000000003,
   "llm_model": null
 }

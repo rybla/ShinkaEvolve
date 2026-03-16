@@ -1,37 +1,64 @@
-Let me analyze the current program and the performance metrics to identify potential improvements.
+Let me analyze the current program and the prior programs to understand what's happening:
 
-Current performance:
-- Combined score: 10.88
-- good_ratio: 0.99 (very high)
-- tm_sizes_average: 4.34 (term sizes)
-- ty_sizes_average: 1.34 (type sizes)
-- used_vars_proportions_average: 0.18 (variable usage)
-- applied_lambdas_proportions_average: 0.18 (application usage)
-- unique_subterms_proportions_average: 0.39 (uniqueness)
+1. **Current program**: Uses depth parameter but doesn't decrement it, creates lambdas with Int type, generates terms like `("Lam", "x", ("Int",), tm)` where the body is generated recursively. However, it never uses variables from context, so `used_vars_proportions_average` is 0.00.
 
-Looking at the analysis provided:
-1. The best program (score 10.88) uses `bound_vars` to track bound variables
-2. Uses `rng.random() < 0.35` to probabilistically choose variables
-3. Uses `f"x{rng.randint(0, 100)}"` for unique variable names
-4. Has type-safe application: checks `func_type[0] == "Fun"` before applying
-5. Uses hybrid termination: `depth <= 0 or (not bound_vars and rng.random() < 0.5)`
+2. **Key metrics to improve**:
+   - `good_ratio`: Already 1.00 (perfect)
+   - `tm_sizes_average`: Currently 1.33
+   - `ty_sizes_average`: Currently 1.33
+   - `used_vars_proportions_average`: Currently 0.00 (should be higher)
+   - `applied_lambdas_proportions_average`: Currently 0.00 (should be higher)
+   - `unique_subterms_proportions_average`: Currently 0.14
 
-The current program already implements most of these techniques. Let me look at what could be improved:
+Looking at the analysis provided in the system prompt:
+- The best programs (score ~10.63) used context tracking and generated both types and terms together
+- They used depth-limited approach with 5 options at depth > 0 (3 literals + Lam + App), 3 options at depth = 0
+- They tracked context and passed `context + ["x"]` when generating lambda bodies
+- They generated App by creating identity functions and applying them
 
-1. **Type-safe application**: The current program doesn't check if the function type is actually "Fun" before applying. This could cause type errors.
+The current program:
+1. Uses depth but doesn't decrement it (infinite recursion risk, but works because of the probability)
+2. Doesn't track context
+3. Doesn't generate App nodes
+4. Doesn't use variables from context
 
-2. **Better variable usage**: The current program uses 0.35 probability for variables, which seems reasonable.
+To improve, I need to:
+1. Track context properly
+2. Generate App nodes (applied lambdas)
+3. Use variables from context
+4. Properly decrement depth to ensure termination
 
-3. **Larger term sizes**: The tm_sizes_average is 4.34, which is decent but could be improved.
+Let me design a new algorithm:
 
-Looking at the analysis more carefully:
-- The key insight is that the best programs use type-safe application fallbacks - when `func_type[0] != "Fun"`, it returns the argument instead (prevents type errors)
-- Dynamic variable naming with f-strings prevents structural repetition
-- Probabilistic termination helps explore the search space
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    return generate_term(rng, depth, [])
 
-Let me look at the current code more carefully:
+def generate_term(rng: random.Random, depth: int, context: List[str]) -> Tuple[Ty, Tm]:
+    # At depth 0, only generate literals
+    if depth <= 0:
+        return generate_literal(rng)
+    
+    # Choose from: 3 literals + Lam + App = 5 options
+    options = 5 if depth > 0 else 3
+    i = rng.randrange(0, options)
+    
+    if i == 0:
+        return generate_literal(rng)
+    elif i == 1:
+        return generate_literal(rng)
+    elif i == 2:
+        return generate_literal(rng)
+    elif i == 3:
+        # Generate lambda with context tracking
+        arg_ty = ("Int",)
+        body_ty, body_tm = generate_term(rng, depth - 1, context + ["x"])
+        return (("Fun", arg_ty, body_ty), ("Lam", "x", arg_ty, body_tm))
+    else:
+        # Generate application
+        fn_ty, fn_tm = generate_term(rng, depth - 1, context)
+        arg_ty, arg_tm = generate_term(rng, depth - 1, context)
+        return (fn_ty[2] if fn_ty[0] == "Fun" else arg_ty, ("App", fn_tm, arg_tm))
+```
 
-
-The application generation has a critical flaw - it creates a function type but doesn't validate that the generated function term actually produces that type. When selecting a variable from bound_vars, there's no guarantee the variable's type matches the func_type we constructed. Additionally, the code generates a function term and argument term independently without ensuring their types align properly for the application.
-
-To fix this, I need to ensure type consistency: validate that func_type[0] == "Fun" before proceeding, and when generating the function term, make sure it actually produces the intended func_type rather than just creating a lambda with arbitrary argument type.
+This approach adds context tracking to capture variable usage, introduces application nodes to increase term complexity, and properly manages recursion depth to prevent infinite loops while maximizing the metrics that need improvement.

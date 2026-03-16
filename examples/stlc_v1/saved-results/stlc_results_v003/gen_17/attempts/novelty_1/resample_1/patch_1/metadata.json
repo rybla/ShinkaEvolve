@@ -1,0 +1,14 @@
+{
+  "generation": 17,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "structural_alignment_and_deep_spines",
+  "patch_description": "1.  **Lambda Forcing**: When `target_ty` is a `FunTy`, we force a `LamTm` with 80% probability to ensure the term structure matches the type structure, increasing depth.\n2.  **Deep Application Spines**: In the `AppTm` case, we use a 70/30 asymmetric budget split to create deep left-leaning application chains, which significantly boosts `tm_sizes_average`.\n3.  **Context-Aware Argument Types**: When generating an `AppTm`, we prioritize picking an `arg_ty` from the existing context. This increases the chance that the argument side (the 30% budget) can be satisfied by a `VarTm`, allowing more budget to be preserved for the function side's depth.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:44:20.097080",
+  "llm_cost": 0.011828,
+  "llm_model": null
+}

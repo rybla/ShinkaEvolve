@@ -1,34 +1,50 @@
-Looking at the performance metrics and the prior programs, I need to understand what improvements can be made.
+Let me analyze the current program and the prior programs to understand what improvements can be made.
 
-Current program metrics:
-- Combined score: 10.30
-- good_ratio: 1.00
-- tm_sizes_average: 1.38
-- ty_sizes_average: 1.38
-- used_vars_proportions_average: 0.00
-- applied_lambdas_proportions_average: 0.00
-- unique_subterms_proportions_average: 0.15
+Looking at the current program:
+- Combined score: 10.62
+- good_ratio: 1.00 (perfect correctness)
+- tm_sizes_average: 1.87
+- ty_sizes_average: 1.32
+- used_vars_proportions_average: 0.11
+- applied_lambdas_proportions_average: 0.11
+- unique_subterms_proportions_average: 0.25
 
-Looking at the top-performing programs from the analysis:
-- Program 1 (Score: 10.8819) - The best one
-- Uses `bound_vars` parameter to track bound variables
-- Uses `rng.random() < 0.35` to probabilistically choose variables
-- Uses `f"x{rng.randint(0, 100)}"` for unique variable names
-- Has type-safe application: checks `func_type[0] == "Fun"` before applying
-- Uses hybrid termination: `depth <= 0 or (not bound_vars and rng.random() < 0.5)`
-- Achieves: good_ratio=0.9950, tm_sizes_average=4.3427, used_vars_proportions_average=0.1795, applied_lambdas_proportions_average=0.1821, unique_subterms_proportions_average=0.3927
+The current program has:
+1. A depth-limited approach (depth > 0 has 5 options, depth == 0 has 3 options)
+2. Lambda generation with context (using `context + ["x"]`)
+3. App generation that applies a lambda to a literal
 
-The current program:
-1. Has 0% used_vars_proportions_average - meaning it never generates Var terms
-2. Has 0% applied_lambdas_proportions_average - meaning it never generates App terms
-3. Has very low tm_sizes_average (1.38) - terms are very simple
+Looking at the prior programs:
+- Program 1 (score 10.28): Used depth parameter, had context tracking, but didn't use it properly (context was never updated in recursive calls)
+- Program 2 (score 10.31): Similar to Program 1
+- Program 3 (score 10.60): Added App constructor, better context tracking
 
-The key improvements I need to make:
-1. Generate Var terms using bound_vars
-2. Generate App terms (apply lambdas to arguments)
-3. Use type-safe application with fallback
+The current program is an improvement over Program 3 (10.60 vs 10.62), mainly because it properly updates context when generating lambdas.
 
+Now, what can be improved?
 
-4. I'll create fresh variable names to track and generate unique variables systematically. This approach will help increase the used_vars_proportions_average and make the term generation more dynamic.
+1. **used_vars_proportions_average** is currently 0.11 - this could be increased by:
+   - Adding a chance to generate a Var directly from context in non-lambda cases
+   - Increasing the probability of using a variable
 
-I'll implement a method that generates unique variable names, ensuring each variable is distinct and can be tracked through bound variables. This will help improve the overall complexity and variety of generated terms.
+2. **applied_lambdas_proportions_average** is currently 0.11 - this could be increased by:
+   - Adding more App constructors
+   - Generating more complex applications
+
+3. **unique_subterms_proportions_average** is currently 0.25 - this could be increased by:
+   - Generating more diverse terms
+   - Using different literal values
+
+4. **tm_sizes_average** is currently 1.87 - this could be increased by:
+   - Generating larger terms
+   - Nesting more deeply
+
+I see several optimization paths forward. The current approach maintains perfect correctness while incrementally improving performance metrics. I'll focus on strategic modifications that could boost the scores without compromising the core generation logic.
+
+The primary goals are:
+- Maintain 100% correctness
+- Increase term complexity
+- Enhance variable and application diversity
+- Push the unique subterms proportion higher
+
+By carefully adjusting probability weights and generation strategies, I can potentially create more nuanced and varied lambda calculus representations while preserving the fundamental generation framework.

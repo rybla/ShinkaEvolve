@@ -1,0 +1,13 @@
+I need to propose an edit to improve the performance of the current program. Let me analyze what's missing:
+
+1. The current program doesn't use variables at all (used_vars_proportions_average: 0.00)
+2. It doesn't create applications (applied_lambdas_proportions_average: 0.00)
+3. The terms are very small (tm_sizes_average: 1.30)
+
+I need to add:
+1. A context/bound_vars parameter to track bound variables
+2. Ability to generate and use variables from context
+3. Ability to create applications
+4. Type-safe application with fallback
+
+Let me craft an edit that incorporates these techniques from the best programs.

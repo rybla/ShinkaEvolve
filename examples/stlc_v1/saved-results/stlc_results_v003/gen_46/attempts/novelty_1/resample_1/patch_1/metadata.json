@@ -1,0 +1,14 @@
+{
+  "generation": 46,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "stlc_asymmetric_beta_injector",
+  "patch_description": "This STLC generator is optimized to maximize term size, variable reuse, and applied lambda density. \n\nKey improvements:\n1.  **Extreme Asymmetry**: Uses a 95/5 budget split in applications to create deep left-leaning spines, pushing the average term size past 100 nodes.\n2.  **Beta-Redex Injection**: Explicitly constructs `(Lam x. body) arg` patterns with a 35% probability when the budget is high, ensuring `applied_lambdas_proportions` stays above 0.82.\n3.  **Frequency-Weighted Context Selection**: Instead of picking random types for arguments, it heavily biases selection toward types already present in the context. This ensures that the small-budget argument branch (5%) can almost always be satisfied by a `VarTm`, boosting `used_vars_proportions`.\n4.  **High-Entropy Literals**: Uses `rng.getrandbits(32)` and context-length-dependent strings to ensure that every leaf node is likely unique, maintaining a high `unique_subterms_proportions`.\n5.  **Shadowing Priority**: Always selects the most recently bound variable (`matches[-1]`) to encourage dense variable usage patterns.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:48:55.228389",
+  "llm_cost": 0.010539,
+  "llm_model": null
+}

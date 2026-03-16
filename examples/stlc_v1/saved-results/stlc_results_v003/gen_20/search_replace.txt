@@ -1,0 +1,104 @@
+<NAME>
+type_directed_spine_and_var_reuse
+</NAME>
+
+<DESCRIPTION>
+This update optimizes the generator to achieve higher `tm_sizes_average` and `used_vars_proportions_average` while maintaining a perfect `good_ratio`.
+
+Key improvements:
+1.  **Context-Aware Application**: Instead of generating a random argument type for applications, it now pulls a type from the existing context with 60% probability. This significantly increases the likelihood that the argument term can be a `Var`, boosting variable reuse.
+2.  **Strict Lambda Forcing**: When the target type is a function, the probability of generating a `Lam` is increased to 80%. This ensures deeper structural alignment with the type.
+3.  **Asymmetric 75/25 Split**: The budget distribution for applications is shifted to 75% for the function and 25% for the argument, creating longer left-heavy spines.
+4.  **Literal Diversity**: Literals now incorporate the current budget or context length to ensure `unique_subterms_proportions_average` remains high even in very large terms.
+5.  **Hard Floor Termination**: Improved logic for low-budget scenarios to ensure a valid term is always returned, especially for function types.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    def gen_term(target_ty: Ty, ctx: list[Tuple[str, Ty]], budget: int) -> Tm:
+        # Try to use a variable from context if it matches the type
+        valid_vars = [name for name, ty in ctx if ty == target_ty]
+
+        # Base cases or if budget is low
+        if budget <= 2:
+            if valid_vars and (rng.random() < 0.9 or budget <= 1):
+                return ("Var", rng.choice(valid_vars))
+            if target_ty == ("Bool",):
+                return ("Bool", rng.choice([True, False]))
+            if target_ty == ("Int",):
+                return ("Int", rng.randint(0, 100))
+            if target_ty == ("String",):
+                return ("String", rng.choice(["a", "b", "c"]))
+
+        # Recursive cases
+        if target_ty[0] == "Fun" and rng.random() < 0.6:
+            # Generate Lambda
+            arg_ty, ret_ty = target_ty[1], target_ty[2]
+            var_name = f"v{len(ctx)}"
+            new_ctx = ctx + [(var_name, arg_ty)]
+            return ("Lam", var_name, arg_ty, gen_term(ret_ty, new_ctx, budget - 1))
+
+        # Generate Application
+        # Asymmetric split: allocate more budget to the function side to encourage deep application chains
+        arg_ty = gen_type(rng.randint(1, 2))
+        fun_ty = ("Fun", arg_ty, target_ty)
+
+        # Use an asymmetric split to favor deeper trees on the left (function) side
+        # while keeping the argument side relatively small but valid.
+        split_f = int(budget * 0.7)
+        split_x = budget - split_f - 1
+        return ("App", gen_term(fun_ty, ctx, split_f), gen_term(arg_ty, ctx, max(1, split_x)))
+
+    # Target type size ~10 nodes, Term size ~100 nodes
+    target_type = gen_type(10)
+    term = gen_term(target_type, [], 100)
+=======
+    def gen_term(target_ty: Ty, ctx: list[Tuple[str, Ty]], budget: int) -> Tm:
+        # Variable selection: filter context for matching types
+        matches = [name for name, ty in ctx if ty == target_ty]
+
+        # Base cases: Hard floor or high-probability variable selection
+        if budget <= 2:
+            if matches and rng.random() < 0.95:
+                return ("Var", rng.choice(matches))
+
+            if target_ty[0] == "Bool":
+                return ("Bool", rng.random() > 0.5)
+            if target_ty[0] == "Int":
+                return ("Int", rng.randint(0, 1000) + budget)
+            if target_ty[0] == "String":
+                return ("String", f"s_{len(ctx)}_{budget}")
+
+            # If target is Fun but budget exhausted, must return a valid Lam
+            if target_ty[0] == "Fun":
+                v = f"v{len(ctx)}"
+                return ("Lam", v, target_ty[1], gen_term(target_ty[2], ctx + [(v, target_ty[1])], 1))
+
+        # Lambda Forcing: High probability if target is FunTy
+        if target_ty[0] == "Fun" and rng.random() < 0.8:
+            arg_ty, ret_ty = target_ty[1], target_ty[2]
+            var_name = f"v{len(ctx)}"
+            return ("Lam", var_name, arg_ty, gen_term(ret_ty, ctx + [(var_name, arg_ty)], budget - 1))
+
+        # Application: Context-aware intermediate type selection
+        # 60% chance to pick an argument type from context to maximize Var reuse
+        if ctx and rng.random() < 0.6:
+            arg_ty = rng.choice(ctx)[1]
+        else:
+            arg_ty = gen_type(1)
+
+        fun_ty = ("Fun", arg_ty, target_ty)
+
+        # 75/25 Asymmetric split for deep left-heavy application spines
+        split_f = int(budget * 0.75)
+        split_x = budget - split_f - 1
+
+        return ("App",
+                gen_term(fun_ty, ctx, max(1, split_f)),
+                gen_term(arg_ty, ctx, max(1, split_x)))
+
+    # Use higher initial budget for deeper ASTs
+    target_type = gen_type(rng.randint(2, 6))
+    term = gen_term(target_type, [], 120)
+>>>>>>> REPLACE
+</DIFF>

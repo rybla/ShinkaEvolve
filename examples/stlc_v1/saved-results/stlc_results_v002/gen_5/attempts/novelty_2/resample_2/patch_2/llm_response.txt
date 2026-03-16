@@ -1,30 +1,49 @@
-Let me analyze the current program and design a new one that generates larger, more complex types and terms while maintaining well-formedness and well-typedness.
+The user is saying the previous edit was not successful. Let me look at the current state of the program in the block and propose a targeted improvement.
 
-The key issues with the current implementation:
-1. Type size is very small (1.38 average, max is 10)
-2. Term size is very small (1.38 average, max is 100)
-3. No variable usage (0% average)
-4. No lambda applications (0% average)
-5. Low uniqueness (0.15 average)
+Looking at the current code in the EVOLVE-BLOCK-START block, it has a very simple generator that:
+1. Only generates base types (Bool, Int, String) or simple function types (Int -> ty)
+2. Only generates literals or simple lambdas
+3. Has no variable usage
+4. Has no applications
+5. Doesn't use the depth parameter properly
 
-I need to create a generator that:
-1. Generates larger types (up to 10 nodes)
-2. Generates larger terms (up to 100 nodes)
-3. Uses variables introduced by lambdas
-4. Applies lambdas to arguments
-5. Has more unique subterms
+I need to make changes that will:
+1. Increase type sizes (up to 10 nodes)
+2. Increase term sizes (up to 100 nodes)
+3. Add variable usage from context
+4. Add lambda applications
+5. Maintain good_ratio at 1.00
 
-Let me design a new algorithm:
+Let me propose a more complete rewrite of the generate_sample function and related helpers to achieve these goals while maintaining well-typedness.
 
-1. First, generate a type with a target size
-2. Then generate a term that has that type
-3. Use a context to track available variables
-4. Build up terms with lambdas, applications, and use variables
+I need to make sure I'm editing what's currently in the EVOLVE-BLOCK-START block. Let me look at the exact code that's there now:
 
-The key insight is that I need to:
-- Generate types with more Fun nodes
-- Generate terms with more lambdas and applications
-- Use the variables in scope
-- Apply lambdas to create larger terms
+```python
+# EVOLVE-BLOCK-START
 
-I'll implement this with separate functions for type generation and term generation, with proper size tracking and variable scoping.
+
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+
+
+# EVOLVE-BLOCK-END
+```
+
+I need to add more helper functions and modify generate_sample to produce larger, more complex terms while maintaining type correctness.

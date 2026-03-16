@@ -1,0 +1,63 @@
+Let me analyze the current situation carefully.
+
+Looking at the performance metrics:
+- good_ratio: 0.99 (very high - type correctness is good)
+- tm_sizes_average: 4.34 (relatively small terms)
+- ty_sizes_average: 1.34 (types are small)
+- used_vars_proportions_average: 0.18 (only 18% of terms use variables - could be higher)
+- applied_lambdas_proportions_average: 0.18 (only 18% of terms are applications - could be higher)
+- unique_subterms_proportions_average: 0.39 (repetitive structures)
+
+The combined score is 10.88.
+
+Looking at the current code, I can see several issues:
+
+1. The code has a 35% chance to use a bound variable when available, but this seems to not be working well
+2. The application creation logic is complex and might not be generating many `App` terms
+3. The base case has a 50% chance to generate a literal at the top level, which limits term complexity
+
+Let me look at the specific issues:
+
+1. In the lambda case, when creating a lambda, the code does:
+```python
+_, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
+```
+This adds the new variable to bound_vars for the body, which is correct.
+
+2. In the application case, there's a problem:
+```python
+# Generate argument term matching the function's input type
+arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+```
+This generates an argument term but doesn't ensure it has the correct type! This could lead to type errors.
+
+3. The variable usage check might be failing because:
+   - When we create a lambda, the bound variable is added to bound_vars
+   - But when we use `Var`, we need to make sure the variable is actually used in the body
+
+The key insight from the meta-review is that the current programs are "minimally correct" - they produce valid type-term pairs but don't explore the full expressiveness of the lambda calculus.
+
+I need to craft a prompt that:
+1. Explicitly guides generators to use `Var` terms to reference bound variables
+2. Explicitly guides generators to create `App` terms for function application
+3. Explicitly guides generators to create more diverse subterms
+4. Maintains the depth-controlled approach to ensure good_ratio stays high
+
+The challenge is that adding complexity (Var, App) might break type correctness if not done carefully. The prompt needs to provide concrete algorithmic guidance on how to implement these while maintaining validity.
+
+Key algorithmic patterns to recommend:
+1. Keep depth-controlled base case bias (for good_ratio)
+2. When creating a Lambda, sometimes use Var to reference the bound variable
+3. When creating App, ensure the function type matches the argument type
+4. Track available variables or use a simple approach like always using "x" for single-variable lambdas
+
+Let me write a new prompt that addresses these issues.
+
+# Potential Recommendations
+The following are potential recommendations for the next program generation:
+
+**Dynamic Weighting for Structural Growth**: To push `tm_sizes_average` beyond 4.34, implement a "warm-up" phase where the probability of choosing `Lam` or `App` is significantly higher (e.g., 80-90%) when `depth` is high and `bound_vars` is small. This ensures the generator builds a substantial "context" of variables early in the recursion, preventing it from defaulting to simple literals too quickly and resulting in larger, more interesting terms.
+
+I'll focus on creating a more sophisticated approach to variable and term generation that ensures type safety while increasing complexity. The key is to carefully balance the generation of literals, variables, and function applications to maintain both correctness and diversity in the generated lambda calculus terms.
+
+The strategy involves dynamically adjusting generation probabilities based on current depth and available bound variables, ensuring that we create more complex and interesting terms without sacrificing type correctness. This approach should help improve the overall expressiveness of the generated lambda calculus terms.

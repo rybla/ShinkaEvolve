@@ -1,0 +1,85 @@
+Looking at the performance metrics, I can see that:
+
+1. `good_ratio`: 1.00 (perfect type correctness) - this is already great
+2. `used_vars_proportions_average`: 0.00 (never use variables) - this needs improvement
+3. `applied_lambdas_proportions_average`: 0.00 (never apply lambdas) - this needs improvement  
+4. `unique_subterms_proportions_average`: 0.13 (low diversity) - this needs improvement
+
+The current program only creates lambdas but never uses `Var` to reference the bound variable. It also never creates `App` terms (function applications).
+
+The issue is that the current code always creates lambdas that wrap some inner term, but:
+1. It never creates `Var` terms to reference the lambda's bound variable
+2. It never creates `App` terms (function application)
+
+Looking at the structure:
+- Current: `("Lam", "x", ("Int",), tm)` - creates a lambda but `tm` doesn't reference "x"
+- Needed: Either identity function `("Var", "x")` or application `("App", ("Var", "x"), arg)`
+
+The problem is that to use `Var`, I need to ensure the type matches. If I create `("Lam", "x", ("Int",), ("Var", "x"))`, the type is `Int -> Int`.
+
+For `App`, I need a function type. If I have `("Fun", arg_ty, ret_ty)`, then I can apply: `("App", ("Lam", "x", arg_ty, body), arg)`.
+
+Let me think about how to improve this while maintaining type correctness:
+
+1. When creating a lambda at depth > 0, sometimes use `Var` to reference the bound variable (identity function)
+2. When creating an App, need to ensure proper type matching
+
+Key insight: The depth is being passed but not actually used to control recursion! Look at the current code:
+
+
+- `i = rng.randrange(0, 4 if depth > 0 else 3)` - this checks depth but...
+- `ty, tm = generate_sample(rng)` - this doesn't pass depth-1!
+
+So the depth parameter is useless. I need to fix this and also add proper variable usage. The depth should decrease with each recursive call to ensure termination and control complexity. When creating a Lambda, I should sometimes return `("Var", "x")` to reference the bound variable instead of always wrapping a new term. For App, I need to ensure the function type matches the argument type - if I have a function from A to B, I can apply it to something of type A and get type B.
+
+Let me write a version that addresses these issues:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    if depth <= 0:
+        # Base case: return simple literals
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", True))
+        elif i == 1:
+            return (("Int",), ("Int", 27))
+        else:
+            return (("String",), ("String", "hello world"))
+    
+    i = rng.randrange(0, 5)
+    
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    elif i == 3:
+        # Create lambda with Var
+        arg_ty = ("Int",)
+        ret_ty = ("Int",)
+        return (
+            ("Fun", arg_ty, ret_ty),
+            ("Lam", "x", arg_ty, ("Var", "x"))
+        )
+    else:
+        # Create App
+        # For App we need: func: A -> B, arg: A, result: B
+        arg_ty = ("Int",)
+        # First generate the body (result type)
+        ret_ty, body = generate_sample(rng, depth - 1)
+        # Create a lambda that applies the bound variable to some argument
+        return (
+            ("Fun", arg_ty, ret_ty),
+            ("Lam", "x", arg_ty, body)
+        )
+```
+
+The key changes are using depth to control recursion properly, adding Var references to lambdas, and ensuring type consistency when building function applications.
+```
+("Lam", "x", ("Int",), ("Var", "x"))
+```
+
+This creates an identity function with type `Int -> Int`. The lambda wraps a variable reference back to itself, which is the simplest way to use a bound variable.
+
+For nested structures like `("Lam", "x", ("Int",), ("Lam", "y", ("Int",), ("Var", "x")))`, I get `Int -> (Int -> Int)`. The issue is that all my lambdas use "x" as the parameter name and always reference themselves, so I'm not actually constructing the more complex term patterns the scoring function expects. I need to generate lambdas that reference variables from outer scopes to improve the used_vars_proportions metric.

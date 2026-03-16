@@ -1,21 +1,43 @@
-The user is asking me to provide a new program to improve the performance. Let me analyze the current program and create an improved version.
+Let me try again with a more careful approach. I need to make a targeted edit to the code between the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END markers.
 
-Looking at the current program:
-- It uses `bound_vars` to track bound variables
-- Uses `rng.random() < 0.35` for variable selection
-- Has some lambda and application generation
+Looking at the current code:
 
-The metrics show:
-- good_ratio: 0.99 (already very high)
-- tm_sizes_average: 4.34
-- used_vars_proportions_average: 0.18
-- applied_lambdas_proportions_average: 0.18
-- unique_subterms_proportions_average: 0.39
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10, context=None) -> Tuple[Ty, Tm]:
+    if context is None:
+        context = []
+    
+    # At depth 0, only generate literals
+    if depth == 0:
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", True))
+        elif i == 1:
+            return (("Int",), ("Int", 27))
+        else:
+            return (("String",), ("String", "hello world"))
+    
+    # At depth > 0, choose from literals, Lam, and App
+    i = rng.randrange(0, 5)  # 5 options
+    
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    elif i == 3:
+        # Generate lambda - always recurse to build more complex terms
+        ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+        return (("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm))
+    else:
+        # Generate application - apply a lambda to an argument
+        arg_ty, arg_tm = generate_sample(rng, depth - 1, context)
+        func_ty = ("Fun", arg_ty, arg_ty)
+        func_tm = ("Lam", "x", arg_ty, ("Var", "x"))
+        return (arg_ty, ("App", func_tm, arg_tm))
+# EVOLVE-BLOCK-END
+```
 
-From the analysis provided, the key improvements are:
-1. Type-safe application with fallback - check if func_type[0] == "Fun" before applying
-2. Better variable usage - use bound_vars more effectively
-3. Fresh variable generation with f-strings
-4. Probabilistic termination
-
-Let me create an improved version that implements these techniques properly.
+The issue is that I'm hardcoding `("Int",)` as the parameter type for lambdas, which restricts type diversity. I should generate random types instead to increase ty_sizes_average and unique_subterms_proportions_average. I'll add a helper function to generate random types and apply it when constructing lambdas.

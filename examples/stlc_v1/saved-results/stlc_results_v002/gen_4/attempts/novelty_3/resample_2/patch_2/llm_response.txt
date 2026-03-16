@@ -1,35 +1,162 @@
-The previous edit wasn't applied. Let me try again with a proper SEARCH/REPLACE block. I need to replace the current `generate_sample` function with a more sophisticated version.
+The user is asking me to rewrite a lambda-calculus generator program. Let me analyze what I need to do:
 
-Let me look at the current code again:
+1. The program generates types and terms of simply-typed lambda-calculus
+2. Current metrics show:
+   - good_ratio: 1.00 (all well-typed) - this is good, must maintain
+   - tm_sizes_average: 1.35 (too small, target is up to 100)
+   - ty_sizes_average: 1.35 (too small, target is up to 10)
+   - used_vars_proportions_average: 0.00 (should be higher)
+   - applied_lambdas_proportions_average: 0.00 (should be higher)
+   - unique_subterms_proportions_average: 0.15 (should be higher)
+
+The current implementation is very simple - it just generates literals or simple lambdas. I need to make it generate bigger, more complex terms with:
+- More variables usage
+- More lambda applications
+- More unique subterms
+
+Let me design a completely different algorithm approach:
+
+**Algorithm: Size-Budgeted Grammar-Based Generation**
+
+The key idea is:
+1. Generate a target type with explicit size control (up to 10 nodes)
+2. Generate a term with explicit size control (up to 100 nodes)
+3. Use a context to track bound variables
+4. Actively generate variables from context when they match the target type
+5. Generate applications to increase applied_lambdas_proportions_average
+6. Use unique sub-terms through diverse generation
+
+Let me write the code:
 
 ```python
+from typing import Literal, Tuple, List
+import random
+
+type Ty = BoolTy | IntTy | StringTy | FunTy
+type BoolTy = Tuple[Literal["Bool"]]
+type IntTy = Tuple[Literal["Int"]]
+
+
+type StringTy = Tuple[Literal["String"]]
+type FunTy = Tuple[Literal["Fun"], Ty, Ty]
+
+type Tm = LitTm | VarTm | LamTm | AppTm
+type LitTm = (
+    Tuple[Literal["Bool"], bool]
+    | Tuple[Literal["Int"], int]
+    | Tuple[Literal["String"], str]
+)
+type VarTm = Tuple[Literal["Var"], str]
+type LamTm = Tuple[Literal["Lam"], str, Ty, Tm]
+type AppTm = Tuple[Literal["App"], Tm, Tm]
+
+# EVOLVE-BLOCK-START
+
 def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
     """
     Generate a sample type and term using a random seed.
+    Uses size-budgeted generation for better complexity.
     """
+    # Generate type with target size around 5-10 nodes
+    ty = generate_type(rng, target_size=rng.randint(5, 10))
+    # Generate term with target size around 50-100 nodes
+    tm = generate_term(rng, target_size=rng.randint(50, 100), context=[], target_ty=ty)
+    return (ty, tm)
 
-    i = rng.randrange(0, 4 if depth > 0 else 3)
+def generate_type(rng: random.Random, target_size: int) -> Ty:
+    """Generate a type with controlled size."""
+    if target_size <= 1:
+        return generate_base_type(rng)
+    
+    # Create function types to build complexity
+    # A FunTy has 3 nodes: "Fun", arg, ret
+    # So we split the budget between arg and ret
+    if rng.random() < 0.7:
+        arg_size = rng.randint(1, max(1, target_size // 2))
+        ret_size = target_size - 2 - arg_size  # -2 for "Fun" and structure
+        ret_size = max(1, ret_size)
+        
+        arg_ty = generate_type(rng, arg_size)
+        ret_ty = generate_type(rng, ret_size)
+        return ("Fun", arg_ty, ret_ty)
+    
+    return generate_base_type(rng)
 
-    if i == 0:
-        return (("Bool",), ("Bool", True))
-    elif i == 1:
-        return (("Int",), ("Int", 27))
-    elif i == 2:
-        return (("String",), ("String", "hello world"))
+def generate_term(rng: random.Random, target_size: int, context: List[Tuple[str, Ty]], target_ty: Ty) -> Tm:
+    """Generate a term with controlled size."""
+    if target_size <= 1:
+        return generate_leaf_term(rng, context, target_ty)
+    
+    # Decide what to generate based on target type
+    if target_ty[0] == "Fun":
+        # For function types, we can generate lambda or application
+        if target_size >= 5 and rng.random() < 0.6:
+            return generate_lambda(rng, target_size, context, target_ty)
+        else:
+            return generate_application(rng, target_size, context, target_ty)
     else:
-        ty, tm = generate_sample(rng)
-        return (
-            ("Fun", ("Int",), ty),
-            ("Lam", "x", ("Int",), tm),
-        )
-```
+        # For base types, generate variable or literal
+        # But also try applications sometimes
+        if context and rng.random() < 0.4:
+            return generate_variable(rng, context, target_ty)
+        return generate_literal(rng, target_ty)
 
-I need to replace this with a better version that:
-1. Generates larger types (up to 10 nodes)
-2. Generates larger terms (up to 100 nodes)
-3. Tracks variables in scope
-4. Can generate applications
-5. Can use variables from scope
-6. Can apply lambdas to arguments
+def generate_lambda(rng: random.Random, size: int, context: List[Tuple[str, Ty]], fun_ty: Ty) -> Tm:
+    """Generate a lambda term."""
+    arg_name = f"x{rng.randint(0, 10000)}"
+    arg_ty = fun_ty[1]
+    
+    # Body gets most of the size budget
+    body_size = size - 3  # -3 for "Lam", name, type
+    new_context = context + [(arg_name, arg_ty)]
+    body = generate_term(rng, body_size, new_context, fun_ty[2])
+    
+    return ("Lam", arg_name, arg_ty, body)
 
-Let me write the new code:
+def generate_application(rng: random.Random, size: int, context: List[Tuple[str, Ty]], target_ty: Ty) -> Tm:
+    """Generate an application term."""
+    # Need a function type
+    fun_ty = ("Fun", generate_base_type(rng), target_ty)
+    fun_size = (size - 1) // 2  # -1 for "App"
+    arg_size = size - 1 - fun_size
+    
+    fun = generate_term(rng, fun_size, context, fun_ty)
+    arg = generate_term(rng, arg_size, context, fun_ty[1])
+    
+    return ("App", fun, arg)
+
+def generate_variable(rng: random.Random, context: List[Tuple[str, Ty]], ty: Ty) -> Tm:
+    """Generate a variable from context."""
+    matching = [(name, t) for name, t in context if t == ty]
+    if matching:
+        name, _ = rng.choice(matching)
+        return ("Var", name)
+    return generate_literal(rng, ty)
+
+def generate_literal(rng: random.Random, ty: Ty) -> Tm:
+    """Generate a literal."""
+    if ty == ("Bool",):
+        return ("Bool", rng.choice([True, False]))
+    elif ty == ("Int",):
+        return ("Int", rng.randint(0, 100))
+    else:
+        return ("String", rng.choice(["hello", "world", "test", "foo", "bar"]))
+
+def generate_leaf_term(rng: random.Random, context: List[Tuple[str, Ty]], ty: Ty) -> Tm:
+    """Generate a leaf term (variable or literal)."""
+    # Try to use a variable first
+    if context and rng.random() < 0.5:
+        return generate_variable(rng, context, ty)
+    return generate_literal(rng, ty)
+
+def generate_base_type(rng: random.Random) -> Ty:
+    """Generate a base type."""
+    i = rng.randrange(0, 3)
+    if i == 0:
+        return ("Bool",)
+    elif i == 1:
+        return ("Int",)
+    else:
+        return ("String",)
+
+I need to refine the size calculation logic. The current approach treats target_size as node count directly, but I should be more explicit about how nodes are counted. For types, Bool/Int/String are single nodes while Fun adds 3 nodes total. For terms, literals and variables are single nodes, lambda introduces 3 plus its body, and application adds 2 plus both subterms. I should adjust the budget distribution accordingly.

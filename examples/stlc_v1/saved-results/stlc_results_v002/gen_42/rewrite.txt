@@ -1,0 +1,6 @@
+if context and rng.random() < 0.3:
+    var_name = rng.choice(context)
+    return (("Fun", ("Int",), ("Int",)), ("Lam", "x", ("Int",), ("Var", var_name)))
+else:
+    ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+    return (("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm))

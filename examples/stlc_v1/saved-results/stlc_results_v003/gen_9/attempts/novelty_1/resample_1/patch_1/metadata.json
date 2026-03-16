@@ -1,0 +1,14 @@
+{
+  "generation": 9,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 2,
+  "patch_name": "depth_controlled_recursion_and_higher_order_types",
+  "patch_description": "The previous iteration saw a drop in `tm_sizes_average` (from ~80 to ~46) likely because of aggressive budget splitting and early terminal hits. \n\nThis improvement:\n1.  **Ensures Budget Utilization**: Uses a more robust budget management to ensure terms reach closer to the 100-node target.\n2.  **Context-Driven Type Generation**: When generating `App` nodes, it prefers selecting `arg_ty` from the context or the `target_ty` components, which significantly boosts `used_vars_proportions`.\n3.  **Higher-Order Function Preference**: Increases the probability of generating `Fun` types and `Lam` terms even when the budget is high, to improve `applied_lambdas_proportions`.\n4.  **Literal Fallback**: Standardizes literal generation to ensure `good_ratio` remains 1.0.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:43:01.974205",
+  "llm_cost": 0.0090955,
+  "llm_model": null
+}

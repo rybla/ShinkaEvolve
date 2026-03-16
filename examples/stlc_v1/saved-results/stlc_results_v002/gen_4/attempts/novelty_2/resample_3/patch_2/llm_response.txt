@@ -1,32 +1,18 @@
-Let me analyze the current code and understand what needs to be improved.
+The user is asking me to improve the current program. Let me analyze what's happening:
 
-Looking at the current `generate_sample` function:
-1. It only generates simple literals (Bool, Int, String) or very simple lambdas
-2. It doesn't use variables at all
-3. It doesn't generate applications
-4. The type sizes and term sizes are very small
+The current `generate_sample` function has issues:
+1. It doesn't properly use the depth parameter
+2. It recursively calls `generate_sample(rng)` without passing depth
+3. It doesn't generate variables from context
+4. It doesn't generate applications of lambdas
+5. The types and terms are very small
 
-The metrics show:
-- tm_sizes_average: 1.38 (max is 100)
-- ty_sizes_average: 1.38 (max is 10)
-- used_vars_proportions_average: 0.00 (should use variables)
-- applied_lambdas_proportions_average: 0.00 (should apply lambdas)
-- unique_subterms_proportions_average: 0.15 (should have more unique subterms)
+I need to rewrite the generate_sample function (and helper functions) to:
+1. Actually use depth to control complexity
+2. Generate larger types (up to 10 nodes)
+3. Generate larger terms (up to 100 nodes)
+4. Use variables from context
+5. Apply lambdas to arguments
+6. Create more unique subterms
 
-I need to create a more sophisticated generator that:
-1. Generates larger types (up to size 10)
-2. Generates larger terms (up to size 100)
-3. Uses variables that are introduced by lambdas
-4. Applies lambdas to arguments
-5. Has more unique subterms
-
-Let me write a better generator that:
-1. First generates a type of bounded size
-2. Then generates a term of that type using the type
-
-I need to be careful about:
-- Maintaining a context of available variables
-- Making sure applications are type-correct
-- Controlling the size of generated terms
-
-Let me create a more sophisticated implementation.
+Let me write a proper implementation.

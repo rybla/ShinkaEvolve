@@ -1,32 +1,45 @@
-The user is asking me to provide a new program to improve the performance. Let me analyze what's happening and provide a complete solution.
+The user is saying the previous edit was not successful. Let me look at what might have gone wrong. I need to provide a valid SEARCH/REPLACE block that makes a meaningful change to the code.
 
-Looking at the current program, it has:
-- good_ratio: 1.00 (perfect type correctness)
-- tm_sizes_average: 1.38
-- used_vars_proportions_average: 0.00 (no variables)
-- applied_lambdas_proportions_average: 0.00 (no applications)
-- Combined score: 10.30
+Looking at the current program, I need to find a targeted improvement. Let me analyze what could be changed:
 
-The system prompt mentioned that the best programs (score 10.88) used:
-1. bound_vars to track bound variables
-2. Probabilistic variable selection
-3. Unique variable names
-4. Type-safe application checking
-5. Hybrid termination
+1. The lambda always uses `("Int",)` as the parameter type - could diversify this
+2. The App always creates an identity function - could make it more complex
+3. The context tracking could be improved
 
-However, looking at the prior programs in this conversation:
-- Programs with simple literals + simple lambdas got ~10.28-10.31
-- Programs that tried more complex generation got lower scores (7.11)
+Let me propose a change that adds more diversity to the lambda parameter types. Instead of always using Int, I'll add a random choice between Bool, Int, and String for the lambda parameter type.
 
-The key insight is that the prior programs that achieved 10.28-10.31 had:
-- good_ratio: 1.00
-- But 0% for used_vars and applied_lambdas
+This should:
+- Increase type diversity (ty_sizes_average)
+- Potentially increase unique_subterms_proportions_average
+- Maintain good_ratio = 1.00 if done correctly
 
-So to improve, I need to:
-1. Maintain good_ratio close to 1.00
-2. Increase tm_sizes_average
-3. Increase used_vars_proportions_average
-4. Increase applied_lambdas_proportions_average  
-5. Increase unique_subterms_proportions_average
+Let me write the SEARCH/REPLACE block:
 
-Let me create a program that introduces variables and applications while maintaining type safety.
+Current code:
+```python
+    elif i == 3:
+        # Generate lambda - with 30% chance to use a variable from context
+        if context and rng.random() < 0.3:
+            var_name = rng.choice(context)
+            return (("Fun", ("Int",), ("Int",)), ("Lam", "x", ("Int",), ("Var", var_name)))
+        else:
+            ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+            return (("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm))
+```
+
+New code - use random type for lambda parameter:
+```python
+    elif i == 3:
+        # Generate lambda - with 30% chance to use a variable from context
+        # Use random type for parameter to increase diversity
+        param_types = [("Bool",), ("Int",), ("String",)]
+        param_ty = rng.choice(param_types)
+        if context and rng.random() < 0.3:
+            var_name = rng.choice(context)
+            return (("Fun", param_ty, param_ty), ("Lam", "x", param_ty, ("Var", var_name)))
+        else:
+            ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+            return (("Fun", param_ty, ty), ("Lam", "x", param_ty, tm))
+```
+
+This change introduces three possible parameter types instead of just Int, which should expand the type diversity and potentially improve the unique_subterms_proportions_average while keeping the correctness intact.

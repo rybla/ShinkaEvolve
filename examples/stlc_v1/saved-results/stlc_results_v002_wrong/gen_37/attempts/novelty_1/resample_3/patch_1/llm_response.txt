@@ -1,0 +1,45 @@
+Let me analyze the prior programs and their performance metrics to understand what patterns work best:
+
+1. **Program 1 (Score: 8.73)** - Lower score
+   - good_ratio: 0.82 (lower)
+   - Has some variable usage (used_vars_proportions_average: 0.16)
+   - But has App terms (applied_lambdas_proportions_average: 0.00 - wait, that's 0.00, so no applications)
+   - Has unique_subterms_proportions_average: 0.21
+
+2. **Program 2 (Score: 10.26)** - Better
+   - good_ratio: 1.00
+   - Has context tracking (ctx parameter)
+   - Can use variables from context (used_vars_proportions_average: 0.02)
+   - But no App terms
+
+3. **Programs 3-6 (Scores 10.26-10.30)** - Best so far
+   - All have good_ratio: 1.00
+   - No variable usage (used_vars_proportions_average: 0.00)
+   - No applications (applied_lambdas_proportions_average: 0.00)
+   - The key difference is unique_subterms_proportions_average increasing (from 0.10 to 0.15)
+   - They don't decrement depth when creating lambdas!
+
+Wait, looking more carefully at Program 1:
+- It has used_vars_proportions_average: 0.16 (the highest!)
+- It has applied_lambdas_proportions_average: 0.00 (this seems wrong - it should have applications)
+- But its good_ratio is only 0.82
+
+The best programs (3-6) all:
+1. Have good_ratio: 1.00
+2. Don't decrement depth in recursive calls (which creates larger terms)
+3. Have increasing unique_subterms_proportions_average
+
+
+4. Produce 0 applications and 0 used variables
+
+Current Program:
+- Score: 10.27
+- good_ratio: 1.00
+- tm_sizes_average: 1.30
+- used_vars_proportions_average: 0.00
+- applied_lambdas_proportions_average: 0.00
+- unique_subterms_proportions_average: 0.13
+
+The meta-review mentioned that Program 1 broke the 10.30 ceiling by introducing bound_vars tracking and variable usage, but its good_ratio is only 0.82. So there's a tradeoff between variable usage and type correctness. The best approach seems to be keeping good_ratio at 1.00 while finding ways to increase unique_subterms_proportions_average.
+
+I should explore adding variable usage while maintaining type safety, introducing applications with proper type checking, and varying variable naming conventions to improve uniqueness without sacrificing the good_ratio. The current implementation uses a fixed depth of 10, which might be preventing exploration of more complex term structures.

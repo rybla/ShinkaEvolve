@@ -1,0 +1,42 @@
+Let me analyze the current program and the prior programs to understand what techniques lead to better performance.
+
+Looking at the current program:
+- It generates simple literals (Bool, Int, String) and occasionally wraps them in lambdas
+- It has `good_ratio: 1.00` which is perfect
+- But `used_vars_proportions_average: 0.00` and `applied_lambdas_proportions_average: 0.00` - no variables are used and no applications
+- The score is 10.30
+
+Looking at the prior programs, particularly Program 1 from the system prompt which achieved 10.88:
+- It uses `bound_vars` parameter to track bound variables
+- Uses `rng.random() < 0.35` to probabilistically choose variables
+- Uses `f"x{rng.randint(0, 100)}"` for unique variable names
+- Has type-safe application: checks `func_type[0] == "Fun"` before applying
+- Uses hybrid termination: `depth <= 0 or (not bound_vars and rng.random() < 0.5)`
+
+The current program has:
+- 100% good_ratio (perfect type correctness)
+- But 0% for used_vars and applied_lambdas
+
+The key insight is that the best programs (10.88 score) use:
+1. Context-aware variable injection (bound_vars)
+2. Type-safe application with fallbacks
+3. Fresh variable generation
+4. Probabilistic termination
+
+But I also notice from the prior programs in the task:
+- Programs that tried to use more complex generation (like the first one with more options) got lower scores (7.11)
+- Programs that stick to simple literals + simple lambdas got 10.28-10.31
+
+Wait, the best performing programs in the task have:
+- good_ratio: 1.00
+- tm_sizes_average: ~1.3-1.4
+- used_vars_proportions_average: 0.00
+
+
+- applied_lambdas_proportions_average: 0.00
+
+So the current approach of simple literals + lambdas achieves near-optimal performance. The real constraint is that attempting to incorporate variables or applications introduces type errors and complexity that degrades the score. I need to find a way to introduce these features without sacrificing the good_ratio.
+
+Looking at the system prompt more carefully, the highest-scoring programs (10.88) actually do use bound variables, type-safe application, and unique variable naming. But those programs aren't among the provided examples in this task—they're from a different set. The challenge is to adapt those successful patterns to work within the constraints I'm working with, where the simpler approach currently yields 10.30.
+
+The key insight is balancing complexity with correctness: introducing variables and applications improves the size and usage metrics, yet risks breaking type safety. I should explore a more conservative approach that incorporates some of these elements while maintaining the good_ratio above 0.95.

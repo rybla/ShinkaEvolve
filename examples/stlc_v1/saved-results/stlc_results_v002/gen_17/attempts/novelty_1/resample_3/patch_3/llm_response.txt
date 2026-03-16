@@ -1,0 +1,40 @@
+The user is saying my edit wasn't applied. Let me re-read the task more carefully.
+
+Looking at the current program, I need to understand the exact code that needs to be modified. Let me copy the exact text from the "Current program" section.
+
+The EVOLVE-BLOCK-START and EVOLVE-BLOCK-END section contains:
+
+```python
+# EVOLVE-BLOCK-START
+
+
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+
+
+# EVOLVE-BLOCK-END
+```
+
+I need to make a SEARCH/REPLACE block that replaces this entire section with an improved version that:
+1. Tracks context (bound variables)
+2. Uses the bound variable in lambda bodies with some probability
+3. Applies lambdas to arguments
+
+Let me write a proper diff:

@@ -1,20 +1,49 @@
-The user is asking me to rewrite a program to improve its performance. Let me analyze the current state and provide a complete new program.
+The previous edit was not successful. Let me re-read the current program more carefully to understand what's there now and make sure I'm targeting the exact text.
 
-Looking at the metrics:
-- Current score: 10.30
-- good_ratio: 1.00 (perfect type correctness)
-- tm_sizes_average: 1.38
-- used_vars_proportions_average: 0.00 (no variables used!)
-- applied_lambdas_proportions_average: 0.00 (no applications!)
+Looking at the current program in the EVOLVE-BLOCK-START section:
 
-The key issue is that the current program:
-1. Never uses variables from the lambda's scope
-2. Never applies functions
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10, context=None) -> Tuple[Ty, Tm]:
+    if context is None:
+        context = []
+    
+    # At depth 0, only generate literals
+    if depth == 0:
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", True))
+        elif i == 1:
+            return (("Int",), ("Int", 27))
+        else:
+            return (("String",), ("String", "hello world"))
+    
+    # At depth > 0, choose from literals, Lam, and App
+    i = rng.randrange(0, 5)  # 5 options
+    
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    elif i == 3:
+        # Generate lambda - always recurse to build more complex terms
+        ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+        return (("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm))
+    else:
+        # Generate application - apply a lambda to an argument
+        arg_ty, arg_tm = generate_sample(rng, depth - 1, context)
+        func_ty = ("Fun", arg_ty, arg_ty)
+        func_tm = ("Lam", "x", arg_ty, ("Var", "x"))
+        return (arg_ty, ("App", func_tm, arg_tm))
+# EVOLVE-BLOCK-END
+```
 
-I need to design a program that:
-1. Uses a context (bound_vars) to track variables in scope
-2. Can generate Var terms using variables from context  
-3. Can generate App terms by applying functions (with type checking)
-4. Uses unique variable names to increase unique_subterms_proportions
+I'll focus on enhancing the lambda generation strategy. The key improvements will involve introducing more type diversity and variable usage probability. I'll modify the lambda generation to incorporate context-based variable selection and expand type options beyond just integers.
 
-Let me write the complete code in the proper format.
+The primary goals are to:
+- Increase type flexibility
+- Add probabilistic variable context usage
+- Maintain the current recursive structure
+- Preserve the existing type and term generation logic

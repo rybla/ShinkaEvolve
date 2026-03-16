@@ -1,0 +1,38 @@
+Let me analyze the current program and the prior programs to understand what improvements can be made.
+
+Current program analysis:
+- Score: 10.28
+- good_ratio: 1.00 (perfect - all terms are type-correct)
+- tm_sizes_average: 1.33 (term size)
+- ty_sizes_average: 1.33 (type size)
+- used_vars_proportions_average: 0.00 (no variables used)
+- applied_lambdas_proportions_average: 0.00 (no applications)
+- unique_subterms_proportions_average: 0.14
+
+The current program only generates:
+1. Boolean literals
+2. Integer literals  
+3. String literals
+4. Lambda terms (with Int -> ty)
+
+The problem is that the current program:
+1. Never generates Var terms (used_vars_proportions_average: 0.00)
+2. Never generates App terms (applied_lambdas_proportions_average: 0.00)
+3. Uses a fixed variable name "x" for all lambdas
+4. Doesn't use the depth parameter properly (it calls generate_sample(rng) without depth decrement)
+
+Looking at the best prior programs from the system prompt:
+- Program 1 (Score: 10.8819) - Uses bound_vars, probabilistic variable selection, type-safe application
+- Program 2 (Score: 10.5488) - Similar approach with bound_vars
+- Program 3 (Score: 10.3128) - Simple depth-controlled recursion
+
+Key insights from the best programs:
+1. **bound_vars parameter** - Track bound variables through recursion
+2. **Type-safe application** - Check if func_type[0] == "Fun" before applying
+3. **Unique variable naming** - Use f"x{rng.randint(0, 100)}" for unique names
+4. **Probabilistic termination** - Use both depth and random chance for base case
+
+
+5. **Recursive depth management** - Decrement depth with each recursive call
+
+I need to implement a more sophisticated approach that properly manages depth, introduces variable binding and usage, enables function application, and generates unique variable names. The key is tracking bound variables and ensuring type-safe operations throughout the recursion.

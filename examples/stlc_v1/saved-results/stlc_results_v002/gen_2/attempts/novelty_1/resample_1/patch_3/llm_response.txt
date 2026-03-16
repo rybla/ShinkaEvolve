@@ -1,1 +1,3 @@
-Let me try a different approach - I'll provide the complete code directly in the format requested.
+The user is saying my edit wasn't applied. Let me look at the exact format needed and provide a proper SEARCH/REPLACE block. I need to match the exact text in the file.
+
+Looking at the current code block, I need to find the exact function to replace. Let me be more careful about the exact text.

@@ -1,0 +1,40 @@
+<NAME>
+context_aware_application_types
+</NAME>
+
+<DESCRIPTION>
+This optimization improves the choice of intermediate types `A` during the generation of application nodes `(App f x)`. 
+
+Instead of generating a completely random `arg_ty` (which often leads to a recursive search for a term that cannot be satisfied by existing variables, forcing the generator to create deep trees that might hit budget limits), we prioritize using types that are already present in the typing context `ctx`. 
+
+By selecting an `arg_ty` that some variable `v` in the context already possesses, the probability that the argument `x` can be a simple `VarTm` increases significantly. This helps in three ways:
+1. It improves `used_vars_proportions_average`.
+2. It makes term generation more "dense" and less likely to fall back to literals.
+3. It allows the budget to be spent more effectively on the function side of the application, potentially increasing `applied_lambdas_proportions_average`.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+        # Generate Application
+        # To generate (App f x) : target_ty, we need f : A -> target_ty and x : A
+        arg_ty = gen_type(rng.randint(1, 3))
+        fun_ty = ("Fun", arg_ty, target_ty)
+
+        split = max(1, budget // 2)
+        return ("App", gen_term(fun_ty, ctx, split), gen_term(arg_ty, ctx, split))
+=======
+        # Generate Application
+        # To generate (App f x) : target_ty, we need f : A -> target_ty and x : A
+        # Optimization: Prioritize A from types already in context to increase variable usage
+        if ctx and rng.random() < 0.7:
+            arg_ty = rng.choice(ctx)[1]
+        else:
+            arg_ty = gen_type(rng.randint(1, 3))
+            
+        fun_ty = ("Fun", arg_ty, target_ty)
+
+        # Partition budget: give slightly more to the function to encourage complexity
+        split = max(1, int(budget * 0.6))
+        return ("App", gen_term(fun_ty, ctx, split), gen_term(arg_ty, ctx, budget - split - 1))
+>>>>>>> REPLACE
+</DIFF>

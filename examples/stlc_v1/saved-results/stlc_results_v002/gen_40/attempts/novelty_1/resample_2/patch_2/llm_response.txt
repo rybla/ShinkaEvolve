@@ -1,38 +1,35 @@
-The user is asking me to perform a crossover between two code scripts. Let me analyze the current program and the prior programs to understand what improvements can be made.
+Looking at the current program, I need to understand why the previous edit wasn't successful. Let me analyze the code more carefully.
 
-Current program (score 10.30):
-- Uses depth parameter but doesn't use it effectively
-- Simple literals with fixed values
-- Creates lambdas but doesn't use variables or apply them
-- good_ratio: 1.00 (all terms are valid)
-- used_vars_proportions_average: 0.00
-- applied_lambdas_proportions_average: 0.00
+The current program is already quite good with a score of 10.60. Looking at what could improve it:
 
-Prior programs with higher scores (10.28-10.31) are essentially the same as the current program.
+1. The current program uses Int as the only type for lambdas
+2. It has a 30% chance to use a variable from context
+3. It generates App terms
 
-The first prior program has score 7.11, which is lower. But it has:
-- Random literals
-- Lambda with variable reference
-- Application terms
-- Problem: likely generates type-inconsistent terms
+Looking at the best prior program (score 10.62), it has:
+- tm_sizes_average: 1.87 (current: 1.84)
+- ty_sizes_average: 1.32 (current: 1.30)
+- unique_subterms_proportions_average: 0.25 (current: 0.23)
 
-Looking at the system prompt analysis, the key insights are:
-1. Use `bound_vars` parameter to track bound variables
-2. Type-safe application: check `func_type[0] == "Fun"` before applying
-3. Unique variable naming with f-strings
-4. Probabilistic termination
+The key difference seems to be in the unique_subterms and sizes. Let me try a different approach - maybe I should try to increase the variety of generated terms.
 
-Let me create a program that:
-1. Maintains 100% good_ratio (type-correct terms)
-2. Introduces variable usage
-3. Introduces application with type safety
-4. Uses depth properly
+Looking at the current code more carefully:
+- For Lambda: it has 30% chance to use a variable from context
+- The context is updated with "x" when recursing
 
-The key is to combine the type safety of the current program with the more complex term generation of the first prior program.
+Wait, let me re-read the current code:
+```python
+elif i == 3:
+    # Generate lambda - with 30% chance to use a variable from context
+    if context and rng.random() < 0.3:
+        var_name = rng.choice(context)
+        return (("Fun", ("Int",), ("Int",)), ("Lam", "x", ("Int",), ("Var", var_name)))
+    else:
+        ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+        return (("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm))
+```
 
-Here's my plan:
-1. Keep the base case (literals) from current program
-2. Add lambda with variable usage (from first prior program)
-3. Add application with proper type checking (from system prompt insights)
-4. Track bound variables properly for type safety
-5. Use depth to control complexity
+The issue here is that when we DON'T use a variable from context, we add "x" to context. But when we DO use a variable from context, we return early without adding "x" to context for the recursive call (since there's no recursive call in that branch).
+
+
+The current approach already handles this well. To improve uniqueness and term variety, I could vary the base types used in lambdas beyond just Int, increase the depth or probability of generating complex terms, or add Var generation as a standalone option at depth > 0 to complement the existing 30% chance within Lambda.

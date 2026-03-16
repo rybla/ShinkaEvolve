@@ -1,0 +1,14 @@
+{
+  "generation": 34,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 3,
+  "patch_name": "dynamic_uniqueness_and_asymmetric_spine_boost",
+  "patch_description": "To maximize the `combined_score`, I am proposing two primary optimizations:\n1.  **Dynamic Literal Generation**: Replacing static string and integer literals with values derived from the current context length and remaining budget. This ensures that even when the \"Hard Floor\" logic is triggered frequently in large terms, the leaf nodes remain structurally unique, protecting the `unique_subterms_proportions_average`.\n2.  **Increased Spine Asymmetry**: Shifting the application split from 90/10 to 94/6. This drives the recursion deeper on the function side, which is the primary engine for increasing `tm_sizes_average` toward the 100-node limit.\n3.  **Context-Biased Type Selection**: Increasing the probability of selecting an `arg_ty` from the context to 92%, which directly boosts the `used_vars_proportions_average` by ensuring the argument branch of an application is highly likely to find a matching variable.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:46:53.591561",
+  "llm_cost": 0.0086395,
+  "llm_model": null
+}

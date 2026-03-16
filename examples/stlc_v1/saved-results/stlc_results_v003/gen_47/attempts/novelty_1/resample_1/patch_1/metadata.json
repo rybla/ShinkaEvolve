@@ -1,0 +1,14 @@
+{
+  "generation": 47,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "beta_redex_injection_and_asymmetry_boost",
+  "patch_description": "This update implements several key strategies to push the combined score past 13.8:\n1. **Beta-Redex Injection**: When generating an application with sufficient budget, we manually construct a `LamTm` for the function side. This significantly boosts `applied_lambdas_proportions_average`.\n2. **Extreme Asymmetry (95/5 Split)**: Increases the budget allocation to the function side of applications to 95%, pushing `tm_sizes_average` higher.\n3. **High-Entropy Naming**: Uses `rng.getrandbits` for variable names and literals to ensure `unique_subterms_proportions_average` stays near 1.0.\n4. **Context-Driven Argument Selection**: Increases the probability of picking an `arg_ty` from the context to 95%, ensuring the argument branch can be satisfied by a `VarTm`, which boosts `used_vars_proportions_average`.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:49:15.811964",
+  "llm_cost": 0.010754,
+  "llm_model": null
+}

@@ -1,24 +1,41 @@
-The user is asking me to improve the performance of the current program. Let me analyze the situation:
+Let me analyze the issue more carefully. Looking at the current code:
 
-Current program metrics:
-- Combined score: 10.31
-- good_ratio: 1.00
-- used_vars_proportions_average: 0.00 (no variables used!)
-- applied_lambdas_proportions_average: 0.00 (no lambda applications!)
-- unique_subterms_proportions_average: 0.16
+```python
+def generate_sample(rng: random.Random, depth=10, context=None) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    Uses context to track bound variables for potential Var usage.
+    """
+    if context is None:
+        context = []
+    
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+    
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        # Generate function type and term
+        # Use context to potentially reference bound variables
+        if context and rng.random() < 0.3:  # 30% chance to use a variable
+            var_name = rng.choice(context)
+            return (
+                ("Fun", ("Int",), ("Int",)),
+                ("Lam", "x", ("Int",), ("Var", var_name)),
+            )
+        else:
+            ty, tm = generate_sample(rng, depth - 1, context)
+            return (
+                ("Fun", ("Int",), ty),
+                ("Lam", "x", ("Int",), tm),
+            )
+```
 
-The key issue is that the current program:
-1. Never generates Var terms (variables referencing bound variables)
-2. Never generates App terms (applying lambdas to arguments)
+The bug is in the `else` branch - when recursing, the context is not updated with the new variable "x". So `context` is always empty (since it's initialized as `[]` and never gets any items added to it).
 
-Looking at the best program from the prior examples (score 10.5488), it achieved:
-- used_vars_proportions_average: 0.1694
-- applied_lambdas_proportions_average: 0.0565
+The fix is to pass `context + ["x"]` instead of just `context` in the recursive call.
 
-The solution is to:
-1. Add a `bound_vars` parameter to track variables in scope
-2. When generating a lambda, add the variable name to bound_vars for the recursive call
-3. With some probability, return a Var term referencing a bound variable
-4. Add App cases to apply lambdas to arguments
-
-Let me write the improved code with proper SEARCH/REPLACE format.
+Let me write the SEARCH/REPLACE block correctly.

@@ -1,0 +1,39 @@
+
+Let me re-read the instructions. I need to make changes to the code inside the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END markers. Let me look at the exact code that's there now and make a proper edit.
+
+The current code in the EVOLVE-BLOCK is:
+
+```python
+# EVOLVE-BLOCK-START
+
+
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+
+
+# EVOLVE-BLOCK-END
+```
+
+I need to modify this to:
+1. Use the bound variable in the lambda (to increase used_vars_proportions_average)
+2. Vary the literal values (to increase unique_subterms_proportions_average)
+3. Add application of lambdas (to increase applied_lambdas_proportions_average)
+
+Let me write a proper edit that does this.

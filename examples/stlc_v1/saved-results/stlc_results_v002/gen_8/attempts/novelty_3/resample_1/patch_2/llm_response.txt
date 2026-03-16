@@ -1,0 +1,42 @@
+The user is asking me to improve the performance of the code. Looking at the current program, it generates very simple terms - just literals. It never generates lambdas or applications. This is why the term size is small and variables/lambdas are not used.
+
+Let me analyze what needs to be changed:
+
+Current metrics:
+- Combined score: 10.30
+- good_ratio: 1.00 (perfect - all terms are well-typed)
+- tm_sizes_average: 1.35 (very small)
+- ty_sizes_average: 1.35 (very small)
+- used_vars_proportions_average: 0.00 (no variables used)
+- applied_lambdas_proportions_average: 0.00 (no lambda applications)
+- unique_subterms_proportions_average: 0.15 (low)
+
+The prior programs had:
+- Combined score: 9.24
+- good_ratio: 0.82 (lower)
+- tm_sizes_average: 4.89 (larger)
+- ty_sizes_average: 2.90 (larger)
+- used_vars_proportions_average: 0.03 (some variable usage)
+- applied_lambdas_proportions_average: 0.17 (some lambda applications)
+- unique_subterms_proportions_average: 0.49 (more unique subterms)
+
+The current program has perfect good_ratio but very small sizes. The prior programs had lower good_ratio but larger sizes and more complex terms.
+
+I need to improve the generator to:
+1. Generate larger types (up to 10 nodes in AST)
+2. Generate larger terms (up to 100 nodes in AST)
+3. Use variables from context more
+4. Apply lambdas to arguments
+5. Have more unique subterms
+
+But I also need to maintain good_ratio = 1.00 (all generated terms must be well-typed).
+
+Looking at the current generate_sample function:
+- It only generates 4 simple cases: Bool, Int, String literals, or a simple lambda wrapping a recursive call
+
+
+- The recursive call doesn't pass depth, so it will infinite loop or generate the same thing
+
+I'll create a more sophisticated generator with proper depth control. The key is to build complexity gradually while maintaining type safety. I'll design functions that can generate increasingly complex types and terms, ensuring each generated term is well-typed and uses the context of bound variables effectively.
+
+The generator will need sophisticated type generation, literal creation, and term construction strategies that respect type constraints and build increasingly complex lambda calculus expressions.

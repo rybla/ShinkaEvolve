@@ -1,0 +1,14 @@
+{
+  "generation": 36,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "asymmetric_spine_inhabitant_preference_generator",
+  "patch_description": "This generator optimizes for the simply-typed lambda-calculus (STLC) by using an Extreme Asymmetric Application Spine (92/8 split) to maximize term size toward the 100-node limit. It implements \"Inhabitant-Preference\" typing, where argument types for applications are picked from the existing context with 90% probability, ensuring arguments can be satisfied by variables (`VarTm`) rather than literals, which drastically improves variable reuse and keeps the spine growing. It uses dynamic naming `f\"v{len(ctx)}\"` to guarantee 100% unique sub-terms and employs a hard-floor logic to ensure type validity even when the budget is exhausted.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:47:10.376082",
+  "llm_cost": 0.0095475,
+  "llm_model": null
+}

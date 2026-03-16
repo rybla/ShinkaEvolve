@@ -1,46 +1,35 @@
-Let me analyze the current program and the performance metrics to understand what improvements can be made.
+Let me analyze the current program and the performance metrics to understand what needs to be improved.
 
-Current program analysis:
-- The generator produces well-typed terms (good_ratio: 1.00)
-- But the terms are very small (tm_sizes_average: 1.35)
-- The types are also small (ty_sizes_average: 1.35)
-- No variables are used (used_vars_proportions_average: 0.00)
-- No lambdas are applied (applied_lambdas_proportions_average: 0.00)
-- Low unique subterms (unique_subterms_proportions_average: 0.14)
+Current performance metrics:
+- Combined score to maximize: 10.28
+- good_ratio: 1.00 (all generated samples are well-formed and well-typed)
+- tm_sizes_average: 1.33 (term size is very small - max is 100)
+- ty_sizes_average: 1.33 (type size is very small - max is 10)
+- used_vars_proportions_average: 0.00 (no variables are being used!)
+- applied_lambdas_proportions_average: 0.00 (no lambdas are being applied!)
+- unique_subterms_proportions_average: 0.14 (low uniqueness)
 
-Looking at the code:
-```python
-def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
-    i = rng.randrange(0, 4 if depth > 0 else 3)
+Looking at the current implementation:
+1. It only generates base types (Bool, Int, String) and simple function types (Int -> ty)
+2. It only generates literal terms or simple lambda terms that wrap other terms
+3. It never generates:
+   - Variables (Var)
+   - Applications (App)
+   - Complex function types (Bool -> Bool, String -> Int, etc.)
 
-    if i == 0:
-        return (("Bool",), ("Bool", True))
-    elif i == 1:
-        return (("Int",), ("Int", 27))
-    elif i == 2:
-        return (("String",), ("String", "hello world"))
-    else:
-        ty, tm = generate_sample(rng)  # Note: depth is not decremented!
-        return (
-            ("Fun", ("Int",), ty),
-            ("Lam", "x", ("Int",), tm),
-        )
-```
+The key issues are:
+1. **Term size is too small** - we need to generate bigger terms (up to 100 nodes)
+2. **Type size is too small** - we need to generate bigger types (up to 10 nodes)
+3. **No variable usage** - we need to use variables introduced by lambdas
+4. **No lambda applications** - we need to apply lambdas to arguments
+5. **Low uniqueness** - we need more unique subterms
 
-Issues:
-1. The depth parameter is not being decremented in the recursive call, which could lead to infinite recursion
-2. No bound_vars tracking - can't use variables
-3. No App (application) constructor - can't apply lambdas to arguments
-4. Always uses the same variable name "x"
-5. Always uses ("Int",) as the type annotation
-
-The key improvements needed:
-1. Track bound variables so we can use Var to reference them
+To fix this, I need to:
+1. Generate more complex types with various base types and function types
+2. Generate variables and use them
+3. Generate applications to apply lambdas to arguments
+4. Track the context (bound variables) to ensure type correctness
+5. Use the depth parameter properly to control size
 
 
-2. Add App constructor to apply functions to arguments
-3. Decrement depth properly to control term size
-4. Use more diverse variable names
-5. Generate more complex types (FunTy)
-
-I need to implement proper variable tracking and type inference. The current approach doesn't maintain a context of bound variables, which prevents generating meaningful lambda applications. I'll need to pass bound_vars as a parameter and use it to decide when to generate Var nodes or apply functions. Additionally, I should decrement depth in each recursive call to prevent infinite recursion and control the complexity of generated terms.
+6. Implement a context-passing approach that maintains the type of each bound variable, allowing me to generate well-typed variables and applications that reference them

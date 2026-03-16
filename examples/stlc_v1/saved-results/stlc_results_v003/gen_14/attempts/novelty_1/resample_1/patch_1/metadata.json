@@ -1,0 +1,14 @@
+{
+  "generation": 14,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "asymmetric_context_aware_generator",
+  "patch_description": "The algorithm implements a high-efficiency STLC generator focusing on three key metrics: term size, variable density, and structural validity. \n\n1. **Asymmetric Budget Splitting**: To achieve `tm_sizes_average > 60`, the `App` constructor uses a 75/25 budget split. This forces the generator to create deep left-leaning application spines (chains of functions) rather than shallow bushy trees.\n2. **Context-Driven Type Selection**: When generating an application `(f x)`, the intermediate type `A` is pulled from the existing typing context with 60% probability. This significantly increases `used_vars_proportions_average` because it ensures that the argument `x` has a high chance of being a variable already in scope.\n3. **Lambda Forcing**: If the target type is a function, the generator is heavily biased (85%) to produce a `Lam` term. This ensures that the term structure mirrors the type structure, maximizing the depth of the context and the potential for variable reuse.\n4. **Hard-Floor Termination**: A strict budget-based termination ensures `good_ratio = 1.0`. When the budget is exhausted, the generator performs a prioritized lookup: first for a matching variable, then falling back to a type-appropriate literal.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:43:43.949138",
+  "llm_cost": 0.009563499999999999,
+  "llm_model": null
+}

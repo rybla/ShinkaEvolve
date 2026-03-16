@@ -1,11 +1,29 @@
-The user is asking me to improve the performance of the code. Let me analyze the current program and propose a modification.
+Let me analyze the current program and think about what changes could improve the performance metrics.
 
-Looking at the current code in the EVOLVE-BLOCK-START section:
+Current program:
+- Combined score: 10.27
+- good_ratio: 1.00 (perfect correctness)
+- tm_sizes_average: 1.29
+- ty_sizes_average: 1.29
+- used_vars_proportions_average: 0.00
+- applied_lambdas_proportions_average: 0.00
+- unique_subterms_proportions_average: 0.13
 
+Best prior program (score 10.30):
+- good_ratio: 1.00
+- tm_sizes_average: 1.35
+- ty_sizes_average: 1.35
+- used_vars_proportions_average: 0.00
+- applied_lambdas_proportions_average: 0.00
+- unique_subterms_proportions_average: 0.15
+
+The key difference is that the best program has slightly higher tm_sizes_average (1.35 vs 1.29) and unique_subterms_proportions_average (0.15 vs 0.13).
+
+Looking at the code:
+Current:
 ```python
 def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
     i = rng.randrange(0, 4 if depth > 0 else 3)
-
     if i == 0:
         return (("Bool",), ("Bool", True))
     elif i == 1:
@@ -20,31 +38,33 @@ def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
         )
 ```
 
-The problem is that:
-1. `used_vars_proportions_average: 0.00` - variables are never used (the lambda creates "x" but never references it with `Var`)
-2. `applied_lambdas_proportions_average: 0.00` - lambdas are never applied (no `App` terms created)
-3. `unique_subterms_proportions_average: 0.14` - low uniqueness
+Best prior:
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+    # Generate type with depth control
+    ty = generate_type(rng, depth)
+    # Generate term with depth control and empty context
+    tm = generate_term(rng, depth, [], ty)
+    return (ty, tm)
+```
 
-The issue is that when we create a lambda `("Lam", "x", ("Int",), tm)`, the body `tm` is just a recursive call that doesn't reference the variable "x". We need to:
-1. Sometimes use `Var("x")` in the lambda body to actually use the bound variable
-2. Create `App` terms to apply functions
+I notice the current implementation lacks depth control and type generation strategies. The best prior program uses a more sophisticated approach with explicit type and term generation methods that incorporate depth tracking. This suggests implementing a recursive generation strategy that can create more complex and varied type structures while maintaining randomness.
 
-Let me think about how to maintain type correctness:
+The key improvements would involve:
+- Adding depth parameter usage
+- Implementing separate type and term generation functions
+- Creating more nuanced type construction logic
 
-For a lambda `("Lam", var_name, arg_ty, body_ty, body)`:
+I'll need to carefully design the type generation to ensure type safety while allowing more complex type compositions. The goal is to create a more flexible and robust type generation mechanism that can handle different depth levels intelligently.
 
+The current implementation risks infinite recursion by not properly decrementing depth. By modifying the recursive call to pass `depth - 1`, I can prevent potential stack overflow and control the complexity of generated types more precisely.
 
-- The type is `("Fun", arg_ty, body_ty)`
-- The body must have type `body_ty`
+The key modifications involve:
+- Explicitly reducing depth in recursive calls
+- Ensuring base case termination
+- Maintaining type generation randomness
 
-For a variable `("Var", name)`:
-- It must refer to a bound variable
-
-For application `("App", fn, arg)`:
-- fn must have type `("Fun", arg_ty, result_ty)`
-- arg must have type `arg_ty`
-- The result has type `result_ty`
-
-The main issue is that the current code creates lambdas but never uses the bound variable. I need to modify the lambda case to sometimes reference the variable with `Var`, and also add application cases to actually apply the functions being created.
-
-A simpler approach would be to keep the current lambda structure but vary the body - sometimes using the variable directly, sometimes creating nested applications. This way I can gradually increase complexity while maintaining type correctness.
+I'll implement a depth-aware type generation strategy that systematically explores type complexity while preventing uncontrolled recursion.

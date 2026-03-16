@@ -1,9 +1,40 @@
-Let me think about what happened. The user asked me to make an edit to the code, but I only provided analysis without actually making the edit. Let me create the SEARCH/REPLACE block now.
+I need to make sure my edit is in the correct format. Let me re-read the instructions and provide the edit properly.
 
-Looking at the current code:
+The instructions say I must use the SEARCH/REPLACE diff format. Let me look at the example format:
+
+```
+<DIFF>
+<<<<<<< SEARCH
+for i in range(m):
+    for j in range(p):
+        for k in range(n):
+            C[i, j] += A[i, k] * B[k, j]
+=======
+# Reorder loops for better memory access pattern
+for i in range(m):
+    for k in range(n):
+        for j in range(p):
+            C[i, j] += A[i, k] * B[k, j]
+>>>>>>> REPLACE
+</DIFF>
+```
+
+So I need to provide:
+1. <NAME> - a short name
+2. <DESCRIPTION> - description
+3. <DIFF> with the SEARCH/REPLACE block
+
+The SEARCH block must match exactly what's in the current file, including indentation.
+
+Let me try again with a proper diff. The code I want to replace is:
 
 ```python
+
 def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
     i = rng.randrange(0, 4 if depth > 0 else 3)
 
     if i == 0:
@@ -18,19 +49,7 @@ def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
             ("Fun", ("Int",), ty),
             ("Lam", "x", ("Int",), tm),
         )
+
 ```
 
-The issues are:
-1. No App constructor - can't apply lambdas
-2. Variables are never used - lambda body doesn't reference the bound variable
-3. Types are always Int -> something
-4. No unique variable names
-
-I need to rewrite this to:
-1. Track bound variables (those introduced by lambdas)
-2. Allow applying lambdas to arguments
-3. Use variables in lambda bodies
-4. Generate different types for lambdas
-5. Use unique variable names
-
-Let me create a better version:
+Let me try again with the exact indentation from the file.

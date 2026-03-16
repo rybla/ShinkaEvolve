@@ -5,10 +5,8 @@
   "patch_attempt": 2,
   "success": false,
   "num_applied": 0,
-  "patch_name": "none",
-  "patch_description": "none",
-  "error_msg": "Could not extract code from patch string",
-  "timestamp": "2026-03-15T11:48:47.757396",
-  "llm_cost": 0.0025956,
-  "llm_model": null
+  "patch_name": null,
+  "patch_description": null,
+  "error_msg": "LLM response content was None.",
+  "timestamp": "2026-03-15T18:48:31.275885"
 }

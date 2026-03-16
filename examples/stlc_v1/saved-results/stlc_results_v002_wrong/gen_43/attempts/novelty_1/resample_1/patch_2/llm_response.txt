@@ -1,0 +1,25 @@
+The user is asking me to improve the current program. Looking at the current program, it has:
+- good_ratio: 1.00 (perfect)
+- tm_sizes_average: 1.34
+- ty_sizes_average: 1.34
+- used_vars_proportions_average: 0.00 (no variables used!)
+- applied_lambdas_proportions_average: 0.00 (no applications!)
+- unique_subterms_proportions_average: 0.13
+
+The key issues are:
+1. No variables are used (used_vars_proportions_average: 0.00)
+2. No applications (applied_lambdas_proportions_average: 0.00)
+
+Looking at the best programs from the analysis, they use:
+1. `bound_vars` parameter to track bound variables
+2. Probabilistic variable selection with `rng.random() < 0.35`
+3. Unique variable names with `f"x{rng.randint(0, 100)}"`
+4. Type-safe application with fallback
+
+Let me create an improved version that:
+1. Adds a `bound_vars` parameter to track variables in scope
+2. Uses probabilistic selection to return variables from context
+3. Creates lambdas with unique variable names
+4. Adds application capability with type checking
+
+I need to make sure the SEARCH block matches exactly what's in the current file.

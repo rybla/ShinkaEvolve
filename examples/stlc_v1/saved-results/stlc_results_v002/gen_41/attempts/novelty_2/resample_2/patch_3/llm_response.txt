@@ -1,33 +1,41 @@
-I need to provide a valid SEARCH/REPLACE block. Let me look at the exact current code in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END section.
+The user is saying the previous edit was not successful. Looking at the context, I haven't actually made any edits yet - this is the first response I'm providing.
 
-The current code is:
+Let me carefully prepare my edit. I need to make a targeted change to the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END section.
 
+Looking at the analysis:
+- Current score: 10.60
+- Prior program 3 score: 10.62
+- The key difference is that current has more complex variable handling but slightly lower tm_sizes and unique_subterms
+
+I should try to increase the complexity/diversity of generated terms. One approach is to remove the 30% variable chance and go back to the simpler approach (like prior program 3), but that might not improve things.
+
+Actually, let me think about what could improve the score:
+1. Increase tm_sizes - generate bigger terms
+2. Increase unique_subterms - more diverse structure
+3. Keep good_ratio at 1.00
+
+Let me try a different approach - use more parameter types for lambdas (not just Int), and create more complex applications.
+
+Actually, looking more carefully at prior program 3 vs current:
+
+Prior program 3 code (score 10.62):
 ```python
-# EVOLVE-BLOCK-START
-
-
-def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
-    """
-    Generate a sample type and term using a random seed.
-    """
-
-    i = rng.randrange(0, 4 if depth > 0 else 3)
-
-    if i == 0:
-        return (("Bool",), ("Bool", True))
-    elif i == 1:
-        return (("Int",), ("Int", 27))
-    elif i == 2:
-        return (("String",), ("String", "hello world"))
-    else:
-        ty, tm = generate_sample(rng)
-        return (
-            ("Fun", ("Int",), ty),
-            ("Lam", "x", ("Int",), tm),
-        )
-
-
-# EVOLVE-BLOCK-END
+elif i == 3:
+    # Generate lambda - FIX: add parameter to context
+    ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+    return (("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm))
 ```
 
-Let me provide a valid SEARCH/REPLACE block. I need to match exactly what's in the file.
+Current code (score 10.60):
+```python
+elif i == 3:
+    # Generate lambda - with 30% chance to use a variable from context
+    if context and rng.random() < 0.3:
+        var_name = rng.choice(context)
+        return (("Fun", ("Int",), ("Int",)), ("Lam", "x", ("Int",), ("Var", var_name)))
+    else:
+        ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+        return (("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm))
+```
+
+I'll focus on simplifying the lambda generation strategy. By removing the complex variable selection logic and returning to a more straightforward approach, I might be able to improve the term generation consistency. The goal is to create more predictable and potentially more complex term structures.

@@ -1,19 +1,51 @@
+The user is asking me to improve the program. Let me analyze the current state and propose an improved version.
 
-The user is saying the previous edit was not successful. Looking at the conversation, I never actually provided an edit - I just provided analysis. Let me now provide the actual edit.
+Looking at the metrics:
+- Score: 10.30
+- good_ratio: 1.00 (perfect correctness - this is key!)
+- tm_sizes_average: 1.35
+- used_vars_proportions_average: 0.00
+- applied_lambdas_proportions_average: 0.00
+- unique_subterms_proportions_average: 0.15
 
-Looking at the current code:
+The current program is already performing very well with perfect correctness. The key insight from the analysis is that correctness is the primary driver.
+
+However, I notice that:
+- used_vars_proportions_average: 0.00 - no variables are being used
+- applied_lambdas_proportions_average: 0.00 - no lambda applications
+
+These metrics are at 0%, which might be limiting the score. Let me think about how to introduce variables and applications while maintaining correctness.
+
+The challenge is:
+1. Variables need to reference bound variables from lambda abstractions
+2. Applications need to apply functions to arguments
+
+To use variables, I need to track the context (bound variables). When I create a lambda, I can add the variable name to the context, and then have a chance to reference it using Var.
+
+Let me implement a context-aware approach that:
+1. Tracks bound variables in a context
+2. Has a chance to use Var to reference a bound variable
+3. Maintains correctness by ensuring type consistency
+
+Here's my plan:
+1. Add a context parameter to track bound variables
+2. When generating at depth > 0, have a small chance to use Var if there are bound variables
+3. When generating a lambda, add the parameter to the context for the body
+4. Keep the same depth-limited approach to maintain termination
+
+Let me write the improved code:
 
 ```python
-# EVOLVE-BLOCK-START
-
-
-def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+def generate_sample(rng: random.Random, depth=10, context=None) -> Tuple[Ty, Tm]:
     """
     Generate a sample type and term using a random seed.
+    Uses context to track bound variables for potential Var usage.
     """
-
+    if context is None:
+        context = []
+    
     i = rng.randrange(0, 4 if depth > 0 else 3)
-
+    
     if i == 0:
         return (("Bool",), ("Bool", True))
     elif i == 1:
@@ -21,26 +53,22 @@ def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
     elif i == 2:
         return (("String",), ("String", "hello world"))
     else:
-        ty, tm = generate_sample(rng)
-        return (
-            ("Fun", ("Int",), ty),
-            ("Lam", "x", ("Int",), tm),
-        )
-
-
-# EVOLVE-BLOCK-END
+        # Generate function type and term
+        # Use context to potentially reference bound variables
+        if context and rng.random() < 0.3:  # 30% chance to use a variable
+            var_name = rng.choice(context)
+            return (
+                ("Fun", ("Int",), ("Int",)),
+                ("Lam", "x", ("Int",), ("Var", var_name)),
+            )
+        else:
+            ty, tm = generate_sample(rng, depth - 1, context)
+            return (
+                ("Fun", ("Int",), ty),
+                ("Lam", "x", ("Int",), tm),
+            )
 ```
 
-I need to modify this to:
-1. Use unique variable names (based on depth)
-2. Sometimes use the bound variable in the lambda body (to increase used_vars_proportions)
-3. Decrement depth properly
-4. Sometimes create applications (to increase applied_lambdas_proportions)
+I'll carefully analyze the potential improvements. The current approach introduces variable referencing with a 30% chance, but I need to verify the type consistency and ensure it maintains the perfect correctness ratio. The key is to balance introducing new complexity while preserving the core generation strategy.
 
-The key changes:
-- Change `generate_sample(rng)` to `generate_sample(rng, depth - 1)` to decrement depth
-- Change `"x"` to `f"x{depth}"` for unique variable names
-- Add logic to sometimes return the variable directly
-- Add logic to sometimes create applications
-
-Let me write the edit:
+The implementation looks promising - it adds a mechanism to potentially use bound variables without completely disrupting the existing generation process. I'll need to test this thoroughly to confirm it doesn't compromise the type safety or overall correctness of the term generation.

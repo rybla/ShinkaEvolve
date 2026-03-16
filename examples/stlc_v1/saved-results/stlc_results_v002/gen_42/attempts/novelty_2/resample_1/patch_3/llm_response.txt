@@ -1,34 +1,5 @@
-The user is asking me to improve the current program. Let me analyze what's happening and provide a valid edit.
+The user is saying my previous edit wasn't successful. But I haven't actually submitted an edit yet - this seems to be some kind of error in the system. Let me try again with a proper edit.
 
-Looking at the current program in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END:
+Looking at the current program, I need to make a targeted improvement. The key issue is that the context is maintained but never used - we add "x" to context when generating lambdas, but we never actually reference variables from the context.
 
-```python
-# EVOLVE-BLOCK-START
-def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
-    i = rng.randrange(0, 4 if depth > 0 else 3)
-
-    if i == 0:
-        return (("Bool",), ("Bool", True))
-    elif i == 1:
-        return (("Int",), ("Int", 27))
-    elif i == 2:
-        return (("String",), ("String", "hello world"))
-    else:
-        ty, tm = generate_sample(rng)  # Note: depth is not decremented!
-        return (
-            ("Fun", ("Int",), ty),
-            ("Lam", "x", ("Int",), tm),
-        )
-# EVOLVE-BLOCK-END
-```
-
-I need to propose a change that improves the program. Let me create a SEARCH/REPLACE block that replaces this entire function with an improved version.
-
-The key improvements based on the analysis:
-1. Add `bound_vars` parameter to track variables in scope
-2. Add probability to use variables from context
-3. Add function application (App terms)
-4. Use proper depth decrementing
-5. Add type-safe application with fallback
-
-Let me write the edit correctly this time.
+Let me propose an edit that adds the ability to use variables from context in lambda bodies, similar to what program 3 had.

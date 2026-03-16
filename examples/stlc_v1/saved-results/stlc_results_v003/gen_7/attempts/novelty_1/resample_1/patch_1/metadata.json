@@ -1,0 +1,14 @@
+{
+  "generation": 7,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 2,
+  "patch_name": "asymmetric_budget_splitting_and_var_prioritization",
+  "patch_description": "This modification implements asymmetric budget splitting in `AppTm` generation to favor deeper function chains (e.g., `f x y z`), which are more representative of complex lambda terms. It also increases the probability of using variables from the context to improve the `used_vars_proportions_average` and adjusts the base case logic to ensure the generator stays within the 100-node limit while maximizing term size.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:42:46.815363",
+  "llm_cost": 0.005112500000000001,
+  "llm_model": null
+}

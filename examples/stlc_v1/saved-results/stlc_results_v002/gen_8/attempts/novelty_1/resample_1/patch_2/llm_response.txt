@@ -1,23 +1,13 @@
-Let me analyze the current program and understand what needs to be improved based on the metrics.
+The user is asking me to improve the current program. Let me analyze what needs to be done.
 
-Looking at the metrics:
-- Combined score to maximize: 10.30
-- good_ratio: 1.00 (good - all well-typed)
-- tm_sizes_average: 1.38 (very small - max is 100)
-- ty_sizes_average: 1.38 (very small - max is 10)
-- used_vars_proportions_average: 0.00 (no variables used!)
-- applied_lambdas_proportions_average: 0.00 (no lambda applications!)
-- unique_subterms_proportions_average: 0.15 (low)
+Looking at the current implementation in the EVOLVE-BLOCK-START section:
 
-The main issues:
-1. Types and terms are too small
-2. No variables are being used
-3. No lambda applications
-4. Low unique subterms
-
-Looking at the current code:
 ```python
 def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
     i = rng.randrange(0, 4 if depth > 0 else 3)
 
     if i == 0:
@@ -34,13 +24,28 @@ def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
         )
 ```
 
-Problems with this code:
-1. The `depth` parameter is never actually used - it's always passed as 10
-2. It always creates lambdas with type `Int -> ty`, ignoring the generated type
-3. It never creates applications (App)
-4. It never uses variables (Var)
+Issues:
+1. The recursive call `generate_sample(rng)` is missing the `depth` argument - this is a bug
+2. The depth parameter is not being used effectively to control complexity
+3. The generated terms are very simple (mostly literals)
+4. No use of variables from context
+5. No applications of lambdas
+
+I need to propose a more comprehensive solution that:
+1. Properly uses depth to control complexity
+2. Generates larger types (up to 10 nodes) and terms (up to 100 nodes)
+3. Uses variables from context
+4. Applies lambdas to arguments
+5. Has unique subterms
+
+Let me create a proper implementation that builds on the prior program's approach but ensures well-typedness (good_ratio = 1.00).
+
+The key changes I need to make:
+1. Add generate_type function with proper depth control
+2. Add generate_term function with context tracking
+3. Add helper functions for generating literals, variables, lambdas, and applications
 
 
-5. The size is always small because depth isn't properly used
+4. Ensure all generated terms are well-typed
 
-I'll design a more robust generator that tracks available variables and creates complex, meaningful lambda calculus expressions. The approach will involve generating types with more depth, creating variables from lambda bindings, and constructing applications that actually use those variables. This will significantly improve the term complexity and variety.
+Now I'll write the replacement code:

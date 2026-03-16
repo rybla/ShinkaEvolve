@@ -1,39 +1,44 @@
-Let me analyze the current program and the performance metrics:
+Let me analyze the current program and the performance metrics to understand what improvements can be made.
 
-1. The current `generate_sample` function is very basic - it just generates small types and terms
-2. The metrics show:
-   - `tm_sizes_average: 1.38` - terms are very small (max is 100)
-   - `ty_sizes_average: 1.38` - types are very small (max is 10)
-   - `used_vars_proportions_average: 0.00` - variables are never used after being introduced
-   - `applied_lambdas_proportions_average: 0.00` - lambdas are never applied
-   - `unique_subterms_proportions_average: 0.15` - low uniqueness
+Current program metrics:
+- Combined score: 10.30
+- good_ratio: 1.00 (all terms are well-typed)
+- tm_sizes_average: 1.35 (term AST nodes)
+- ty_sizes_average: 1.35 (type AST nodes)
+- used_vars_proportions_average: 0.00 (no variable usage)
+- applied_lambdas_proportions_average: 0.00 (no lambda applications)
+- unique_subterms_proportions_average: 0.15
 
-The current implementation has several problems:
-1. It only creates base types (Bool, Int, String) or simple function types (Int -> ty)
-2. It always creates a lambda that takes an Int and returns something
-3. It never actually uses the variable introduced by the lambda
-4. It never creates applications
+Prior programs metrics:
+- Combined score: 9.24
+- good_ratio: 0.82
+- tm_sizes_average: 4.89
+- ty_sizes_average: 2.90
+- used_vars_proportions_average: 0.03
+- applied_lambdas_proportions_average: 0.17
+- unique_subterms_proportions_average: 0.49
+
+Looking at these metrics, the current program has:
+1. Perfect good_ratio (1.00 vs 0.82) - this is great
+2. Much smaller term sizes (1.35 vs 4.89) - need to increase
+3. Much smaller type sizes (1.35 vs 2.90) - need to increase
+4. No variable usage (0.00 vs 0.03) - need to add
+5. No lambda applications (0.00 vs 0.17) - need to add
+6. Lower unique subterms (0.15 vs 0.49) - need to increase
+
+The key insight is that the current program is too simple - it only generates:
+- Bool literals
+- Int literals  
+- String literals
+- Simple lambdas with Int argument
 
 To improve, I need to:
-1. Generate more complex types with multiple levels of function types
-2. Generate terms that use lambda variables (via Var or as arguments to App)
-3. Generate applications of lambdas to arguments
-4. Track the type context to ensure well-typedness
-5. Make terms larger (closer to 100 nodes) and types larger (closer to 10 nodes)
-
-Let me think about the approach:
-- I need a context (list of types) to track what variables are available
-- When creating a lambda, I need to add its parameter type to the context
-- When creating a variable, I need to pick from the context
-- When creating an application, I need to ensure the function type matches the argument type
-
-Here's my plan:
-1. Create a more sophisticated generator that builds types recursively
-2. Track variable context for well-typed term generation
+1. Generate larger types (up to 10 nodes in AST)
 
 
-3. Use variables from context in terms
+2. Generate larger terms (up to 100 nodes in AST)
+3. Use variables from context
 4. Apply lambdas to arguments
-5. Build larger terms and types
+5. Have more unique subterms
 
-I'll focus on generating more complex and varied structures by leveraging the context and increasing the complexity of generated terms and types. This approach should help improve the performance metrics significantly.
+The prior program already has a good structure for this. I should adapt its approach to maintain the perfect good_ratio while increasing complexity. The key is to use the depth parameter properly to control size, and ensure type safety throughout. I'll need to implement recursive type generation with depth tracking, build terms that reference bound variables, and create lambda applications that actually use the arguments passed to them.

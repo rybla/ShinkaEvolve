@@ -1,0 +1,22 @@
+Let me analyze the problem more carefully. I need to provide a complete new program that combines the best aspects of the programs.
+
+Looking at the programs:
+1. Current program (score 10.29): Perfect good_ratio (1.00) but no variable usage, no applications
+2. Best prior program (score 10.55): Lower good_ratio (0.99) but has variable usage, applications, more unique subterms
+
+I need to perform crossover to get a program that:
+- Has high good_ratio (ideally 1.00 or close)
+- Has some variable usage
+- Has some applications
+- Has more unique subterms
+
+The key insight is that I need to track bound variables and use them appropriately. Let me write the complete program now.
+
+I'll create a program that:
+1. Uses bound_vars to track lambda-bound variables
+2. Has a controlled probability of using variables (to maintain high good_ratio)
+3. Varies primitive values for more unique subterms
+4. Creates proper lambda and application terms
+5. Maintains type correctness
+
+Let me write the complete code.

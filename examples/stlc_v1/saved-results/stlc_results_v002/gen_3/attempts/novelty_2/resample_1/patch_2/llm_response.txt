@@ -1,0 +1,56 @@
+Let me re-read the task and the current program. The user wants me to improve the performance of the code by modifying the `generate_sample` function (and related helper functions) in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END section.
+
+The current program is:
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+This is a very simple generator that:
+1. Returns simple literals when depth <= 0 or with 75% probability
+2. Creates a lambda wrapping a recursive call with 25% probability
+
+The problem is that this generates very small types and terms, doesn't use variables, doesn't apply lambdas, and has low unique subterms.
+
+The prior program had better metrics in terms of sizes and variable usage, but lower good_ratio. The current program has perfect good_ratio (1.00) but very small sizes.
+
+Looking at the metrics I need to improve:
+- tm_sizes_average: 1.35 (very small, should aim for up to 100 nodes)
+- ty_sizes_average: 1.35 (very small, should aim for up to 10 nodes)
+- used_vars_proportions_average: 0.00 (should use variables from context)
+
+
+- applied_lambdas_proportions_average: 0.00 (should apply lambdas)
+- unique_subterms_proportions_average: 0.15 (should have more unique subterms)
+- good_ratio: 1.00 (should maintain this high)
+
+I'll design a more sophisticated generator that builds complex, well-typed lambda calculus structures while maintaining type safety and increasing structural complexity.
+
+The generator will incorporate depth-controlled type and term generation, with careful tracking of variable contexts. I'll create methods to systematically construct types and terms that maximize the desired metrics while ensuring type correctness.
+
+Key strategy involves generating function types recursively, using random selection between base and function types based on current depth. The approach ensures controlled complexity by managing type generation depth.
+
+For term generation, I'll implement context-aware variable and literal generation. This involves maintaining a context of bound variables, allowing strategic selection between lambda abstractions, applications, and literal expressions. The method dynamically adapts based on target type and available context.
+
+The lambda generation specifically creates function parameters with unique names, extending the variable context for recursive term generation. This allows building increasingly complex lambda expressions with type-preserving transformations.
+
+The application generation focuses on creating well-typed function applications by carefully constructing function and argument types. It ensures type consistency through recursive generation of function and argument terms.
+
+These generator functions collectively enable systematic, type-safe exploration of lambda calculus term space with controlled complexity and depth.

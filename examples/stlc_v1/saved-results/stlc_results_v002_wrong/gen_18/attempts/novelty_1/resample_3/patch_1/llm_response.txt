@@ -1,0 +1,49 @@
+Let me analyze the current situation carefully.
+
+Looking at the performance metrics:
+- good_ratio: 1.00 (perfect type correctness)
+- tm_sizes_average: 1.38 (small terms)
+- used_vars_proportions_average: 0.00 (never use variables)
+- applied_lambdas_proportions_average: 0.00 (never apply lambdas)
+- unique_subterms_proportions_average: 0.15 (repetitive structures)
+
+The key issues are:
+1. `used_vars_proportions_average = 0.00` - The program never uses `Var` to reference bound variables
+2. `applied_lambdas_proportions_average = 0.00` - The program never creates `App` (function application) terms
+3. `unique_subterms_proportions_average = 0.15` - The structures are very repetitive
+
+Looking at the current code:
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+The problem is clear:
+1. When `i == 3` (the else branch), it creates a Lambda that wraps another term, but that inner term is always generated fresh and never references the bound variable "x" via `Var`.
+
+
+2. There's no mechanism to construct `App` terms that would apply these lambdas to arguments.
+3. The depth parameter isn't being decremented, so recursion continues indefinitely without bounds.
+
+To fix this, I need to:
+1. Decrement depth to prevent infinite recursion
+2. Add a case that creates `Var` terms to reference bound variables
+3. Add a case that creates `App` terms for function application
+4. Ensure type correctness is maintained
+
+The key insight is that when we create a `Lam`, we need to sometimes use `Var` to reference the bound variable, and we need to create `App` terms to apply functions.
+
+I'll modify the code to decrement depth, introduce `Var` and `App` constructors, and maintain type safety throughout the recursion.

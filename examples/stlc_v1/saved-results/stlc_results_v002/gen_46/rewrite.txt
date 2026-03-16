@@ -1,5 +1,28 @@
-from typing import Literal, Tuple
-import random
-import tqdm
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    return generate_term(rng, depth, [])
 
-type Ty = BoolTy | IntTy | StringTy | FunTy
+def generate_term(rng: random.Random, depth: int, context: List[str]) -> Tuple[Ty, Tm]:
+    # At depth 0, only generate literals
+    if depth <= 0:
+        return generate_literal(rng)
+    
+    # Choose from: 3 literals + Lam + App = 5 options
+    options = 5 if depth > 0 else 3
+    i = rng.randrange(0, options)
+    
+    if i == 0:
+        return generate_literal(rng)
+    elif i == 1:
+        return generate_literal(rng)
+    elif i == 2:
+        return generate_literal(rng)
+    elif i == 3:
+        # Generate lambda with context tracking
+        arg_ty = ("Int",)
+        body_ty, body_tm = generate_term(rng, depth - 1, context + ["x"])
+        return (("Fun", arg_ty, body_ty), ("Lam", "x", arg_ty, body_tm))
+    else:
+        # Generate application
+        fn_ty, fn_tm = generate_term(rng, depth - 1, context)
+        arg_ty, arg_tm = generate_term(rng, depth - 1, context)
+        return (fn_ty[2] if fn_ty[0] == "Fun" else arg_ty, ("App", fn_tm, arg_tm))

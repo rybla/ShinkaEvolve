@@ -1,0 +1,46 @@
+The user is asking me to improve the performance of the code. Let me analyze the current state and the prior programs more carefully.
+
+Looking at the metrics:
+- Current program: Combined score 10.30, good_ratio 1.00, tm_sizes_average 1.35
+- Prior programs: Combined score 9.24, good_ratio 0.82, tm_sizes_average 4.89
+
+The current program has a higher combined score because it has perfect good_ratio (1.00), but generates very small terms. The prior programs tried to generate bigger terms but had some invalid samples (good_ratio 0.82).
+
+The key insight is that the current simple generator always produces valid, well-typed terms but they're too small. I need to generate bigger terms while maintaining validity.
+
+Let me look at the current code in the EVOLVE-BLOCK-START section:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+This is very simple and always generates small terms. The `depth` parameter is passed but not really used effectively.
+
+I need to modify this to generate bigger, more complex terms while maintaining type safety. Let me create a more sophisticated generator that:
+
+
+1. Uses depth more effectively to control size
+2. Maintains a context of available variables
+3. Generates lambda terms with proper type annotations
+4. Generates application terms
+5. Uses variables from context when appropriate
+
+I'll implement a recursive approach that builds increasingly complex terms while preserving type correctness. This means tracking variable types and ensuring that lambda bodies and applications maintain proper type relationships. The goal is to scale up term complexity without sacrificing the perfect type safety that gives us a good_ratio of 1.00.

@@ -1,0 +1,47 @@
+The user is asking me to improve the performance of the code. Let me analyze the current program and the issue.
+
+Looking at the current generate_sample function:
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)  # BUG: doesn't pass depth, infinite recursion potential
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+The current code has a bug - it calls `generate_sample(rng)` without passing depth, which could cause issues. Also, it only generates very simple terms.
+
+The metrics show:
+- good_ratio: 1.00 (perfect)
+- tm_sizes_average: 1.35 (very small)
+- used_vars_proportions_average: 0.00 (no variables)
+- applied_lambdas_proportions_average: 0.00 (no applications)
+
+I need to write a new generator that:
+1. Generates larger types (up to 10 nodes)
+2. Generates larger terms (up to 100 nodes)
+3. Uses variables from context
+4. Applies lambdas to arguments
+5. Has more unique subterms
+
+But maintains good_ratio = 1.00.
+
+Let me write the improved code. I need to make sure the SEARCH block matches exactly what's in the file.
+
+Looking at the file structure:
+- The EVOLVE-BLOCK-START and EVOLVE-BLOCK-END markers define the editable region
+
+
+- I'll create a more robust generator with careful depth management and type-aware term construction
+
+I'll design a recursive approach that systematically builds complex lambda calculus expressions while maintaining type safety and preventing infinite recursion. The key will be implementing intelligent depth tracking and context-aware variable generation.

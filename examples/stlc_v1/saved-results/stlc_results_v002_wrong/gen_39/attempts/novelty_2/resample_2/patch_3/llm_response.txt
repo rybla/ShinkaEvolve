@@ -1,0 +1,43 @@
+The user is asking me to make an edit to the code. Let me analyze the current program and propose a targeted improvement.
+
+Looking at the current program:
+- It generates simple literals and lambda terms
+- It has no variable usage (used_vars_proportions_average: 0.00)
+- It has no applications (applied_lambdas_proportions_average: 0.00)
+
+From the system prompt analysis, the best programs used:
+1. `bound_vars` parameter to track bound variables
+2. Probabilistic variable selection
+3. Unique variable names with f-strings
+4. Type-safe application with fallbacks
+
+I need to propose a SEARCH/REPLACE block that modifies the generate_sample function. Let me look at the exact code in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END.
+
+The current code is:
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+# EVOLVE-BLOCK-END
+```
+
+I need to replace this with an improved version that:
+1. Adds bound_vars parameter
+2. Uses variables from context
+3. Applies functions with type checking
+4. Uses unique variable names
+
+Let me make sure I copy the exact code including indentation.

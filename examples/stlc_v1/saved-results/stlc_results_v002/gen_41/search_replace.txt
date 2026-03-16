@@ -1,15 +1,25 @@
-I need to provide a valid SEARCH/REPLACE block. Let me look at the exact current code in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END section.
+The user is saying the previous edit was not successful. Let me look at what might be happening. I need to make sure I'm providing a valid SEARCH/REPLACE block that actually matches the current code.
 
-The current code is:
+Let me look at the current program code in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END:
 
 ```python
 
-def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
-    """
-    Generate a sample type and term using a random seed.
-    """
+def generate_sample(rng: random.Random, depth=10, context=None) -> Tuple[Ty, Tm]:
+    if context is None:
+        context = []
 
-    i = rng.randrange(0, 4 if depth > 0 else 3)
+    # At depth 0, only generate literals
+    if depth == 0:
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", True))
+        elif i == 1:
+            return (("Int",), ("Int", 27))
+        else:
+            return (("String",), ("String", "hello world"))
+
+    # At depth > 0, choose from literals, Lam, and App
+    i = rng.randrange(0, 5)  # 5 options
 
     if i == 0:
         return (("Bool",), ("Bool", True))
@@ -17,13 +27,28 @@ def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
         return (("Int",), ("Int", 27))
     elif i == 2:
         return (("String",), ("String", "hello world"))
+    elif i == 3:
+        # Generate lambda - with 30% chance to use a variable from context
+        if context and rng.random() < 0.3:
+            var_name = rng.choice(context)
+            return (("Fun", ("Int",), ("Int",)), ("Lam", "x", ("Int",), ("Var", var_name)))
+        else:
+            ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+            return (("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm))
     else:
-        ty, tm = generate_sample(rng)
-        return (
-            ("Fun", ("Int",), ty),
-            ("Lam", "x", ("Int",), tm),
-        )
+        # Generate application
+        arg_ty, arg_tm = generate_sample(rng, depth - 1, context)
+        func_ty = ("Fun", arg_ty, arg_ty)
+        func_tm = ("Lam", "x", arg_ty, ("Var", "x"))
+        return (arg_ty, ("App", func_tm, arg_tm))
 
 ```
 
-Let me provide a valid SEARCH/REPLACE block. I need to match exactly what's in the file.
+I'll modify the lambda generation to increase variable usage probability. I'll adjust the random selection to potentially use more context variables and create more diverse lambda expressions.
+
+The key changes involve:
+- Increasing variable usage chance from 0.3 to 0.4
+- Adding more varied parameter types
+- Ensuring type consistency in lambda generation
+
+I'll carefully track the type transformations to maintain type safety while expanding the generation strategy.

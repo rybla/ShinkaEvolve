@@ -1,0 +1,81 @@
+The user is asking me to make an edit to improve the code. Let me look at the current code and the expected format for the edit.
+
+The current code in the EVOLVE-BLOCK-START block is:
+
+```python
+# EVOLVE-BLOCK-START
+
+
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+
+
+# EVOLVE-BLOCK-END
+```
+
+I need to replace this with an improved version. Let me think about what changes to make:
+
+1. The current code doesn't properly use the depth parameter - it calls `generate_sample(rng)` without passing depth
+2. It doesn't generate variables or applications
+3. It always uses the same variable name "x" which leads to variable capture issues
+
+I'll create a more sophisticated generator that:
+- Properly decrements depth
+- Generates larger types (up to 10 nodes)
+- Generates larger terms (up to 100 nodes)
+- Uses variables from context
+- Applies lambdas
+- Maintains good typing
+
+Let me write a new version:
+
+```python
+# EVOLVE-BLOCK-START
+
+
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+    # Generate type with depth control
+    ty = generate_type(rng, depth)
+    # Generate term with depth control and empty context
+    tm = generate_term(rng, depth, [], ty)
+    return (ty, tm)
+
+
+def generate_type(rng: random.Random, depth: int) -> Ty:
+    """Generate a type with controlled depth."""
+    if depth <= 0:
+        # Base types only when depth is exhausted
+        return generate_base_type(rng)
+    
+    # At higher depths, favor function types to build complexity
+    if rng.random() < 0.7:
+        arg
+```
+
+I'll focus on creating a more robust type and term generation system that properly utilizes the depth parameter and builds more complex, well-typed lambda calculus expressions.
+
+The type generation strategy involves recursively constructing function types while controlling complexity. By using a probabilistic approach, I can balance between base types and more intricate function types. The key is to manage depth carefully, ensuring that the generated types remain manageable and meaningful.
+
+The function starts by handling the base case when depth is exhausted, defaulting to generating a simple base type. When depth remains, it uses a weighted random selection to determine whether to create a function type or a base type, with a strong preference for function types to build more complex type structures.
+
+The implementation ensures type generation remains flexible yet controlled, using recursive calls with decremented depth to progressively build more sophisticated type representations.

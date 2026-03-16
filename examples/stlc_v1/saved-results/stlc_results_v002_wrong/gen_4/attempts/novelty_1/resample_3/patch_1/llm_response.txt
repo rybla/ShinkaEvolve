@@ -1,0 +1,39 @@
+Let me analyze the current program and the performance metrics:
+
+1. The current `generate_sample` function is very basic - it just generates small types and terms
+2. The metrics show:
+   - `tm_sizes_average: 1.38` - terms are very small (max is 100)
+   - `ty_sizes_average: 1.38` - types are very small (max is 10)
+   - `used_vars_proportions_average: 0.00` - variables are never used after being introduced
+   - `applied_lambdas_proportions_average: 0.00` - lambdas are never applied
+   - `unique_subterms_proportions_average: 0.15` - low uniqueness
+
+The current implementation has several problems:
+1. It only creates base types (Bool, Int, String) or simple function types (Int -> ty)
+2. It always creates a lambda that takes an Int and returns something
+3. It never actually uses the variable introduced by the lambda
+4. It never creates applications
+
+To improve, I need to:
+1. Generate more complex types with multiple levels of function types
+2. Generate terms that use lambda variables (via Var or as arguments to App)
+3. Generate applications of lambdas to arguments
+4. Track the type context to ensure well-typedness
+5. Make terms larger (closer to 100 nodes) and types larger (closer to 10 nodes)
+
+Let me think about the approach:
+- I need a context (list of types) to track what variables are available
+- When creating a lambda, I need to add its parameter type to the context
+- When creating a variable, I need to pick from the context
+- When creating an application, I need to ensure the function type matches the argument type
+
+Here's my plan:
+1. Create a more sophisticated generator that builds types recursively
+2. Track variable context for well-typed term generation
+
+
+3. Use variables from context in terms
+4. Apply lambdas to arguments
+5. Build larger terms and types
+
+I'll focus on generating more complex and varied structures by leveraging the context and increasing the complexity of generated terms and types. This approach should help improve the performance metrics significantly.

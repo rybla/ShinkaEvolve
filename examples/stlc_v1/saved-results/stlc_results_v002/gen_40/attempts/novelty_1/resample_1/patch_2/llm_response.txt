@@ -1,16 +1,39 @@
-The user wants me to improve the program. Let me analyze the current state and propose a new program.
+Let me analyze the current program and think about how to improve its performance. Looking at the metrics:
 
-Looking at the metrics:
-- Current score: 10.28
-- good_ratio: 1.00
-- used_vars_proportions_average: 0.00
-- applied_lambdas_proportions_average: 0.00
+Current program (score 10.62):
+- good_ratio: 1.00 (perfect correctness - this is critical)
+- tm_sizes_average: 1.87
+- ty_sizes_average: 1.32
+- used_vars_proportions_average: 0.11
+- applied_lambdas_proportions_average: 0.11
+- unique_subterms_proportions_average: 0.25
 
-The problem is clear: the current program doesn't use variables or apply lambdas. I need to implement the pattern from the best-performing program that was described in the system prompt - one that used bound_vars, type-safe application, and probabilistic selection.
+The key insight from the analysis is that correctness (good_ratio) is the primary driver. I need to maintain that while improving other metrics.
 
-Let me create a new program that:
-1. Uses `bound_vars` parameter to track bound variables
-2. Uses probabilistic choice to return variables from bound_vars
-3. Uses type-safe application that checks if func_type[0] == "Fun" before applying
-4. Uses unique variable names
-5. Uses hybrid termination (depth + random)
+Looking at what could improve the score:
+1. unique_subterms_proportions_average - currently 0.25, higher is better
+2. tm_sizes_average - currently 1.87, higher is better
+3. used_vars_proportions_average - currently 0.11, higher is better
+4. applied_lambdas_proportions_average - currently 0.11, higher is better
+
+The unique_subterms_proportions seems to be a key metric. To improve it:
+- Use more varied literal values (different booleans, integers, strings)
+- Have more structural diversity in lambdas
+- Create more complex terms
+
+Let me design a new approach that:
+1. Maintains correctness (good_ratio = 1.00)
+2. Increases unique_subterms by using varied literals
+3. Possibly increases tm_sizes by creating more complex structures
+4. Keeps the depth-limited approach for termination
+
+I'll use a different strategy:
+- At depth 0: literals only
+- At depth > 0: 
+  - Literals with varied values (random bool, random int in range, random string)
+  - Lambda with context tracking for variables
+  - Application
+
+This should increase unique_subterms_proportions because we're using more varied literal values.
+
+Let me write the new code:

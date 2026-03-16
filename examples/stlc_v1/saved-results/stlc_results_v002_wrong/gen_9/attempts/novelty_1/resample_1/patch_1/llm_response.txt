@@ -1,0 +1,48 @@
+Let me understand the task:
+
+1. I need to improve a lambda-calculus generator that produces types and terms
+2. The current metrics show:
+   - good_ratio: 1.00 (all samples are well-formed and well-typed)
+   - tm_sizes_average: 1.38 (term sizes are very small, max is 100)
+   - ty_sizes_average: 1.38 (type sizes are very small, max is 10)
+   - used_vars_proportions_average: 0.00 (no variables are being used)
+   - applied_lambdas_proportions_average: 0.00 (no lambdas are being applied)
+   - unique_subterms_proportions_average: 0.15 (low unique subterms)
+
+3. Key improvements needed:
+   - Generate bigger types (up to 10 nodes)
+   - Generate bigger terms (up to 100 nodes)
+   - Use variables that are introduced by lambdas
+   - Apply lambdas to arguments
+   - Have more unique subterms
+
+Let me analyze the current implementation:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+Problems with current implementation:
+1. It always uses "x" as the variable name, causing variable capturing issues and no real variable usage
+
+
+2. The depth parameter is never decremented, so recursion never stops properly
+3. The function doesn't track variable bindings, making it impossible to reference introduced variables
+4. No application terms are generated, so lambdas are never applied
+5. Types and terms remain tiny
+
+I need to refactor the generator to track bound variables, decrement depth to control recursion, generate application terms, and build larger, more complex expressions with proper variable references.

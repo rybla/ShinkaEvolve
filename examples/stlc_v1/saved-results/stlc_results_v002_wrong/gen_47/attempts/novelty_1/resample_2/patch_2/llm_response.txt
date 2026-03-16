@@ -1,0 +1,18 @@
+The user is saying my previous edit wasn't successful, but I don't see a previous edit in this conversation. Let me try again with a fresh approach.
+
+Looking at the current code in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END markers, I need to make targeted improvements.
+
+The key issue I identified is in the application branch:
+```python
+# Generate argument term matching the function's input type
+arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+```
+
+The comment says "matching the function's input type" but the code doesn't actually enforce this! The `arg_type` variable exists but isn't being used to constrain the generated argument term.
+
+I need to:
+1. Add a `target_type` parameter to `generate_sample`
+2. Use this parameter in the base case to bias towards generating terms of the target type
+3. Use this parameter when generating the argument for an application
+
+Let me write the edit properly this time.

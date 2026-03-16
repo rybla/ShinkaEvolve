@@ -1,8 +1,15 @@
-The user wants me to provide a complete new program that improves upon the current implementation. Let me create the improved version that:
+Let me analyze the issue and provide a proper solution. I need to rewrite the generate_sample function to improve the performance metrics.
 
-1. Uses depth properly to control the size of generated types/terms
-2. Generates more varied types and terms including variables and applications
-3. Improves the metrics that are currently at 0 (used_vars_proportions_average, applied_lambdas_proportions_average)
-4. Increases unique_subterms_proportions_average
+Looking at the current implementation:
+1. It doesn't use the depth parameter properly (recursive call doesn't pass depth)
+2. It never generates applications (AppTm)
+3. It never generates variables (VarTm) that use the bound variables from lambdas
+4. The term sizes and type sizes are very small
 
-Let me write the complete new program.
+I need to create a more sophisticated generator that:
+1. Properly uses depth to control size
+2. Generates applications
+3. Tracks bound variables and uses them
+4. Generates more complex types
+
+Let me write a proper implementation.

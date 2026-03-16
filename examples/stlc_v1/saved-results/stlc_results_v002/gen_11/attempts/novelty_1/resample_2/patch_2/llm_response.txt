@@ -1,10 +1,7 @@
-The user is saying that my previous edit was not successful and no changes were applied. Let me re-read the instructions and provide a proper SEARCH/REPLACE block.
+I need to propose a change to improve the performance of the code. Let me analyze the current code and metrics more carefully.
 
-Looking at the current program in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END, I need to modify it. Let me provide the correct format.
-
-The current code is:
+Current code:
 ```python
-# EVOLVE-BLOCK-START
 def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
     i = rng.randrange(0, 4 if depth > 0 else 3)
 
@@ -20,7 +17,20 @@ def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
             ("Fun", ("Int",), ty),
             ("Lam", "x", ("Int",), tm),
         )
-# EVOLVE-BLOCK-END
 ```
 
-I need to replace this with an improved version. Let me create a proper diff.
+The issues are:
+1. The depth parameter is never decremented - it always uses the same depth
+2. It always creates lambda with "x" as the variable name
+3. There's no way to use variables (no VarTm)
+4. There's no way to apply lambdas (no AppTm)
+5. It always uses ("Int",) as the domain type
+
+Let me create a more sophisticated generator that:
+1. Uses depth properly to control size
+2. Maintains a context of bound variables
+3. Can generate VarTm (using variables from context)
+4. Can generate AppTm (applying terms to arguments)
+5. Uses multiple base types
+
+I'll propose a new implementation that addresses all these issues.

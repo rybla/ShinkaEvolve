@@ -1,0 +1,14 @@
+{
+  "generation": 29,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "asymmetric_spine_context_booster",
+  "patch_description": "This implementation maximizes `tm_sizes_average` and `used_vars_proportions_average` by using a \"Context-Length Dependent Lambda Forcing\" strategy and an extremely aggressive asymmetric budget split (92/8). \n\nKey improvements:\n1. **Dynamic Lambda Forcing**: The probability of generating a lambda for a function type starts at 98% and scales down as the context grows. This ensures a rich variable pool is built early in the recursion.\n2. **Aggressive Left-Heavy Spines**: By allocating 92% of the budget to the function side of an application, we create extremely deep ASTs, pushing the average term size well beyond 60.\n3. **Context-Aware Type Selection**: When generating an application, we prioritize selecting an argument type that already exists in the context with 90% probability. This drastically increases the chance that the base-case variable lookup will succeed.\n4. **Iterative Budget Management**: The starting budget is increased to 250 to ensure the average size hits the target after accounting for the \"hard floor\" terminations.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:46:06.690053",
+  "llm_cost": 0.009823,
+  "llm_model": null
+}

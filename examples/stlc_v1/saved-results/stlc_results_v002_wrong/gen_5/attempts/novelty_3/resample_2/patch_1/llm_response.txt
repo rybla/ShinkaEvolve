@@ -1,0 +1,35 @@
+Let me analyze the current program to understand what's happening and how to improve it.
+
+Current issues:
+1. The generator only produces very small terms (average size 1.38 nodes when max is 100)
+2. No variable usage (used_vars_proportions_average: 0.00)
+3. No lambda applications (applied_lambdas_proportions_average: 0.00)
+4. Very few unique subterms (unique_subterms_proportions_average: 0.15)
+
+The current `generate_sample` function:
+- Only creates literals or simple lambdas wrapping recursive calls
+- Doesn't maintain a proper variable context
+- Doesn't track depth properly (it uses `depth` in the signature but never passes it)
+- Creates very simple terms that don't use variables
+
+To improve:
+1. Need to properly track depth to create larger terms
+2. Need to maintain a variable context so we can use variables
+3. Need to apply variables to arguments
+4. Need to use more unique subterms
+
+Let me redesign the program with a better approach:
+
+1. **Modular design**: Separate type generation from term generation
+2. **Proper depth tracking**: Use depth to control term size
+3. **Variable context**: Keep track of available variables and their types
+4. **More variety**: Generate variables, applications, and properly use lambdas
+
+Here's my approach:
+- Generate types first based on depth
+- Generate terms with proper variable context
+- Make sure variables are used
+- Make sure lambdas are applied
+- Track uniqueness of subterms
+
+Let me write the improved code:

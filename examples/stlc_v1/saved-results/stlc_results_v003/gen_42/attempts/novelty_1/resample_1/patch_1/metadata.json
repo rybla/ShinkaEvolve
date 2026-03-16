@@ -1,0 +1,14 @@
+{
+  "generation": 42,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 3,
+  "patch_name": "type_frequency_weighting_and_var_priority",
+  "patch_description": "This optimization introduces \"Type-Inhabitant Frequency Weighting\". Instead of picking a random type from the context for an application's argument, we weight the selection toward types that appear more frequently in the context. This significantly increases the probability that the argument branch can be satisfied by a `VarTm` rather than a literal, pushing `used_vars_proportions` higher. Additionally, I've refined the variable selection to strictly favor the most recent matching variable to maximize local variable utilization.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:48:19.878618",
+  "llm_cost": 0.008088999999999999,
+  "llm_model": null
+}

@@ -1,208 +1,39 @@
-Let me analyze the current program and understand what needs to be improved.
+Let me analyze the current program and the metrics to understand what needs to be improved.
 
-The current program:
-1. Has a `generate_sample` function that generates types and terms of simply-typed lambda calculus
-2. The current implementation is very simple - it only generates literals or wraps things in a function type with Int domain
-3. The metrics show:
-   - good_ratio: 1.00 (all samples are well-formed and well-typed)
-   - tm_sizes_average: 1.38 (very small terms)
-   - ty_sizes_average: 1.38 (very small types)
-   - used_vars_proportions_average: 0.00 (variables are never used)
-   - applied_lambdas_proportions_average: 0.00 (lambdas are never applied)
-   - unique_subterms_proportions_average: 0.15 (low uniqueness)
+Current metrics:
+- Combined score: 10.30
+- good_ratio: 1.00 (all terms are well-typed)
+- tm_sizes_average: 1.35 (term size - should be up to 100)
+- ty_sizes_average: 1.35 (type size - should be up to 10)
+- used_vars_proportions_average: 0.00 (should be higher - variables should be used)
+- applied_lambdas_proportions_average: 0.00 (should be higher - lambdas should be applied)
+- unique_subterms_proportions_average: 0.15 (should be higher - more unique subterms)
 
-The goal is to improve these metrics while maintaining:
-- Well-formed types and terms
-- Well-typed terms
+The current implementation is very simple - it just generates base types and literals, or wraps them in lambdas. It doesn't:
+1. Generate complex types (function types with depth)
+2. Generate applications
+3. Use variables from context
+4. Generate larger terms
 
-Key improvements needed:
-1. Generate bigger types (up to 10 nodes)
-2. Generate bigger terms (up to 100 nodes)
-3. Use variables that are introduced by lambdas
-4. Apply lambdas to arguments
-5. Have more unique subterms
+Looking at the prior programs:
+- The first prior program has better metrics: tm_sizes_average: 4.89, used_vars_proportions_average: 0.03, applied_lambdas_proportions_average: 0.17, unique_subterms_proportions_average: 0.49
+- But it has lower good_ratio: 0.82
 
-Let me redesign the program with a different structural approach:
+The goal is to improve the current program to get:
+- Higher tm_sizes_average (target: up to 100)
+- Higher ty_sizes_average (target: up to 10)
+- Higher used_vars_proportions_average 
+- Higher applied_lambdas_proportions_average
+- Higher unique_subterms_proportions_average
+- While maintaining good_ratio at 1.00
 
-1. I'll use a more sophisticated approach with:
-   - A context (typing environment) to track bound variables
-   - A size budget system to control term/type growth
-   - Better variable usage tracking
-   - More diverse type generation
-
-2. The structural changes:
-   - Separate type generation from term generation
-   - Use a context for type checking
-   - Implement size tracking
-   - Better variable generation and usage
-
-Let me write the new implementation:
-
-```python
-from typing import Literal, Tuple, List, Dict, Any
-import random
-from dataclasses import dataclass
-from typing import Union
-
-# Type definitions
-type Ty = BoolTy | IntTy | StringTy | FunTy
+I need to create a generator that:
+1. Generates more complex types (with depth up to 10)
+2. Generates larger terms (with depth up to 100)
 
 
-type BoolTy = Tuple[Literal["Bool"]]
-type IntTy = Tuple[Literal["Int"]]
-type StringTy = Tuple[Literal["String"]]
-type FunTy = Tuple[Literal["Fun"], Ty, Ty]
+3. Uses variables from context more often
+4. Applies lambdas to arguments
+5. Creates more unique subterms
 
-type Tm = LitTm | VarTm | LamTm | AppTm
-type LitTm = (
-    Tuple[Literal["Bool"], bool]
-    | Tuple[Literal["Int"], int]
-    | Tuple[Literal["String"], str]
-)
-type VarTm = Tuple[Literal["Var"], str]
-type LamTm = Tuple[Literal["Lam"], str, Ty, Tm]
-type AppTm = Tuple[Literal["App"], Tm, Tm]
-```
-
-Now I'll create a generator class that manages the generation process with better structure. The class will track context, size budgets, and variable usage to produce more complex and varied terms while maintaining well-typedness.
-
-@dataclass
-class GenConfig:
-    """Configuration for generation"""
-    max_type_size: int = 10
-    max_term_size: int = 100
-    min_term_size: int = 5
-
-class STLCGenerator:
-    """Generates well-typed STLC terms with size control"""
-    
-    def __init__(self, rng: random.Random, config: GenConfig = None):
-        self.rng = rng
-        self.config = config or GenConfig()
-        self.var_counter = 0
-        self.used_vars: Dict[str, bool] = {}
-        
-    def fresh_var(self) -> str:
-        """Generate a fresh variable name"""
-        var = f"x{self.var_counter}"
-        self.var_counter += 1
-        self.used_vars[var] = False
-        return var
-    
-    def generate_type(self, size_budget: int) -> Ty:
-        """Generate a type with size control"""
-        if size_budget <= 0:
-            return self._generate_base_type()
-        
-        # Randomly choose type constructor
-        choice = self.rng.randrange(0, 4)
-        
-        if choice == 0:
-            return ("Bool",)
-        elif choice == 1:
-            return ("Int",)
-        elif choice == 2:
-            return ("String",)
-        else:
-            # Function type - consume more budget
-            arg_size = self.rng.randrange(1, size_budget // 2 + 1)
-            ret_size = size_budget - arg_size - 1
-            return ("Fun", self.generate_type(arg_size), self.generate_type(ret_size))
-    
-    def _generate_base_type(self) -> Ty:
-        """Generate a base type"""
-        choice = self.rng.randrange(0, 3)
-        if choice == 0:
-            return ("Bool",)
-        elif choice == 1:
-            return ("Int",)
-        else:
-            return ("String",)
-    
-    def generate_term(self, expected_ty: Ty, size_budget: int, context: Dict[str, Ty]) -> Tm:
-        """Generate a term with given expected type and size budget"""
-        if size_budget <= 1:
-            return self._generate_literal(expected_ty)
-        
-        # Decide between lambda, application, variable, or literal
-        choice = self.rng.randrange(0, 4)
-        
-        if choice == 0 and isinstance(expected_ty, tuple) and expected_ty[0] == "Fun":
-            return self._generate_lambda(expected_ty, size_budget, context)
-        elif choice == 1 and context:
-            return self._generate_application(expected_ty, size_budget, context)
-        elif context and self.rng.random() < 0.3:
-            return self._generate_var(expected_ty, context)
-        else:
-            return self._generate_literal(expected_ty)
-    
-    def _generate_lambda(self, fun_ty: Ty, size_budget: int, context: Dict[str, Ty]) -> Tm:
-        """Generate a lambda term"""
-        arg_var = self.fresh_var()
-        arg_ty = fun_ty[1]
-        new_context = context.copy()
-        new_context[arg_var] = arg_ty
-        
-        # Generate body with remaining budget
-        body_size = size_budget - 2  # Lambda node + var node
-        body = self.generate_term(fun_ty[2], body_size, new_context)
-        
-        return ("Lam", arg_var, arg_ty, body)
-    
-    def _generate_application(self, app_ty: Ty, size_budget: int, context: Dict[str, Ty]) -> Tm:
-        """Generate an application term"""
-        # Find a function in context that can produce app_ty
-        available_funcs = [(v, t) for v, t in context.items() if isinstance(t, tuple) and t[0] == "Fun"]
-        
-        if not available_funcs:
-            return self._generate_literal(app_ty)
-        
-        # Pick random function
-        func_var, func_ty = self.rng.choice(available_funcs)
-        
-        # Generate argument
-        arg_ty = func_ty[1]
-        arg_size = size_budget // 2
-        arg = self.generate_term(arg_ty, arg_size, context)
-        
-        # Generate function (variable reference)
-        func = ("Var", func_var)
-        self.used_vars[func_var] = True
-        
-        return ("App", func, arg)
-    
-    def _generate_var(self, var_ty: Ty, context: Dict[str, Ty]) -> Tm:
-        """Generate a variable reference"""
-        # Find variables with matching type
-        matching = [v for v, t in context.items() if self._types_equal(t, var_ty)]
-        
-        if not matching:
-            return self._generate_literal(var_ty)
-        
-        var = self.rng.choice(matching)
-        self.used_vars[var] = True
-        return ("Var", var)
-    
-    def _generate_literal(self, ty: Ty) -> Tm:
-        """Generate a literal based on type"""
-        if ty == ("Bool",):
-            return ("Bool", self.rng.choice([True, False]))
-        elif ty == ("Int",):
-            return ("Int", self.rng.randint(0, 100))
-        elif ty == ("String",):
-            return ("String", self.rng.choice(["hello", "world", "test"]))
-        else:
-            # Fallback for function types
-            return ("Bool", True)
-    
-    def _types_equal(self, ty1: Ty, ty2: Ty) -> bool:
-        """Check type equality"""
-        if isinstance(ty1, tuple) and isinstance(ty2, tuple):
-            if ty1[0] == "Fun" and ty2[0] == "Fun":
-                return self._types_equal(ty1[1], ty2[1]) and self._types_equal(ty1[2], ty2[2])
-            return ty1 == ty2
-        return False
-
-I need to reconsider the generation strategy. The current approach of passing expected types limits flexibility. Instead, I should generate types and terms independently, then pair them through type checking. This means generating a random type, creating a term that inhabits that type, and verifying the match.
-
-The generator needs to track context as variables get bound, maintain size budgets to stay under limits, and ensure variables are actually used once introduced. I'll restructure to separate type generation from term generation, using a class-based approach with explicit context management and size tracking.
+I'll focus on expanding the generation strategy to incorporate more sophisticated term construction. The key is to leverage the context, create more complex type structures, and increase term complexity while maintaining type safety. This means carefully designing the generation process to balance variety with correctness, ensuring that each generated term remains well-typed and follows the lambda calculus rules.

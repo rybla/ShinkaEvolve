@@ -1,0 +1,82 @@
+Let me analyze the current program and the performance metrics to understand what needs to be improved.
+
+Current performance metrics:
+- Combined score to maximize: 10.30
+- good_ratio: 1.00 (all generated samples are well-typed)
+- tm_sizes_average: 1.38 (very small terms)
+- ty_sizes_average: 1.38 (very small types)
+- used_vars_proportions_average: 0.00 (no variables are being used)
+- applied_lambdas_proportions_average: 0.00 (no lambdas are being applied)
+- unique_subterms_proportions_average: 0.15 (low variety of subterms)
+
+The current `generate_sample` function is very basic:
+1. It only generates literals (Bool, Int, String) or simple lambdas with Int type annotation
+2. It doesn't generate applications
+3. It doesn't use variables that are introduced by lambdas
+4. The types and terms are very small
+
+To improve the score, I need to:
+1. Generate bigger types (up to 10 nodes in AST)
+2. Generate bigger terms (up to 100 nodes in AST)
+3. Use variables that are introduced by lambdas
+4. Apply lambdas to arguments
+5. Have more unique subterms
+
+Let me design a better generator:
+
+1. First, I need to track the "context" - what variables are available with what types
+2. Generate types with more complex structure (Fun types)
+3. Generate terms that:
+   - Use lambdas to introduce variables
+   - Use variables that are in scope
+   - Apply functions to arguments
+   - Create more complex nested structures
+
+Here's my plan for a better generator:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    # First generate a type
+    ty = generate_type(rng, depth)
+    # Then generate a term with that type
+    tm = generate_term(rng, depth, ty, {})
+    return (ty, tm)
+
+def generate_type(rng: random.Random, depth=10) -> Ty:
+    if depth <= 0 or rng.random() < 0.3:
+        # Base types
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return ("Bool",)
+        elif i == 1:
+            return ("Int",)
+        else:
+            return ("String",)
+    else:
+        # Function type
+        arg_ty = generate_type(rng, depth - 1)
+        ret_ty = generate_type(rng, depth - 1)
+        return ("Fun", arg_ty, ret_ty)
+```
+
+I'll start by generating a type, then create a term that matches that type while tracking available variables in a context dictionary.
+
+def generate_term(rng: random.Random, depth: int, target_ty: Ty, ctx: dict[str, Ty]) -> Tm:
+    # If depth is exhausted or we hit a base type, generate a literal
+    if depth <= 0 or (isinstance(target_ty, tuple) and target_ty[0] in ("Bool", "Int", "String")):
+        return generate_literal(rng, target_ty)
+    
+    # Occasionally use a variable from context if available
+    if ctx and rng.random() < 0.3:
+        var_name = rng.choice(list(ctx.keys()))
+        return ("Var", var_name)
+    
+    # Otherwise create a lambda
+    param_name = f"x{rng.randrange(0, 1000)}"
+    param_ty = generate_type(rng, depth - 1)
+    body = generate_term(rng, depth - 1, target_ty, {**ctx, param_name: param_ty})
+    return ("Lam", param_name, param_ty, body)
+
+The approach alternates between picking existing variables from the context and constructing new lambda abstractions, with the parameter type and body generated recursively while building up the context. I need to reconsider the approach. The current implementation doesn't properly handle the target type when generating lambda bodies, and I'm not generating applications which are essential for building larger terms.
+
+Let me restructure: I'll create separate functions for generating types and terms, where the term generation takes a target type and context. For types, I'll randomly choose between base types and function types based on depth. For terms, I need to handle the case where the target is a function type by generating applications that combine lambdas with arguments, while also considering variables from the context and literals when appropriate.

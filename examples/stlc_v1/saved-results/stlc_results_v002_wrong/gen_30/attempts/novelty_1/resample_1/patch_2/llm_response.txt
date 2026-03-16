@@ -1,0 +1,32 @@
+Let me analyze the problem more carefully. The current program generates lambda terms but never uses variables or applies lambdas. I need to find a way to add variable usage and lambda application while maintaining type correctness (good_ratio = 1.00).
+
+The key insight is that I need to track variables in scope and properly type them when creating Var terms. Let me try a different approach - use a context-passing style to track bound variables.
+
+Looking at the type system:
+- A lambda `("Lam", "x", arg_ty, body)` has type `("Fun", arg_ty, ret_ty)` where `ret_ty` is the type of `body`
+- A variable `("Var", "x")` must refer to a bound variable with the correct type
+
+The issue is that when we create a lambda, we need to:
+1. Know what type the bound variable has (that's the arg_ty)
+2. Use that variable somewhere in the body with the correct type
+
+Let me think about how to generate valid terms that use variables:
+
+For a lambda `("Lam", "x", ("Int",), body)`:
+- The body must have type "Int" (since the lambda returns Int)
+- We could use ("Var", "x") as the body - this would be type-correct!
+
+But currently the code just passes `tm` as the body, which is the result of a recursive call. We need to either:
+1. Return the variable directly when depth is 0
+2. Or combine the variable with other constructs
+
+Let me try a different approach - add a branch that creates a variable reference when the depth indicates we should use the bound variable.
+
+Actually, let me think about this differently. The score seems to be:
+- good_ratio is weighted heavily (current: 1.0 gives best score ~10.3)
+- Other metrics like used_vars, applied_lambdas, unique_subterms also matter but less
+
+The first prior program with used_vars_proportions_average: 0.16 had good_ratio: 0.82 and score 8.73
+
+
+The trade-off is clear: trying to use variables breaks type correctness and hurts the score more than it helps. I should explore adding more structural variation instead - varying primitive types, adjusting recursion depth, and modifying how the nested lambdas are constructed might improve uniqueness without sacrificing the perfect type checking.

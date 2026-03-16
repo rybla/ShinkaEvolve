@@ -1,0 +1,48 @@
+
+The previous response showed an analysis but didn't actually produce a SEARCH/REPLACE block. Let me now create the actual edit.
+
+Looking at the code more carefully:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)  # Note: depth is not decremented!
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+Issues I see:
+1. `depth` is never decremented - infinite recursion
+2. Uses same literals every time
+3. No variable usage (never creates Var terms)
+4. No lambda application (never creates App terms)
+
+Key insight from the analysis:
+- The first prior program tried adding complexity but had lower good_ratio (0.87 vs 1.00)
+- The simple programs have perfect type correctness but no complexity
+
+To improve, I need to:
+1. Properly decrement depth to control term size
+2. Add variable tracking and occasional usage
+3. Add lambda application
+
+But the key challenge is: how to do this WITHOUT breaking type correctness?
+
+Looking at the first prior program more carefully:
+- It had bound_vars tracking
+- It had 0.07 used_vars_proportions and 0.03 applied_lambdas_proportions
+- But good_ratio dropped to 0.87
+
+The problem is that adding complexity introduces type errors. 
+
+The fix is to use unique variable names at each depth level to prevent shadowing, ensure lambdas are only created when depth allows, and apply lambdas type-safely by generating both a function and its matching argument.

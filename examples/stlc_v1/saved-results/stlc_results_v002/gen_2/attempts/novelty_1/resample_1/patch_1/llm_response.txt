@@ -1,43 +1,100 @@
-Let me analyze the current program and the requirements:
+Let me analyze the current state of the program and the performance metrics:
 
-1. The current program generates types and terms of simply-typed lambda-calculus
-2. The current metrics show:
-   - good_ratio: 1.00 (all samples are well-formed and well-typed)
-   - tm_sizes_average: 1.38 (very small terms)
-   - ty_sizes_average: 1.38 (very small types)
-   - used_vars_proportions_average: 0.00 (no variables are used)
-   - applied_lambdas_proportions_average: 0.00 (no lambdas are applied)
-   - unique_subterms_proportions_average: 0.15 (low variety)
+1. The current `generate_sample` function is very basic - it only generates simple literals (Bool, Int, String) and simple lambdas with Int argument.
+2. The metrics show:
+   - tm_sizes_average: 1.35 (very small, max is 100)
+   - ty_sizes_average: 1.35 (very small, max is 10)
+   - used_vars_proportions_average: 0.00 (no variable usage)
+   - applied_lambdas_proportions_average: 0.00 (no lambda applications)
+   - unique_subterms_proportions_average: 0.15 (very low)
 
-The key issues:
-1. The term size is limited - needs to generate bigger terms (up to 100 nodes)
-2. The type size is limited - needs to generate bigger types (up to 10 nodes)
-3. Variables aren't being used - lambdas introduce variables but they're not used
-4. Lambdas aren't being applied - need more applications
-5. Need more unique subterms
+The main issues are:
+1. The generator produces very small terms and types
+2. It doesn't use variables at all (no VarTm)
+3. It doesn't apply lambdas (no AppTm)
+4. It doesn't have recursive generation with proper depth management
 
-Looking at the current `generate_sample` function:
-- It has a depth parameter with default 10, but only uses it to decide whether to include "Fun" type
-- But wait, the depth is never decremented, so it always uses `depth > 0` which is always true after the first call
-- Also, the recursive call doesn't pass `depth-1`
-- When generating a function, it only generates `("Int",)` as the domain, not using the recursively generated type properly
+To improve, I need to:
+1. Increase the size of generated types (up to 10 nodes)
+2. Increase the size of generated terms (up to 100 nodes)
+3. Generate variables and use them
+4. Apply lambdas to arguments
+5. Have more unique subterms
 
-Let me redesign this:
+Let me create a more sophisticated generator that:
+1. Uses a depth parameter to control size
+2. Generates base types with probability that decreases with depth
+3. Generates function types recursively
+4. Generates variables that reference in-scope variables
+5. Generates lambda abstractions
+6. Generates applications
 
-1. **Proper depth tracking**: Decrement depth on each recursive call
-2. **Use the generated type properly**: When creating a function, use the generated type as the range
-3. **Variable usage**: Generate variables that are introduced by lambdas and use them in the body
+Here's my plan:
 
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+    # Generate type
+    ty = generate_type(rng, depth)
+    # Generate term with that type
+    tm = generate_term(rng, depth, ty, [])
+    return (ty, tm)
 
-4. **Lambda application**: Generate more applications to create larger, more complex terms
-5. **Unique subterms**: Build up complexity by composing different term structures together
-6. **Size limits**: Enforce bounds - max 10 nodes for types, max 100 nodes for terms
+def generate_type(rng: random.Random, depth: int) -> Ty:
+    if depth <= 0 or rng.random() < 0.3:
+        # Base types
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return ("Bool",)
+        elif i == 1:
+            return ("Int",)
+        else:
+            return ("String",)
+    else:
+        # Function type
+        arg_ty = generate_type(rng, depth - 1)
+        ret_ty = generate_type(rng, depth - 1)
+        return ("Fun", arg_ty, ret_ty)
+```
 
-The redesign should use a more controlled approach with a size budget that tracks AST nodes. I'll implement separate type and term generation functions that manage their budgets explicitly, ensuring variables are properly introduced and used within lambda bodies, and that applications create meaningful term combinations. def generate_term(rng, ty, size_budget):
-    """Generate a term with the given type and size budget."""
-    if size_budget <= 0:
+I need to build out the term generator to handle variables, lambdas, and applications with proper depth management and scope tracking.
+
+def generate_term(rng: random.Random, depth: int, ty: Ty, scope: List[Tuple[str, Ty]]) -> Tm:
+    # Base case: if depth is exhausted or we hit a random chance, generate a literal for base types
+    if depth <= 0 or (ty[0] == "Bool" and rng.random() < 0.5):
         return generate_literal(rng, ty)
     
-    # ... generate using the size_budget
+    # For function types, decide whether to build a lambda or use something from scope
+    if ty[0] == "Fun":
+        # Higher chance to create a lambda when we have more depth available
+        if depth > 1 and rng.random() < 0.7:
+            # Generate parameter name and create lambda
+            param_name = f"x{rng.randint(0, 100)}"
+            param_ty = ty[1]
+            body = generate_term(rng, depth - 1, ty[2], scope + [(param_name, param_ty)])
+            return ("Lam", param_name, param_ty, body)
+        # Otherwise try to use a variable from scope that has matching type
+        else:
+            # Try to find a variable in scope with compatible type
+            for var_name, var_ty in reversed(scope):
+                if types_compatible(var_ty, ty):
+                    return ("Var", var_name)
+    
+    # Fallback: generate a literal
+    return generate_literal(rng, ty)
 
-The core issue is that the current implementation lacks proper size tracking. By introducing a size_budget parameter that decrements with each recursive call, I can ensure generated terms respect the 100-node limit while still allowing for meaningful variable binding and application chains. This approach also naturally supports the metric for applied_lambdas_proportions since each application consumes budget.
+def generate_literal(rng: random.Random, ty: Ty) -> Tm:
+    if ty[0] == "Bool":
+        return ("Bool", rng.choice([True, False]))
+    elif ty[0] == "Int":
+        return ("Int", rng.randint(0, 100))
+    else:
+        return ("String", "hello")
+
+def types_compatible(ty1: Ty, ty2: Ty) -> bool:
+    # Simple check - for now assume exact match for base types, function types need work
+    return ty1 == ty2
+```
+ that either create new lambdas or use/appl

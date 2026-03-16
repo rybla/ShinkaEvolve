@@ -1,0 +1,37 @@
+The user is asking me to improve the generator function. Let me analyze the current code and the metrics to understand what needs to be changed.
+
+Looking at the current `generate_sample` function:
+1. It only generates literals (Bool, Int, String) and very simple lambdas
+2. It doesn't use the `depth` parameter properly
+3. It doesn't generate variables (Var terms)
+4. It doesn't generate applications (App terms)
+5. The types and terms are very small
+
+The metrics show:
+- tm_sizes_average: 1.38 (should be up to 100)
+- ty_sizes_average: 1.38 (should be up to 10)
+- used_vars_proportions_average: 0.00 (should be higher)
+- applied_lambdas_proportions_average: 0.00 (should be higher)
+- unique_subterms_proportions_average: 0.15 (should be higher)
+
+I need to rewrite the `generate_sample` function to:
+1. Generate larger types (up to 10 nodes)
+2. Generate larger terms (up to 100 nodes)
+3. Use variables from the context
+4. Apply lambdas to arguments
+5. Have more unique subterms
+
+Let me write a better generator that:
+1. Uses depth to control complexity
+2. Maintains a context of bound variables
+3. Generates Var terms referencing bound variables
+4. Generates App terms applying functions to arguments
+5. Builds larger Fun types
+
+The key insight is that we need to:
+- Track bound variables (their names and types)
+- Generate Var terms that use these variables
+- Generate App terms that apply functions
+- Build larger types using the Fun constructor
+
+Let me create a more sophisticated generator.

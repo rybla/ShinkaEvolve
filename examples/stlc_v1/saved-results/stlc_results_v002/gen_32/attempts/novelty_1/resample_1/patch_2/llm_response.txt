@@ -1,52 +1,48 @@
-The user is asking me to improve the current program. Let me analyze the current state and make a targeted improvement.
+The user is asking me to improve the current program. Let me analyze what's happening:
 
-Looking at the current program:
-- It generates simple literals or creates lambda functions
-- Lambda always has ("Int",) as parameter type
-- Lambda body is always a recursive call without depth control
-- Never uses Var, never applies lambdas
+1. The current program has a depth parameter but doesn't decrement it in recursive calls
+2. It has good_ratio = 1.00 (perfect correctness)
+3. It has tm_sizes_average: 1.32, ty_sizes_average: 1.32
+4. used_vars_proportions_average: 0.00 - no variables are used
+5. applied_lambdas_proportions_average: 0.00 - no applications
 
-Current metrics: Combined score 10.28
-- good_ratio: 1.00
-- tm_sizes_average: 1.34
-- ty_sizes_average: 1.34  
-- used_vars_proportions_average: 0.00
-- applied_lambdas_proportions_average: 0.00
-- unique_subterms_proportions_average: 0.13
+The key insight from the analysis is that:
+- Correctness (good_ratio) is the primary driver
+- The depth parameter should be decremented to ensure termination
+- Context tracking could help use variables in lambda bodies
 
-The best prior programs achieved around 10.30. The key issue is:
-1. used_vars_proportions_average: 0.00 - variables are never used
-2. applied_lambdas_proportions_average: 0.00 - lambdas are never applied
-3. unique_subterms_proportions_average: 0.13 - low uniqueness
+Let me propose a change that:
+1. Properly decrements depth to ensure termination
+2. Adds context tracking so variables can be used in lambda bodies
+3. Maintains the 3:1 literal-to-function ratio
 
-To improve, I need to:
-1. Use variables in lambda bodies (use Var to reference the lambda parameter)
-2. Apply lambdas to arguments
-3. Increase uniqueness
+Looking at the current code:
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)  # Note: depth is not decremented!
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
 
-But I need to be careful - the first prior program tried to use variables and got good_ratio: 0.82 (dropped from 1.00), resulting in a lower combined score.
+The issue is that depth is not decremented. Let me fix this and add context tracking.
 
-The key insight is that to use a variable properly in a typed lambda calculus, the lambda must return that variable. And to apply a lambda, we need to create an App term.
+Actually, looking more carefully at the prior programs, they all have similar structure and the scores are very close (10.28-10.30). 
 
-Let me try a conservative approach:
-1. Create lambdas that return their input variable (identity functions) - this maintains type correctness
-2. Vary the parameter types to increase uniqueness
-3. Apply the lambda to a literal argument in some cases
+I see the depth parameter isn't actually being utilized in the recursive generation process. The current implementation calls `generate_sample(rng)` without passing the depth, which means the depth parameter is essentially ignored. This suggests I need to modify the recursive call to decrement and pass the depth parameter to ensure proper termination and control the generation process.
 
-Actually, looking more carefully at the code structure:
-- `("Lam", "x", ("Int",), tm)` creates a lambda with parameter "x" of type ("Int",) and body `tm`
+The key improvements will involve:
+1. Passing the decremented depth in recursive calls
+2. Implementing a context tracking mechanism
+3. Ensuring the generation respects the depth limit
 
-
-- To use the variable, the body should be `("Var", "x")`
-
-For type correctness:
-- If lambda has type ("Fun", ("Int",), ret_ty), then applying it to an Int should give ret_ty
-- ("App", ("Lam", "x", ("Int",), ("Var", "x")), ("Int", 42)) would be an Int
-
-Let me try creating:
-1. Identity functions: ("Lam", "x", ty, ("Var", "x"))
-2. Apply identity to a literal: ("App", ("Lam", "x", ty, ("Var", "x")), lit)
-
-This should increase used_vars_proportions and applied_lambdas_proportions while maintaining type correctness.
-
-The simplest path forward is generating identity functions with varied parameter types and applying them to literals. This preserves type safety while addressing the three metrics I'm targeting.
+I'll need to carefully design the context tracking to allow variable usage while maintaining the generation constraints. The goal is to create a more robust generation approach that leverages the depth parameter effectively.

@@ -1,0 +1,16 @@
+The user wants me to improve the program. Let me analyze the current state and propose a new program.
+
+Looking at the metrics:
+- Current score: 10.28
+- good_ratio: 1.00
+- used_vars_proportions_average: 0.00
+- applied_lambdas_proportions_average: 0.00
+
+The problem is clear: the current program doesn't use variables or apply lambdas. I need to implement the pattern from the best-performing program that was described in the system prompt - one that used bound_vars, type-safe application, and probabilistic selection.
+
+Let me create a new program that:
+1. Uses `bound_vars` parameter to track bound variables
+2. Uses probabilistic choice to return variables from bound_vars
+3. Uses type-safe application that checks if func_type[0] == "Fun" before applying
+4. Uses unique variable names
+5. Uses hybrid termination (depth + random)

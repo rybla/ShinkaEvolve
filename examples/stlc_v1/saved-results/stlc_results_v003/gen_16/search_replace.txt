@@ -1,0 +1,81 @@
+<NAME>
+type_directed_alignment_and_stricter_bounds
+</NAME>
+
+<DESCRIPTION>
+To improve the `good_ratio` to 1.0 and significantly increase `tm_sizes_average`, I am implementing a stricter type-directed generation strategy.
+
+1. **Strict Type Matching**: The current `good_ratio` of 0.94 indicates that `gen_term` occasionally fails to produce a term matching `target_ty` (specifically when budget is low and no variable exists for a `Fun` type). I've added a mandatory `Lam` fallback for function types.
+2. **Context-Aware Argument selection**: In `AppTm`, instead of always generating a new type from scratch, we now attempt to pull an existing type from the context with high probability. This reinforces `used_vars_proportions_average`.
+3. **Asymmetric Budget Split**: To push `tm_sizes_average` beyond 60, I've adjusted the application splitting logic to be heavily left-biased (70/30) and ensured the recursion depth is utilized by avoiding early exits unless budget is truly exhausted.
+4. **Unique Literal Generation**: To maintain high `unique_subterms_proportions`, literals are now indexed by the current context length.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    def gen_term(target_ty: Ty, ctx: list[Tuple[str, Ty]], budget: int) -> Tm:
+        valid_vars = [name for name, ty in ctx if ty == target_ty]
+
+        # Dynamic Variable Selection: If context is rich, favor variables even at slightly higher budgets
+        # to save budget for other branches.
+        var_prob = 0.95 if len(ctx) > 5 else 0.7
+        if budget <= 3:
+            if valid_vars and (rng.random() < var_prob or budget <= 1):
+                return ("Var", rng.choice(valid_vars))
+            if budget <= 1:
+                if target_ty == ("Bool",): return ("Bool", rng.choice([True, False]))
+                if target_ty == ("Int",): return ("Int", rng.randint(0, 100))
+                return ("String", rng.choice(["a", "b", "c"]))
+
+        # Recursive cases: Prioritize Lambda for Fun types to increase variable depth
+        if target_ty[0] == "Fun" and (rng.random() < 0.8 or budget < 10):
+            arg_ty, ret_ty = target_ty[1], target_ty[2]
+            var_name = f"v{len(ctx)}"
+            return ("Lam", var_name, arg_ty, gen_term(ret_ty, ctx + [(var_name, arg_ty)], budget - 1))
+
+        # Generate Application: Invent a small intermediate type
+        # We use a very small budget for arg_ty to keep the focus on term size
+        arg_ty = gen_type(1)
+        fun_ty = ("Fun", arg_ty, target_ty)
+
+        # Asymmetric split: 80% to function side to maximize depth and applied lambdas
+        split_f = int(budget * 0.8)
+        split_x = budget - split_f - 1
+        return ("App", gen_term(fun_ty, ctx, split_f), gen_term(arg_ty, ctx, max(1, split_x)))
+=======
+    def gen_term(target_ty: Ty, ctx: list[Tuple[str, Ty]], budget: int) -> Tm:
+        valid_vars = [name for name, ty in ctx if ty == target_ty]
+
+        # Base case: Force termination at budget <= 2
+        if budget <= 2:
+            if valid_vars and rng.random() < 0.9:
+                return ("Var", rng.choice(valid_vars))
+            if target_ty[0] == "Bool": return ("Bool", rng.choice([True, False]))
+            if target_ty[0] == "Int": return ("Int", rng.randint(0, 1000) + len(ctx))
+            if target_ty[0] == "String": return ("String", f"s{len(ctx)}_{budget}")
+            if target_ty[0] == "Fun":
+                # Must return a Lam to satisfy FunTy even at low budget
+                var_name = f"v{len(ctx)}"
+                return ("Lam", var_name, target_ty[1], gen_term(target_ty[2], ctx + [(var_name, target_ty[1])], 1))
+
+        # Lambda Forcing: Ensure structural alignment with Fun types
+        if target_ty[0] == "Fun" and rng.random() < 0.75:
+            arg_ty, ret_ty = target_ty[1], target_ty[2]
+            var_name = f"v{len(ctx)}"
+            return ("Lam", var_name, arg_ty, gen_term(ret_ty, ctx + [(var_name, arg_ty)], budget - 1))
+
+        # Application Case: Asymmetric split to encourage deep ASTs
+        # Pull arg_ty from context to maximize used_vars_proportions_average
+        if ctx and rng.random() < 0.7:
+            arg_ty = rng.choice(ctx)[1]
+        else:
+            arg_ty = gen_type(1)
+
+        fun_ty = ("Fun", arg_ty, target_ty)
+        # 70/30 Asymmetric split favors left-nested applications (functional redexes)
+        split_f = int(budget * 0.7)
+        split_x = budget - split_f - 1
+        return ("App", gen_term(fun_ty, ctx, max(1, split_f)), gen_term(arg_ty, ctx, max(1, split_x)))
+>>>>>>> REPLACE
+
+</DIFF>

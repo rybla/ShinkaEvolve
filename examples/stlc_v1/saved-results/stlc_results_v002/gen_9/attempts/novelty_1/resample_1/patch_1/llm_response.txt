@@ -1,48 +1,61 @@
-Let me understand the task:
+Let me analyze the performance metrics and the current implementation to understand what needs to be improved.
 
-1. I need to improve a lambda-calculus generator that produces types and terms
-2. The current metrics show:
-   - good_ratio: 1.00 (all samples are well-formed and well-typed)
-   - tm_sizes_average: 1.38 (term sizes are very small, max is 100)
-   - ty_sizes_average: 1.38 (type sizes are very small, max is 10)
-   - used_vars_proportions_average: 0.00 (no variables are being used)
-   - applied_lambdas_proportions_average: 0.00 (no lambdas are being applied)
-   - unique_subterms_proportions_average: 0.15 (low unique subterms)
+Current metrics:
+- Combined score: 10.30
+- good_ratio: 1.00 (all terms are well-typed)
+- tm_sizes_average: 1.35 (term sizes are very small - max is 100)
+- ty_sizes_average: 1.35 (type sizes are very small - max is 10)
+- used_vars_proportions_average: 0.00 (no variable usage)
+- applied_lambdas_proportions_average: 0.00 (no lambda applications)
+- unique_subterms_proportions_average: 0.15 (low uniqueness)
 
-3. Key improvements needed:
-   - Generate bigger types (up to 10 nodes)
-   - Generate bigger terms (up to 100 nodes)
-   - Use variables that are introduced by lambdas
-   - Apply lambdas to arguments
-   - Have more unique subterms
+Looking at the target metrics from the prior programs:
+- Combined score: 9.24
+- tm_sizes_average: 4.89
+- ty_sizes_average: 2.90
+- used_vars_proportions_average: 0.03
+- applied_lambdas_proportions_average: 0.17
+- unique_subterms_proportions_average: 0.49
 
-Let me analyze the current implementation:
+The current implementation produces:
+1. Very small terms (1.35 nodes on average, but should be up to 100)
+2. Very small types (1.35 nodes on average, but should be up to 10)
+3. No variable usage (should use variables from context)
+4. No lambda applications (should apply lambdas to arguments)
+5. Low uniqueness (should have more unique subterms)
 
-```python
-def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
-    i = rng.randrange(0, 4 if depth > 0 else 3)
+The current implementation only generates:
+- Base type literals (Bool, Int, String)
+- A single lambda wrapping another term
 
-    if i == 0:
-        return (("Bool",), ("Bool", True))
-    elif i == 1:
-        return (("Int",), ("Int", 27))
-    elif i == 2:
-        return (("String",), ("String", "hello world"))
-    else:
-        ty, tm = generate_sample(rng)
-        return (
-            ("Fun", ("Int",), ty),
-            ("Lam", "x", ("Int",), tm),
-        )
-```
+It doesn't:
+- Generate function types with depth
+- Generate applications
+- Use variables from context
+- Build larger term structures
 
-Problems with current implementation:
-1. It always uses "x" as the variable name, causing variable capturing issues and no real variable usage
+Looking at the "prior programs" section, there's a more sophisticated implementation that attempts to address these issues. Let me analyze what went wrong with that approach.
+
+The prior implementation tries to:
+1. Generate types with depth control
 
 
-2. The depth parameter is never decremented, so recursion never stops properly
-3. The function doesn't track variable bindings, making it impossible to reference introduced variables
-4. No application terms are generated, so lambdas are never applied
-5. Types and terms remain tiny
+2. Generate terms with depth control
+3. Use context for variables
+4. Generate lambdas and applications
 
-I need to refactor the generator to track bound variables, decrement depth to control recursion, generate application terms, and build larger, more complex expressions with proper variable references.
+However, I need to think of a "completely different algorithm approach." Let me think about what would be fundamentally different.
+
+The current approach is essentially a recursive descent generator. A different approach could be:
+
+1. **Generate-and-test approach**: Generate random terms/types first, then check if they're well-typed, discard if not
+2. **Grammar-based generation**: Use a more sophisticated grammar that guarantees well-typedness
+3. **Size-bounded generation**: Explicitly track and target specific sizes
+4. **Context-based generation with backtracking**: When generating, maintain context and potentially backtrack when stuck
+
+The fundamental problem is that recursive descent often produces small structures because it doesn't explicitly target size. A better approach would explicitly track target size and work toward it, using context more aggressively to enable variable usage and building applications to increase term complexity.
+
+I should generate types by explicitly targeting a specific size (measured in AST nodes), then generate terms that match that type while explicitly working toward a target size. This means:
+1. First, determine a target type size (0-10) and generate a type of that approximate size
+2. Then determine a target term size (0-100) and generate a term of that approximate size, using context more aggressively to enable variable usage
+3. Use application more frequently to build up term size

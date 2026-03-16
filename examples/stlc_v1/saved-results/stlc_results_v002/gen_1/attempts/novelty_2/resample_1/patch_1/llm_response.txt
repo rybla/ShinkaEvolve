@@ -1,32 +1,141 @@
+Let me analyze the current program and the performance metrics to understand what needs to be improved.
 
-Let me analyze the current program and the metrics to understand what needs to be improved.
+Current performance metrics:
+- Combined score to maximize: 10.30
+- good_ratio: 1.00 (all generated samples are well-formed and well-typed)
+- tm_sizes_average: 1.35 (very small terms)
+- ty_sizes_average: 1.35 (very small types)
+- used_vars_proportions_average: 0.00 (no variables are used)
+- applied_lambdas_proportions_average: 0.00 (no lambdas are applied)
+- unique_subterms_proportions_average: 0.15 (low uniqueness)
 
-Current metrics:
-- Combined score: 10.30
-- good_ratio: 1.00 (this is good - all generated samples are well-formed and well-typed)
-- tm_sizes_average: 1.38 (very small, max is 100)
-- ty_sizes_average: 1.38 (very small, max is 10)
-- used_vars_proportions_average: 0.00 (no variables are being used!)
-- applied_lambdas_proportions_average: 0.00 (no lambdas are being applied!)
-- unique_subterms_proportions_average: 0.15 (low)
-
-The main issues are:
-1. Types are very small (1.38 average, max 10) - need bigger types
-2. Terms are very small (1.38 average, max 100) - need bigger terms
-3. No variables are being used (0.00) - the generated terms don't reference variables introduced by lambdas
-4. No lambdas are being applied (0.00) - lambdas are never applied to arguments
-5. Low unique subterms
+The key issues are:
+1. Very small types (average 1.35 nodes, max is 10)
+2. Very small terms (average 1.35 nodes, max is 100)
+3. No variable usage (0%)
+4. No lambda applications (0%)
+5. Low uniqueness of subterms
 
 Looking at the current `generate_sample` function:
-- It randomly picks between Bool, Int, String literals, and a Fun type
-- When it picks the Fun case, it recursively calls `generate_sample` but with `depth > 0`, but there's a bug: the recursive call doesn't decrement depth!
-- It only generates literals (Bool, Int, String) and simple identity functions (Lam with x, Int, tm)
+- It has a 25% chance to return Bool literal
+- 25% chance to return Int literal
+- 25% chance to return String literal
+- Only 25% chance to create a function type/lambda
 
-Problems with current implementation:
-1. The depth parameter is never decremented, so it always uses the same condition
-2. It only generates literals and simple identity functions - no variables, no applications
-3. No way to actually USE the variables that are introduced
-4. No way to apply lambdas to arguments
+The function doesn't use the `depth` parameter properly (it's passed but not used in the recursive call), and it doesn't build larger types/terms.
 
+To improve:
+1. Use the depth parameter to control the size of generated types and terms
+2. Increase the probability of generating function types/lambdas
+3. Generate variables and use them
+4. Apply lambdas to arguments
+5. Create more unique subterms
 
-5. To fix this, I need to properly track depth so types can grow larger, introduce Var terms that reference bound variables, construct App terms to apply lambdas to arguments, and recursively generate larger and more complex terms while keeping everything well-typed.
+Let me design a new algorithm:
+
+1. For types: Use depth to control size, with higher depth allowing more function types
+2. For terms: 
+   - Use depth to control size
+   - Generate lambdas with proper type annotations
+   - Generate variables that reference bound variables
+   - Apply lambdas to arguments
+   - Create applications
+
+I'll need to maintain a context (list of variable names and their types) to properly type check and generate variables.
+
+Let me write a new implementation:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+    # Generate type with depth control
+    ty = generate_type(rng, depth)
+    # Generate term with depth control and empty context
+    tm = generate_term(rng, depth, [], ty)
+    return (ty, tm)
+
+def generate_type(rng: random.Random, depth: int) -> Ty:
+    """Generate a type with controlled depth."""
+    if depth <= 0:
+        # Base types only when depth is exhausted
+        return generate_base_type(rng)
+    
+    # At higher depths, favor function types to build complexity
+    if rng.random() < 0.7:
+        arg_ty = generate_base_type(rng)
+        ret_ty = generate_type(rng, depth - 1)
+        return ("Fun", arg_ty, ret_ty)
+    
+    return generate_base_type(rng)
+
+def generate_base_type(rng: random.Random) -> Ty:
+    """Generate a base type."""
+    i = rng.randrange(0, 3)
+    if i == 0:
+        return ("Bool",)
+    elif i == 1:
+        return ("Int",)
+    else:
+        return ("String",)
+
+def generate_term(rng: random.Random, depth: int, context: List[Tuple[str, Ty]], target_ty: Ty) -> Tm:
+    """Generate a term with controlled depth, respecting the target type."""
+    if depth <= 0:
+        # At depth 0, generate literals or variables
+        return generate_literal_or_var(rng, context, target_ty)
+    
+    # Decide between lambda, application, or literal
+    if isinstance(target_ty, tuple) and target_ty[0] == "Fun":
+        # For function types, generate lambda or application
+        if rng.random() < 0.5:
+            return generate_lambda(rng, depth, context, target_ty)
+        else:
+            return generate_application(rng, depth, context, target_ty)
+    
+    # For base types, generate literal or variable
+    return generate_literal_or_var(rng, context, target_ty)
+
+def generate_literal_or_var(rng: random.Random, context: List[Tuple[str, Ty]], ty: Ty) -> Tm:
+    """Generate a literal or variable."""
+    if context and rng.random() < 0.3:
+        # Use a variable from context
+        var_name, var_ty = rng.choice(context)
+        if var_ty == ty:
+            return ("Var", var_name)
+    
+    # Generate a literal matching the type
+    if ty == ("Bool",):
+        return ("Bool", rng.choice([True, False]))
+    elif ty == ("Int",):
+        return ("Int", rng.randint(0, 100))
+    else:
+        return ("String", rng.choice(["hello", "world", "test"]))
+
+def generate_lambda(rng: random.Random, depth: int, context: List[Tuple[str, Ty]], fun_ty: Ty) -> Tm:
+    """Generate a lambda term."""
+    arg_name = f"x{rng.randint(0, 1000)}"
+    arg_ty = fun_ty[1]
+    body_ty = fun_ty[2]
+    
+    # Add argument to context for body generation
+    new_context = context + [(arg_name, arg_ty)]
+    body = generate_term(rng, depth - 1, new_context, body_ty)
+    
+    return ("Lam", arg_name, arg_ty, body)
+
+def generate_application(rng: random.Random, depth: int, context: List[Tuple[str, Ty]], target_ty: Ty) -> Tm:
+    """Generate an application term."""
+    # Generate a function to apply
+    fun_ty = ("Fun", generate_base_type(rng), target_ty)
+    fun = generate_term(rng, depth - 1, context, fun_ty)
+    
+    # Generate an argument
+    arg_ty = fun_ty[1]
+    arg = generate_term(rng, depth - 1, context, arg_ty)
+    
+    return ("App", fun, arg)
+```
+
+This implementation uses depth to control complexity, generates function types more frequently at higher depths, creates lambdas with proper type annotations, uses variables from context, and applies lambdas to arguments. It should produce larger, more complex terms while maintaining well-typedness.

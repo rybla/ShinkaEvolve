@@ -1,13 +1,19 @@
-The previous edit was not applied. Let me try again with the exact format needed.
+The user is saying my edit wasn't applied. Let me look at the current code more carefully and provide the exact diff.
 
-I need to make sure I'm using the exact SEARCH/REPLACE format as required. Let me look at the current program block more carefully and propose a complete replacement of the generate_sample function.
-
-The current code in EVOLVE-BLOCK-START to EVOLVE-BLOCK-END is:
+Looking at the current code in the EVOLVE-BLOCK-START section:
 
 ```python
-def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10, context=None) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    Uses context to track bound variables for potential Var usage.
+    """
+    if context is None:
+        context = []
+    
     i = rng.randrange(0, 4 if depth > 0 else 3)
-
+    
     if i == 0:
         return (("Bool",), ("Bool", True))
     elif i == 1:
@@ -15,17 +21,42 @@ def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
     elif i == 2:
         return (("String",), ("String", "hello world"))
     else:
-        ty, tm = generate_sample(rng)
-        return (
-            ("Fun", ("Int",), ty),
-            ("Lam", "x", ("Int",), tm),
-        )
+        # Generate function type and term
+        # Use context to potentially reference bound variables
+        if context and rng.random() < 0.3:  # 30% chance to use a variable
+            var_name = rng.choice(context)
+            return (
+                ("Fun", ("Int",), ("Int",)),
+                ("Lam", "x", ("Int",), ("Var", var_name)),
+            )
+        else:
+            ty, tm = generate_sample(rng, depth - 1, context)
+            return (
+                ("Fun", ("Int",), ty),
+                ("Lam", "x", ("Int",), tm),
+            )
+# EVOLVE-BLOCK-END
 ```
 
-I need to replace this with a more sophisticated version that:
-1. Tracks bound variables with a `bound_vars` parameter
-2. Uses probabilistic variable selection
-3. Has unique variable names
-4. Includes App case with type checking
+I need to change:
+```python
+        else:
+            ty, tm = generate_sample(rng, depth - 1, context)
+            return (
+                ("Fun", ("Int",), ty),
+                ("Lam", "x", ("Int",), tm),
+            )
+```
 
-Let me make sure I'm doing this correctly.
+To:
+```python
+        else:
+            new_context = context + ["x"]
+            ty, tm = generate_sample(rng, depth - 1, new_context)
+            return (
+                ("Fun", ("Int",), ty),
+                ("Lam", "x", ("Int",), tm),
+            )
+```
+
+The key change is passing a new context with the current variable added to it, rather than passing the unchanged context. This ensures that when we recurse, we track the newly bound variable "x" in the context for the nested lambda body.

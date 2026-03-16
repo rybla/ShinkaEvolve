@@ -1,0 +1,104 @@
+<NAME>
+stlc_generator_with_context
+</NAME>
+
+<DESCRIPTION>
+This update replaces the naive generator with a context-aware recursive generator. It tracks available variables (the typing environment) to ensure well-typedness while actively pursuing the optimization goals:
+1. **Type Generation**: Randomly generates types up to size 10.
+2. **Term Generation**: Uses a budget-based approach (max 100 nodes) and a context `gamma` to pick variables.
+3. **Variable Usage**: Prioritizes using variables from the environment to increase the `used_vars` metric.
+4. **Applications**: Frequently generates `App` nodes to increase term size and the `applied_lambdas` metric.
+5. **Base Cases**: Provides literals when the budget is low or no variables of the required type are available.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+=======
+def generate_sample(rng: random.Random) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    Ensures well-typedness and targets size/usage metrics.
+    """
+
+    def gen_type(size_limit: int) -> Ty:
+        if size_limit <= 1 or rng.random() < 0.3:
+            return rng.choice([("Bool",), ("Int",), ("String",)])
+        
+        # Fun type has 1 node + left + right. 
+        # Split remaining size between domain and codomain
+        left_size = rng.randint(1, size_limit - 2)
+        return ("Fun", gen_type(left_size), gen_type(size_limit - 1 - left_size))
+
+    def gen_term(target_ty: Ty, gamma: list[Tuple[str, Ty]], budget: int) -> Tm:
+        # gamma is a list of (var_name, var_type)
+        
+        # Try to use a variable from context if it matches target_ty
+        valid_vars = [name for name, ty in gamma if ty == target_ty]
+        
+        # Heuristic: Use variables often, or if budget is depleted
+        if (valid_vars and rng.random() < 0.6) or budget <= 1:
+            if valid_vars:
+                return ("Var", rng.choice(valid_vars))
+            # Fallback to literals if no variable matches
+            if target_ty == ("Bool",): return ("Bool", rng.choice([True, False]))
+            if target_ty == ("Int",): return ("Int", rng.randint(0, 100))
+            if target_ty == ("String",): return ("String", "s")
+            # If target is a function and no var available, must Lam
+            if target_ty[0] == "Fun":
+                new_var = f"v{len(gamma)}"
+                return ("Lam", new_var, target_ty[1], gen_term(target_ty[2], gamma + [(new_var, target_ty[1])], budget - 1))
+            return ("Int", 0) # Should not reach
+
+        # Decision logic for App, Lam, or Lit
+        choices = []
+        if budget > 3: choices.append("App")
+        if target_ty[0] == "Fun": choices.append("Lam")
+        if not choices: choices = ["Lit"]
+
+        choice = rng.choice(choices)
+
+        if choice == "Lam":
+            new_var = f"v{len(gamma)}"
+            return ("Lam", new_var, target_ty[1], gen_term(target_ty[2], gamma + [(new_var, target_ty[1])], budget - 1))
+        
+        if choice == "App":
+            # Generate a function type A -> target_ty
+            arg_ty = gen_type(3)
+            fun_ty = ("Fun", arg_ty, target_ty)
+            # Split budget: 1 for App node, rest for fun and arg
+            b_fun = budget // 2
+            return ("App", gen_term(fun_ty, gamma, b_fun), gen_term(arg_ty, gamma, budget - b_fun - 1))
+
+        # Default Lit
+        if target_ty == ("Bool",): return ("Bool", True)
+        if target_ty == ("Int",): return ("Int", 42)
+        return ("String", "abc")
+
+    # Generate a type with max 10 nodes
+    final_ty = gen_type(10)
+    # Generate a term with max 100 nodes
+    final_tm = gen_term(final_ty, [], 100)
+    
+    return final_ty, final_tm
+>>>>>>> REPLACE
+
+</DIFF>

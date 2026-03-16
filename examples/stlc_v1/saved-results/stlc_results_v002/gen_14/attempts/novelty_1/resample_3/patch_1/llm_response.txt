@@ -1,0 +1,46 @@
+Let me analyze the current program and the performance metrics to understand what needs to be improved.
+
+Current performance metrics:
+- Combined score: 10.27
+- good_ratio: 1.00 (all terms are well-typed)
+- tm_sizes_average: 1.29 (term size is small)
+- ty_sizes_average: 1.29 (type size is small)
+- used_vars_proportions_average: 0.00 (no variables are being used!)
+- applied_lambdas_proportions_average: 0.00 (no lambdas are being applied!)
+- unique_subterms_proportions_average: 0.13 (low uniqueness)
+
+Looking at the current code:
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+Problems:
+1. The `depth` parameter is never decremented, so it always stays at 10, meaning it always uses `4 if depth > 0 else 3` which is always 4.
+2. The function always creates lambdas with `("Int",)` as the domain type, which is boring.
+3. The lambda always uses the variable name "x", which is always the same.
+4. There's no use of variables from context - the lambdas create variables but they're never used in the body (the body is always a fresh recursive call).
+
+
+5. There's no application of lambdas to arguments.
+
+The key improvements needed are:
+1. Use context to track available variables from lambdas
+2. Apply lambdas to arguments to create App nodes
+3. Use variables from context in the generated terms
+4. Generate larger types with more complexity
+5. Generate larger terms with more nodes
+
+I need to implement a context-guided generation approach that tracks variables introduced by lambdas and uses them in subsequent generation steps, while also applying lambdas to arguments and building more complex type and term structures.

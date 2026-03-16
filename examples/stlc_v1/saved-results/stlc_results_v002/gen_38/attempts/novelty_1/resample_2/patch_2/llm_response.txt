@@ -1,14 +1,18 @@
-The user is saying the previous edit was not successful. Let me look at the current program again and make a targeted improvement.
+Let me analyze the problem and provide a complete improved program.
 
-Looking at the current program:
-- It generates literals (Bool, Int, String)
-- It generates lambda abstractions, but always uses "x" as the variable name
-- It never generates Var terms or App terms
-- The used_vars_proportions_average is 0.00
+The current program has these issues:
+1. It doesn't add parameters to context when generating lambdas - so `used_vars_proportions_average` is 0.00
+2. It doesn't generate App (applications) at all - so `applied_lambdas_proportions_average` is 0.00
+3. The tm_sizes_average is lower because there's less depth in the generated terms
 
-The key improvement would be to:
-1. Track bound variables
-2. Use those variables in the generated terms (Var terms)
-3. Apply lambdas to arguments (App terms)
+Looking at the prior program 2 (score 10.62), it:
+1. Adds "x" to context when generating lambda body: `context + ["x"]`
+2. Includes App constructor for generating applications
+3. Uses a 5-way choice at depth > 0 (3 literals + Lam + App)
 
-Let me create a new version that does this.
+I need to create a program that:
+1. Properly tracks context by adding lambda parameters
+2. Generates App (applications) 
+3. Maintains good_ratio = 1.00
+
+Let me write a complete new program:

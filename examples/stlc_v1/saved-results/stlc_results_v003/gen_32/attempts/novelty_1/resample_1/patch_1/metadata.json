@@ -1,0 +1,14 @@
+{
+  "generation": 32,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "aggressive_spine_contextual_shadowing",
+  "patch_description": "This generator combines the high-efficiency components of previous models to maximize structural complexity and variable reuse. \n1. **Saturation Budgeting**: Uses a high initial fuel (280) to consistently reach the 100-node limit.\n2. **Context-Length Weighted Lambda Forcing**: Employs a high early-stage abstraction probability (98% for small contexts) to build a rich environment of variables, then scales back to 85% to allow for deep application spines.\n3. **Optimized Variable Reuse**: Uses frequency-weighted selection from the context when generating applications, ensuring that the argument branch is highly likely to contain a valid variable reference.\n4. **Asymmetric Spine Split**: Implements a 92/8 split for `AppTm` nodes, creating deep, left-leaning trees that maximize unique sub-term counts and total size.\n5. **Hard-Shadowing Selection**: Always selects the most recent variable from the context (`matches[-1]`) to maximize local binding usage.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:46:40.809095",
+  "llm_cost": 0.0108025,
+  "llm_model": null
+}

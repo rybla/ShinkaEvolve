@@ -1,0 +1,14 @@
+{
+  "generation": 37,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "asymmetric_inhabitant_spine_generator",
+  "patch_description": "This algorithm maximizes term size and variable reuse by implementing three key shifts:\n1. **Extreme Asymmetric Budgeting (92/8 Split)**: Instead of a 70/30 split, we allocate 92% of the budget to the function side of an application. This forces the generator to create extremely deep left-heavy spines, pushing the average term size toward the 100-node limit.\n2. **Inhabitant-Preference Type Selection**: When generating an application, we select the argument type from the existing context with 90% probability. This ensures that the argument branch can be satisfied by a `VarTm` almost immediately, preventing the budget from being \"wasted\" on complex literal structures and significantly boosting `used_vars_proportions`.\n3. **High-Altitude Initial Budget**: We increase the initial term budget to 280. While the target is ~100, the asymmetric decay and \"hard floor\" logic mean a higher starting fuel is required to consistently reach the 70-90 node range without hitting recursion limits.\n4. **Shadowing-Biased Var Selection**: We prioritize the most recently added variable in the context to satisfy a type, ensuring that the most local scope is utilized, which naturally fits the structure of deep lambda abstractions.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:47:32.635132",
+  "llm_cost": 0.00979,
+  "llm_model": null
+}

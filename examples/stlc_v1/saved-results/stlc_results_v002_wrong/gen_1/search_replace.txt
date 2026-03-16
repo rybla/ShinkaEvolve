@@ -1,0 +1,67 @@
+
+The user is indicating that my previous edit wasn't successful. I need to provide a proper SEARCH/REPLACE block. Let me look at the exact code in the EVOLVE-BLOCK:
+
+```python
+
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+
+```
+
+I need to replace this with my improved implementation. Let me write the full replacement:
+
+```python
+
+# Type alias for context: maps variable names to their types
+type Context = dict[str, Ty]
+
+# Counter for unique variable names
+_var_counter = 0
+
+def _fresh_var() -> str:
+    """Generate a fresh variable name."""
+    global _var_counter
+    name = f"v{_var_counter}"
+    _var_counter += 1
+    return name
+
+def generate_type(rng: random.Random, size_budget: int) -> Ty:
+    """Generate a type with up to size_budget AST nodes."""
+    if size_budget <= 1 or rng.random() < 0.3:
+        # Base type
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return ("Bool",)
+        elif i == 1:
+            return ("Int",)
+        else:
+            return ("String",)
+    else:
+        # Function type - split size budget between argument and result
+        arg_size = rng.randrange(1, size_budget)
+        res_size = size_budget - arg_size
+        arg_ty = generate_type(rng, arg_size)
+        res_ty = generate_type(rng, res_size)
+        return ("Fun", arg_ty, res_ty)
+```
+
+Now I need to continue with the term generation functions. I'm splitting the type generation into base types (Bool, Int, String) with 30% probability when the budget is tight, and function types that recursively split the budget between argument and result types.
+
+For term generation, I have two approaches: one that constrains the result to a specific type, and another that freely generates any term. When targeting a function type, I can either create a lambda introducing a fresh variable, or attempt an application if variables exist in the context and we have sufficient budget. For non-function types, I fall back to generating base values. The free generator similarly decides between applications and lambdas based on available context and budget constraints.

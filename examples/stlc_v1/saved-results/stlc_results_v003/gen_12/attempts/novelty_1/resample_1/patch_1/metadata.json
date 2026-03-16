@@ -1,0 +1,14 @@
+{
+  "generation": 12,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "dynamic_budget_reallocation_and_context_prioritization",
+  "patch_description": "To improve `tm_sizes_average` and `used_vars_proportions_average`, I am implementing a dynamic budget reallocation strategy. When the context size increases, the generator will favor variable selection more aggressively at lower budgets, effectively \"saving\" budget from those leaf nodes and allowing the remaining recursive branches to consume more nodes. I also increased the probability of generating a `Lam` when the target is a `Fun` type to ensure deeper structural complexity and better variable binding opportunities.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:43:31.507055",
+  "llm_cost": 0.008701,
+  "llm_model": null
+}

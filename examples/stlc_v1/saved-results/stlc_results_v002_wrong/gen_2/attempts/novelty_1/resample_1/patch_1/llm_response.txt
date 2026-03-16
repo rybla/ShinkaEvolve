@@ -1,0 +1,43 @@
+Let me analyze the current program and the requirements:
+
+1. The current program generates types and terms of simply-typed lambda-calculus
+2. The current metrics show:
+   - good_ratio: 1.00 (all samples are well-formed and well-typed)
+   - tm_sizes_average: 1.38 (very small terms)
+   - ty_sizes_average: 1.38 (very small types)
+   - used_vars_proportions_average: 0.00 (no variables are used)
+   - applied_lambdas_proportions_average: 0.00 (no lambdas are applied)
+   - unique_subterms_proportions_average: 0.15 (low variety)
+
+The key issues:
+1. The term size is limited - needs to generate bigger terms (up to 100 nodes)
+2. The type size is limited - needs to generate bigger types (up to 10 nodes)
+3. Variables aren't being used - lambdas introduce variables but they're not used
+4. Lambdas aren't being applied - need more applications
+5. Need more unique subterms
+
+Looking at the current `generate_sample` function:
+- It has a depth parameter with default 10, but only uses it to decide whether to include "Fun" type
+- But wait, the depth is never decremented, so it always uses `depth > 0` which is always true after the first call
+- Also, the recursive call doesn't pass `depth-1`
+- When generating a function, it only generates `("Int",)` as the domain, not using the recursively generated type properly
+
+Let me redesign this:
+
+1. **Proper depth tracking**: Decrement depth on each recursive call
+2. **Use the generated type properly**: When creating a function, use the generated type as the range
+3. **Variable usage**: Generate variables that are introduced by lambdas and use them in the body
+
+
+4. **Lambda application**: Generate more applications to create larger, more complex terms
+5. **Unique subterms**: Build up complexity by composing different term structures together
+6. **Size limits**: Enforce bounds - max 10 nodes for types, max 100 nodes for terms
+
+The redesign should use a more controlled approach with a size budget that tracks AST nodes. I'll implement separate type and term generation functions that manage their budgets explicitly, ensuring variables are properly introduced and used within lambda bodies, and that applications create meaningful term combinations. def generate_term(rng, ty, size_budget):
+    """Generate a term with the given type and size budget."""
+    if size_budget <= 0:
+        return generate_literal(rng, ty)
+    
+    # ... generate using the size_budget
+
+The core issue is that the current implementation lacks proper size tracking. By introducing a size_budget parameter that decrements with each recursive call, I can ensure generated terms respect the 100-node limit while still allowing for meaningful variable binding and application chains. This approach also naturally supports the metric for applied_lambdas_proportions since each application consumes budget.

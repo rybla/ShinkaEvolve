@@ -1,87 +1,63 @@
-The user is asking me to rewrite a program to improve its performance. Let me analyze the current state and propose an improved solution.
-
-Looking at the current program:
-- Combined score: 10.55
-- good_ratio: 0.99 (very high, close to 1.0)
-- tm_sizes_average: 2.12
-- ty_sizes_average: 1.57
-- used_vars_proportions_average: 0.17
-- applied_lambdas_proportions_average: 0.06
-- unique_subterms_proportions_average: 0.27
-
-The best prior programs had good_ratio=1.00 but very low on other metrics. The current program has improved but has good_ratio=0.99.
-
-Key issues in the current implementation:
-1. When creating an application, if the function type is not a FunTy, it just returns the argument, losing the application structure
-2. Need to ensure type-correct applications
-
-Let me design an improved version that:
-1. Maintains good_ratio at 1.0 or very close
-2. Increases variable usage
-3. Increases lambda application
-4. Increases unique subterms
-
-The key insight is that for type-correct applications, we need to:
-- First decide we want to create an application
-- Generate a function type (FunTy) 
-- Generate a function term that has that type
-- Generate an argument term that matches the input type of the function
-
-Let me write a cleaner implementation:
+The error says "No changes applied" which means my SEARCH block didn't match the current code exactly. Let me look at the current code in the "Current program" section very carefully:
 
 ```python
-def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
-    if bound_vars is None:
-        bound_vars = []
-    
-    # Base case: generate literals when depth is exhausted or randomly at top level
-    if depth <= 0 or (not bound_vars and rng.random() < 0.5):
-        i = rng.randrange(0, 3)
-        if i == 0:
-            return (("Bool",), ("Bool", rng.choice([True, False])))
-        elif i == 1:
-            return (("Int",), ("Int", rng.randint(0, 100)))
-        else:
-            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
-    
-    # When we have bound variables, use them with some probability
-    if bound_vars and rng.random() < 0.35:
-        var_name, var_type = rng.choice(bound_vars)
-        return (var_type, ("Var", var_name))
-    
-    # Choose between lambda and application
-    i = rng.randrange(0, 2)
-    if i == 0 and depth > 1:
-        # Create a lambda with a fresh variable
-        var_name = f"x{rng.randint(0, 100)}"
-        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
-        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
-        return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
     else:
-        # Create an application - need type-correct function and argument
-        # First generate a function type
-        arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
-        ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
-        func_type = ("Fun", arg_type, ret_type)
-        
-        # Generate function term - could be a lambda or variable
-        if rng.random() < 0.5 and bound_vars:
-            # Use an existing variable of function type
-            for var_name, var_type in bound_vars:
-                if var_type[0] == "Fun":
-                    func_term = ("Var", var_name)
-                    break
-            else:
-                # No function variable available, create a lambda
-                func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
-        else:
-            # Create a lambda
-            func_term = ("Lam", "f", arg_type, generate_sample(rng, depth - 1, bound_vars + [("f", arg_type)])[1])
-        
-        # Generate argument term matching the function's input type
-        arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
-        
-        return (ret_type, ("App", func_term, arg_term))
+        ty, tm = generate_sample(rng)  # Note: depth is not passed!
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+# EVOLVE-BLOCK-END
 ```
 
-This implementation creates type-correct applications by first defining the function type, then generating a function term that matches that type, and finally creating an argument term that matches the expected input type. This ensures all applications are well-typed while maintaining the desired distribution of variables and lambda expressions. The issue is that when generating an application, I need to ensure the function actually has a function type. Rather than generating arbitrary terms and hoping the first one happens to be a function, I should explicitly construct a function first—either by creating a lambda or using a variable that I know has a function type—then apply it to an argument of the appropriate type.
+I need to match this exactly. Let me try a different approach - I'll try to improve the program by making it generate slightly larger terms while maintaining correctness.
+
+Looking at the best program (score 10.30), it has:
+- good_ratio: 1.00
+- tm_sizes_average: 1.35
+
+Current program has:
+- good_ratio: 1.00  
+- tm_sizes_average: 1.32
+
+The difference is in tm_sizes_average. To get larger terms, I could:
+1. Pass depth-1 to the recursive call (but this might cause issues with correctness)
+2. Add more variety in the literals
+3. Use different argument types for lambdas
+
+Actually, let me look at the best program more carefully:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+The key difference is that the best program includes a docstring and uses `generate_sample(rng)` without passing depth, which is identical to what I have. The structure is the same, so the scoring difference must come from something subtle in how the recursion or random selection behaves.
+
+Looking at the metrics, both achieve perfect correctness (good_ratio: 1.00), but the best program produces slightly larger terms on average (tm_sizes_average: 1.35 vs 1.32). This suggests the scoring might be sensitive to term complexity. I should try adding a docstring to see if that alone closes the gap, or explore other ways to increase term size without sacrificing correctness.

@@ -1,0 +1,27 @@
+The user is asking me to improve the performance of the lambda calculus generator. Let me analyze the current state and propose a targeted improvement.
+
+Looking at the current program in the EVOLVE-BLOCK-START section, it's a very simple generator that:
+1. Only generates simple literals (Bool, Int, String)
+2. Only generates simple lambdas wrapping those literals
+3. Has no depth control
+4. Has no context management for variables
+5. Has no application generation
+
+The metrics show:
+- good_ratio: 1.00 (perfect - all terms are well-typed)
+- tm_sizes_average: 1.35 (very small)
+- ty_sizes_average: 1.35 (very small)
+- used_vars_proportions_average: 0.00 (no variable usage)
+- applied_lambdas_proportions_average: 0.00 (no lambda applications)
+- unique_subterms_proportions_average: 0.15 (low uniqueness)
+
+I need to increase the complexity while maintaining good_ratio at 1.00.
+
+Let me write a more sophisticated generator that:
+1. Uses depth control to generate larger types (up to 10 nodes) and terms (up to 100 nodes)
+2. Properly manages a context of typed variables
+3. Generates lambdas and applications
+4. Uses variables from context when appropriate
+5. Always maintains type safety to keep good_ratio at 1.00
+
+I'll need to add the List import from typing as well.

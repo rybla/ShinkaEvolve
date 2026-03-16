@@ -1,11 +1,18 @@
-The user is saying the previous edit was not successful. Let me re-read the current program and make a valid edit.
+The user is saying the previous edit was not successful. Let me look at the current code again and make sure I'm proposing the correct change.
 
-Looking at the current program:
+Looking at the current code in the EVOLVE-BLOCK-START section:
+
 ```python
-# EVOLVE-BLOCK-START
-def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+def generate_sample(rng: random.Random, depth=10, context=None) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    Uses context to track bound variables for potential Var usage.
+    """
+    if context is None:
+        context = []
+    
     i = rng.randrange(0, 4 if depth > 0 else 3)
-
+    
     if i == 0:
         return (("Bool",), ("Bool", True))
     elif i == 1:
@@ -13,21 +20,32 @@ def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
     elif i == 2:
         return (("String",), ("String", "hello world"))
     else:
-        ty, tm = generate_sample(rng)  # Note: depth is not decremented!
-        return (
-            ("Fun", ("Int",), ty),
-            ("Lam", "x", ("Int",), tm),
-        )
-# EVOLVE-BLOCK-END
+        # Generate function type and term
+        # Use context to potentially reference bound variables
+        if context and rng.random() < 0.3:  # 30% chance to use a variable
+            var_name = rng.choice(context)
+            return (
+                ("Fun", ("Int",), ("Int",)),
+                ("Lam", "x", ("Int",), ("Var", var_name)),
+            )
+        else:
+            ty, tm = generate_sample(rng, depth - 1, context)
+            return (
+                ("Fun", ("Int",), ty),
+                ("Lam", "x", ("Int",), tm),
+            )
 ```
 
-I need to replace this entire function with an improved version. Let me make sure I get the exact indentation and format correct.
+The bug is in the else branch - when creating a lambda, the context is not updated with the new bound variable "x". The fix should be:
 
-The key improvements I want to make:
-1. Add bound_vars parameter to track bound variables
-2. Add variable usage (Var terms) - check if bound_vars is non-empty and select one
-3. Add application (App terms) - apply functions to arguments
-4. Use depth properly for termination control
-5. Use unique variable names
+```python
+        else:
+            new_context = context + ["x"]
+            ty, tm = generate_sample(rng, depth - 1, new_context)
+            return (
+                ("Fun", ("Int",), ty),
+                ("Lam", "x", ("Int",), tm),
+            )
+```
 
-Let me craft the edit carefully.
+This ensures that when we recurse into the lambda body, the new variable "x" is added to the context, allowing it to be referenced by Var nodes. I need to make sure I'm copying the exact code from the file to avoid any whitespace or formatting issues.

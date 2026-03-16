@@ -1,0 +1,48 @@
+I need to provide a SEARCH/REPLACE block to improve the code. Let me look at the current EVOLVE-BLOCK-START section and propose an improvement.
+
+The current code is:
+
+```python
+# EVOLVE-BLOCK-START
+
+
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+
+
+# EVOLVE-BLOCK-END
+```
+
+The issue is that this code:
+1. Recursively calls `generate_sample(rng)` without passing depth, causing infinite recursion or depth=10 default
+2. Generates very small terms (only literals or simple lambdas)
+3. Doesn't use variables at all
+4. Doesn't apply lambdas
+5. Has very few unique subterms
+
+I need to replace this with a more sophisticated generator that:
+1. Properly uses depth to control size
+2. Generates larger terms
+3. Uses variables from context
+4. Applies lambdas
+5. Has more unique subterms
+6. Maintains good_ratio = 1.00
+
+Let me write a proper implementation.

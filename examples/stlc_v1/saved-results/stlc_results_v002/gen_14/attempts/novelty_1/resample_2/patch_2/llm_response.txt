@@ -1,0 +1,29 @@
+The user is saying the previous edit was not successful. But looking at the conversation, I haven't actually made any edit yet - I was just analyzing the problem. Let me now make an actual edit proposal.
+
+Looking at the current code in the EVOLVE-BLOCK-START section:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+My idea is to modify the `else` branch to sometimes use the variable "x" instead of always generating a fresh term. This would increase used_vars_proportions_average while maintaining good_ratio = 1.00.
+
+Let me propose the edit:

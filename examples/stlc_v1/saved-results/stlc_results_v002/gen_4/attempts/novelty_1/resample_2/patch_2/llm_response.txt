@@ -1,16 +1,37 @@
-The previous edit didn't go through. Let me analyze the current code more carefully and make targeted improvements.
+The user is asking me to improve the performance of the lambda-calculus generator. Looking at the current program and the metrics, I need to make targeted improvements.
 
-Looking at the current `generate_sample` function:
-- It only generates literals or simple lambdas with Int type
-- It never uses variables
-- It never applies terms
-- The depth parameter is not used effectively
+Let me analyze what's happening:
 
-I need to replace the entire `generate_sample` function with a better implementation that:
-1. Generates larger types (up to 10 nodes)
-2. Generates larger terms (up to 100 nodes)
-3. Uses variables from lambda abstractions
-4. Applies lambdas to arguments
-5. Has more unique subterms
+Current program has:
+- Combined score: 10.30
+- good_ratio: 1.00 (perfect - all well-typed)
+- tm_sizes_average: 1.35 (very small)
+- ty_sizes_average: 1.35 (very small)
+- used_vars_proportions_average: 0.00 (no variable usage)
+- applied_lambdas_proportions_average: 0.00 (no lambda applications)
+- unique_subterms_proportions_average: 0.15 (low uniqueness)
 
-Let me write a proper implementation.
+The prior program had:
+- Combined score: 9.24
+- good_ratio: 0.82
+- tm_sizes_average: 4.89
+- ty_sizes_average: 2.90
+- used_vars_proportions_average: 0.03
+- applied_lambdas_proportions_average: 0.17
+- unique_subterms_proportions_average: 0.49
+
+The current program has a higher combined score mainly because of the perfect good_ratio, but the term sizes, variable usage, lambda applications, and unique subterms are all worse.
+
+Looking at the current implementation in generate_sample:
+- It only generates 4 simple cases: Bool, Int, String literals, or a trivial lambda wrapping a recursive call
+- It doesn't use the depth parameter properly
+- It doesn't maintain a context for variables
+- It doesn't generate applications
+
+I need to improve this to:
+1. Use depth control properly to generate larger types and terms
+2. Maintain a context of available variables
+3. Generate applications to apply lambdas
+4. Increase term size while maintaining type correctness
+
+Let me write a better implementation that addresses these issues.

@@ -1,8 +1,11 @@
-I need to provide the actual code change in the SEARCH/REPLACE format. Let me carefully construct the diff.
+I need to actually provide a valid edit. Let me look at the current code in the EVOLVE-BLOCK-START section and propose a replacement.
 
-The current code in the EVOLVE-BLOCK is:
+The current code is:
 
 ```python
+# EVOLVE-BLOCK-START
+
+
 def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
     """
     Generate a sample type and term using a random seed.
@@ -22,59 +25,9 @@ def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
             ("Fun", ("Int",), ty),
             ("Lam", "x", ("Int",), tm),
         )
+
+
+# EVOLVE-BLOCK-END
 ```
 
-I need to replace this with a better generator that:
-1. Generates larger types (up to 10 nodes)
-2. Generates larger terms (up to 100 nodes)
-3. Uses variables
-4. Applies lambdas
-5. Has unique subterms
-
-Let me write the replacement code carefully:
-
-```python
-def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
-    """
-    Generate a sample type and term using a random seed.
-    """
-    # Generate a type first, then generate a term of that type
-    ty = generate_type(rng, depth)
-    # Generate a term with the generated type
-    tm = generate_term_of_type(rng, depth, ty, [])
-    return (ty, tm)
-
-
-def generate_type(rng: random.Random, depth: int) -> Ty:
-    """Generate a random type up to the given depth."""
-    # Count nodes: base types have 1 node, function types have 1 + left + right nodes
-    max_depth_for_recursion = depth
-    
-    if depth <= 0:
-        # Only base types when at max depth
-        i = rng.randrange(0, 3)
-        if i == 0:
-            return ("Bool",)
-        elif i == 1:
-            return ("Int",)
-        else:
-            return ("String",)
-    
-    # Randomly choose between base types and function types
-    # Give more weight to base types when depth is low
-    if depth <= 1 or rng.random() < 0.4:
-        i = rng.randrange(0, 3)
-        if i == 0:
-            return ("Bool",)
-        elif i == 1:
-            return ("Int",)
-        else:
-            return ("String",)
-    else:
-        # Generate function type with recursive calls
-        left = generate_type(rng, depth - 1)
-        right = generate_type(rng, depth - 1)
-        return ("Fun", left, right)
-```
-
-Now I need to implement the term generation functions that create terms matching these types. The key is ensuring that when I generate a function type, I create lambda terms that properly abstract over the argument type, and when I generate base types, I create appropriate literals or variables. I need to complete the type checking logic and term generation. When generating an application, I verify the function has a function type, extract its argument type, recursively generate a term of that argument type, and combine them with an AppTm node. For variables, I randomly select one from the available context and return it wrapped in a VarTm node.
+I need to replace this with a more sophisticated implementation. Let me write a complete solution.

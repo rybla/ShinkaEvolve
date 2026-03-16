@@ -1,0 +1,14 @@
+{
+  "generation": 4,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "stlc_random_generator",
+  "patch_description": "I will implement a more sophisticated generator that tracks variable contexts and target types to ensure well-typedness while maximizing the size and complexity of the generated terms. \n\nKey improvements:\n1. **Context Tracking**: Pass a `ctx` (mapping variable names to types) to allow the generation of `Var` terms.\n2. **Targeted Generation**: The generator now takes a target `Ty` as an argument, ensuring the term matches the type.\n3. **Size Management**: Uses a `budget` parameter to control the AST size for both types and terms, aiming for the 10-node limit for types and 100-node limit for terms.\n4. **Higher-Order Terms**: Encourages the creation of `App` and `Lam` nodes to increase the `applied_lambdas` and `used_vars` metrics.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:42:11.369725",
+  "llm_cost": 0.004035,
+  "llm_model": null
+}

@@ -1,221 +1,25 @@
+The user is asking me to improve the performance of the lambda-calculus generator. Looking at the current code and metrics, I need to make changes to the `generate_sample` function in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END section.
 
-Let me look at the current code more carefully and propose the exact diff that needs to be made.
+Let me analyze what needs to be improved:
+- tm_sizes_average: 1.35 (very small, max is 100)
+- ty_sizes_average: 1.35 (very small, max is 10)
+- used_vars_proportions_average: 0.00 (no variable usage)
+- applied_lambdas_proportions_average: 0.00 (no lambda applications)
+- unique_subterms_proportions_average: 0.15 (few unique subterms)
 
-The current code in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END section is:
+The current implementation is too simple and doesn't generate:
+1. Complex types (function types with complex arguments)
+2. Variables
+3. Applications
+4. Nested lambdas
 
-```python
-def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
-    """
-    Generate a sample type and term using a random seed.
-    """
+I need to rewrite the generate_sample function to:
+1. Generate larger types (up to 10 nodes)
+2. Generate larger terms (up to 100 nodes)
+3. Use variables from the context
+4. Apply lambdas to arguments
+5. Have more unique subterms
 
-    i = rng.randrange(0, 4 if depth > 0 else 3)
+Let me write a more sophisticated generator.
 
-    if i == 0:
-        return (("Bool",), ("Bool", True))
-    elif i == 1:
-        return (("Int",), ("Int", 27))
-    elif i == 2:
-        return (("String",), ("String", "hello world"))
-    else:
-        ty, tm = generate_sample(rng)
-        return (
-            ("Fun", ("Int",), ty),
-            ("Lam", "x", ("Int",), tm),
-        )
-```
-
-I need to replace this entire function with a better implementation.
-
-Let me write a complete replacement:
-
-```python
-def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
-    """
-    Generate a sample type and term using a random seed.
-    """
-    
-    # First, generate a type with target size ~10 nodes
-    ty = generate_type(rng, depth=10)
-    
-    # Then generate a term with that type, tracking available variables
-    # Start with empty context, target term size ~100 nodes
-    tm = generate_term(rng, expected_ty=ty, context={}, term_depth=100)
-    
-    return (ty, tm)
-
-
-def generate_type(rng: random.Random, depth: int) -> Ty:
-    """Generate a random type with controlled depth/size."""
-    if depth <= 0:
-        # Base case: return a base type
-        i = rng.randrange(0, 3)
-        if i == 0:
-            return ("Bool",)
-        elif i == 1:
-            return ("Int",)
-        else:
-            return ("String",)
-    else:
-        # Recursive case: either base type or function type
-        i = rng.randrange(0, 4)
-        if i == 0:
-            return ("Bool",)
-        elif i == 1:
-            return ("Int",)
-        elif i == 2:
-            return ("String",)
-        else:
-            # Create function type with more sophisticated structure
-            dom = generate_type(rng, depth - 2)
-            cod = generate_type(rng, depth - 2)
-            return ("Fun", dom, cod)
-
-
-```
-
-I'm generating a type system with three base types (Bool, Int, String) and function types that compose them. When depth permits, I recursively build function types by pairing domain and codomain types with decreasing depth to control complexity. Then I generate a term matching the expected type, using the context to track available variables.
-
-For term generation, I have several strategies: if variables exist in context, I can select one and apply it to arguments; if term depth remains, I can create lambda abstractions that bind new variables; otherwise I fall back to literals. When applying a variable, I ensure the application is well-typed by checking the variable's type against the domain of the expected function type, then build the argument accordingly.
-
-```
-generate_term(rng, expected_ty, context, term_depth - 2)
-        cod = generate_term(rng, cod_ty, context, term_depth - 2)
-        return ("App", app, cod)
-    else:
-        # Fallback: create a literal of the expected base type
-        return generate_literal(rng, expected_ty)
-```
-
-When depth permits, I can also build applications by applying one term to another, checking that the argument matches the function's domain type. If no other strategy applies, I generate a literal value matching the expected base type.
-
-For literals, I need to construct values based on the type: booleans get True or False, integers get random values, and strings get generated content. I also track type sizes to keep the structure reasonable.
-
-```
-ty)
-    elif ty[0] == "String":
-        return ("String", generate_string(rng))
-    else:
-        # Should not reach here for well-typed terms
-        return ("Bool", True)
-
-
-def count_type_nodes(ty: Ty) -> int:
-    """Count the number of nodes in a type AST."""
-    if ty[0] == "Bool" or ty[0] == "Int" or ty[0] == "String":
-        return 1
-    elif ty[0] == "Fun":
-        return 1 + count_type_nodes(ty[1]) + count_type_nodes(ty[2])
-    return 1
-
-
-def count_term_nodes(tm: Tm) -> int:
-    """Count the number of nodes in a term AST."""
-    if tm[0] == "Bool" or tm[0] == "Int" or tm[0] == "String":
-        return 1
-    elif tm[0] == "Var":
-        return 1
-    elif tm[0] == "Lam":
-        return 1 + count_term_nodes(tm[3])
-    elif tm[0] == "App":
-        return 1 + count_term_nodes(tm[1]) + count_term_nodes(tm[2])
-    return 1
-```
-
-Now I'll add a helper to count AST nodes for both types and terms, then wrap everything in the proper format for the replacement block.
-
-```python
-def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
-    """
-    Generate a sample type and term using a random seed.
-    """
-    
-    # First, generate a type with target size ~10 nodes
-    ty = generate_type(rng, depth=10)
-    
-    # Then generate a term with that type, tracking available variables
-    # Start with empty context, target term size ~100 nodes
-    tm = generate_term(rng, expected_ty=ty, context={}, term_depth=100)
-    
-    return (ty, tm)
-
-
-def generate_type(rng: random.Random, depth: int) -> Ty:
-    """Generate a random type with controlled depth/size."""
-    if depth <= 0:
-        # Base case: return a base type
-        i = rng.randrange(0, 3)
-        if i == 0:
-            return ("Bool",)
-        elif i == 1:
-            return ("Int",)
-        else:
-            return ("String",)
-    else:
-        # Recursive case: either base type or function type
-        i = rng.randrange(0, 4)
-        if i == 0:
-            return ("Bool",)
-        elif i == 1:
-            return ("Int",)
-        elif i == 2:
-            return ("String",)
-        else:
-            # Create function type - distribute depth between domain and codomain
-            dom = generate_type(rng, depth // 2 - 1)
-            cod = generate_type(rng, depth // 2 - 1)
-            return ("Fun", dom, cod)
-
-
-def generate_term(rng: random.Random, expected_ty: Ty, context: dict, term_depth: int) -> Tm:
-    """Generate a term with the expected type, using variables from context."""
-    # Handle base types
-    if expected_ty[0] == "Bool" or expected_ty[0] == "Int" or expected_ty[0] == "String":
-        if term_depth > 0 and context and rng.random() < 0.3:
-            # Use a variable if available
-            var_name = rng.choice(list(context.keys()))
-            var_ty = context[var_name]
-            if var_ty == expected_ty:
-                return ("Var", var_name)
-        # Otherwise create a literal
-        return generate_literal(rng, expected_ty)
-    
-    # Handle function types
-    if expected_ty[0] == "Fun":
-        if term_depth > 0 and context and rng.random() < 0.3:
-            # Apply a variable to an argument
-            dom_ty = expected_ty[1]
-            arg = generate_term(rng, dom_ty, context, term_depth - 1)
-            var_name = rng.choice(list(context.keys()))
-            return ("App", ("Var", var_name), arg)
-        elif term_depth > 0:
-            # Create a lambda
-            var_name = f"x{rng.randrange(0, 1000)}"
-            dom_ty = expected_ty[1]
-            cod_ty = expected_ty[2]
-            # Extend context with the new variable
-            new_context = context.copy()
-            new_context[var_name] = dom_ty
-            body = generate_term(rng, cod_ty, new_context, term_depth - 1)
-            return ("Lam", var_name, dom_ty, body)
-        else:
-            # Can't create more complex term, create literal
-            return generate_literal(rng, expected_ty[1])
-    
-    # Fallback
-    return generate_literal(rng, expected_ty)
-
-
-def generate_literal(rng: random.Random, ty: Ty) -> Tm:
-    """Generate a literal value of the given type."""
-    if ty[0] == "Bool":
-        return ("Bool", rng.choice([True, False]))
-    elif ty[0] == "Int":
-        return ("Int", rng.randint(0, 100))
-    elif ty[0] == "String":
-        return ("String", "str")
-    else:
-        return ("Bool", True)
-```
-
-This generates types with controlled depth, builds terms that use variables from context, and creates literals matching the expected type. The context gets extended with lambda-bound variables so they can be referenced in the body.
+Looking at the code, I need to replace the generate_sample function. Let me create a better version.

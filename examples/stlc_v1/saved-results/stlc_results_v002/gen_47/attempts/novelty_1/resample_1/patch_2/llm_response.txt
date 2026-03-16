@@ -1,8 +1,26 @@
-Let me analyze the current program and propose an improvement. The key insight from the analysis is that the current program generates the argument term without ensuring its type matches the expected arg_type. This can lead to type mismatches.
+The user is asking me to improve the current program. Let me analyze what's happening:
 
-Let me create a novel approach that:
-1. Uses type-directed argument generation - passes the expected type to recursive calls
-2. Improves function variable selection with proper type checking
-3. Uses a slightly different probability distribution for better exploration
+1. The current program has good_ratio: 1.00 (perfect correctness)
+2. But it has used_vars_proportions_average: 0.00 and applied_lambdas_proportions_average: 0.00
+3. The best programs from the system prompt had used_vars_proportions_average ~0.11 and applied_lambdas_proportions_average ~0.11
 
-Here's my proposed solution:
+The current program has these issues:
+1. It doesn't pass depth to recursive calls (infinite recursion risk, though it seems to work)
+2. It doesn't generate App (application) terms
+3. It doesn't track context for variables
+
+Looking at the best programs in the system prompt, they:
+- Used depth parameter for termination control
+- Had context tracking
+- Had 5 options at depth > 0 (3 literals + Lam + App)
+- Had 3 options at depth = 0 (only literals)
+- App generates identity function and applies it
+
+Let me propose a modification that adds:
+1. Proper depth handling (pass depth-1 to recursive calls)
+2. Application term generation
+3. Context tracking for variables
+
+I need to be careful to keep good_ratio = 1.00 while improving the other metrics.
+
+Let me write the edit:

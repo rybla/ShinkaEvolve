@@ -1,8 +1,12 @@
+Let me analyze the issue. The user is asking me to improve the generator function. The previous attempts didn't work because I was trying to show the full code but wasn't properly formatting the SEARCH/REPLACE block.
 
-The previous response had an error - it seems I didn't provide a valid SEARCH/REPLACE block. Let me now provide the exact diff format needed.
+Looking at the code structure:
+- The file has EVOLVE-BLOCK-START and EVOLVE-BLOCK-END markers
+- I need to replace the generate_sample function between these markers
 
-Looking at the current code in the EVOLVE-BLOCK:
+Let me look at exactly what the current generate_sample function looks like in the file and write a proper replacement.
 
+The current function is:
 ```python
 def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
     """
@@ -25,4 +29,4 @@ def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
         )
 ```
 
-I need to replace this with a more sophisticated generator.
+I need to replace this with a better version. Let me write the complete SEARCH/REPLACE block now.

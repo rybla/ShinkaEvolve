@@ -1,35 +1,33 @@
 Let me analyze the current program and the prior programs to understand what improvements can be made.
 
-Looking at the current program:
-- It generates simple literals (Bool, Int, String) and lambda terms
-- It has good_ratio = 1.00 (perfect!)
-- But tm_sizes_average = 1.38 and ty_sizes_average = 1.38 are quite small
-- used_vars_proportions_average = 0.00 - no variables are being used!
-- applied_lambdas_proportions_average = 0.00 - no applications are being generated!
+Current program metrics:
+- Combined score: 10.60
+- good_ratio: 1.00
+- tm_sizes_average: 1.84
+- ty_sizes_average: 1.30
+- used_vars_proportions_average: 0.11
+- applied_lambdas_proportions_average: 0.11
+- unique_subterms_proportions_average: 0.23
 
-Looking at the best performing prior programs:
-- The best score was 10.8819 with good_ratio=0.9950, tm_sizes_average=4.3427, used_vars_proportions_average=0.1795, applied_lambdas_proportions_average=0.1821, unique_subterms_proportions_average=0.3927
-- That program used `bound_vars` parameter to track bound variables
-- It used `rng.random() < 0.35` to probabilistically choose variables
-- It used `f"x{rng.randint(0, 100)}"` for unique variable names
-- It had type-safe application: checks `func_type[0] == "Fun"` before applying
+Best prior programs (from the examples):
+- Program with score 10.64: good_ratio=1.00, tm_sizes_average=1.92, ty_sizes_average=1.35, used_vars_proportions_average=0.11, applied_lambdas_proportions_average=0.11, unique_subterms_proportions_average=0.26
 
-The key insight is:
-1. The current program doesn't use variables at all (used_vars_proportions_average = 0.00)
-2. The current program doesn't generate applications (applied_lambdas_proportions_average = 0.00)
-3. To improve, we need to:
-   - Add context tracking (bound_vars) to generate variables
-   - Add application generation
-   - Make the generation type-safe
+The key observation from the best programs:
+1. They all have good_ratio = 1.00 (perfect correctness)
+2. The best program (10.64) has:
+   - Higher tm_sizes_average (1.92 vs 1.84)
+   - Higher ty_sizes_average (1.35 vs 1.30)
+   - Same used_vars_proportions_average (0.11)
+   - Same applied_lambdas_proportions_average (0.11)
+   - Higher unique_subterms_proportions_average (0.26 vs 0.23)
 
-Let me propose a solution that incorporates these improvements:
+Looking at the differences:
+- The current program adds a 30% chance to use a variable from context in the Lam case
+- The best program doesn't have this check - it always recurses
 
-1. Add a `bound_vars` parameter to track variables in scope
-2. Add probability-based selection of variables from context
-3. Add application generation with type checking
-4. Use unique variable names with f-strings
+The 30% random check might be reducing the diversity/unique_subterms because sometimes it short-circuits with a simple identity function.
+
+Let me also look at what can improve unique_subterms_proportions_average - this measures the proportion of unique subterms in the generated samples. More diversity in the generated terms should help.
 
 
-5. Implement probabilistic termination to create more diverse term structures
-
-I'll focus on creating a more dynamic generation approach that balances variable usage, application creation, and type safety. The goal is to increase the complexity of generated terms while maintaining type consistency and avoiding infinite recursion.
+The best program consistently generates lambdas through recursion rather than using context variables. This approach naturally produces larger, more complex terms with greater structural variation. The current program's 30% probability check short-circuits this process by returning simple identity functions, which limits term complexity and reduces unique subterms. Removing this conditional and always recursing should increase both tm_sizes_average and unique_subterms_proportions_average. I should also consider exploring different types beyond just Int to create more varied terms.

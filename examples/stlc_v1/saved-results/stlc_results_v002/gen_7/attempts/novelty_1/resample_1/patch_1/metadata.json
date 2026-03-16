@@ -3,12 +3,12 @@
   "novelty_attempt": 1,
   "resample_attempt": 1,
   "patch_attempt": 1,
-  "success": true,
-  "num_applied": 1,
+  "success": false,
+  "num_applied": 0,
   "patch_name": "none",
   "patch_description": "none",
-  "error_msg": null,
-  "timestamp": "2026-03-15T05:49:39.876742",
-  "llm_cost": 0.0040482,
+  "error_msg": "No changes applied",
+  "timestamp": "2026-03-15T13:27:42.337300",
+  "llm_cost": 0.0032513999999999998,
   "llm_model": null
 }

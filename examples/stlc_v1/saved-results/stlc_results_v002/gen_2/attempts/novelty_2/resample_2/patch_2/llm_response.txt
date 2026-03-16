@@ -1,37 +1,19 @@
-The user is asking me to improve the generator function. Let me analyze the current code and the metrics to understand what needs to be changed.
+The user is asking me to improve the performance of the code. Looking at the current program, it generates very simple types and terms with small sizes. The goal is to maximize the combined score by generating:
 
-Looking at the current `generate_sample` function:
-1. It only generates literals (Bool, Int, String) and very simple lambdas
-2. It doesn't use the `depth` parameter properly
-3. It doesn't generate variables (Var terms)
-4. It doesn't generate applications (App terms)
-5. The types and terms are very small
+1. Bigger types (up to 10 nodes in AST)
+2. Bigger terms (up to 100 nodes in AST)
+3. More variable usage
+4. More lambda applications
+5. More unique subterms
 
-The metrics show:
-- tm_sizes_average: 1.38 (should be up to 100)
-- ty_sizes_average: 1.38 (should be up to 10)
-- used_vars_proportions_average: 0.00 (should be higher)
-- applied_lambdas_proportions_average: 0.00 (should be higher)
-- unique_subterms_proportions_average: 0.15 (should be higher)
+The current implementation only generates 4 simple cases and doesn't use the depth parameter properly. I need to create a more sophisticated generator that builds complex, well-typed terms.
 
-I need to rewrite the `generate_sample` function to:
-1. Generate larger types (up to 10 nodes)
-2. Generate larger terms (up to 100 nodes)
-3. Use variables from the context
-4. Apply lambdas to arguments
-5. Have more unique subterms
-
-Let me write a better generator that:
+Let me write an improved version that:
 1. Uses depth to control complexity
-2. Maintains a context of bound variables
-3. Generates Var terms referencing bound variables
-4. Generates App terms applying functions to arguments
-5. Builds larger Fun types
+2. Generates larger types with nested function types
+3. Generates larger terms with lambdas and applications
+4. Tracks variables in context and uses them
+5. Applies lambdas to arguments
+6. Creates unique subterms
 
-The key insight is that we need to:
-- Track bound variables (their names and types)
-- Generate Var terms that use these variables
-- Generate App terms that apply functions
-- Build larger types using the Fun constructor
-
-Let me create a more sophisticated generator.
+I'll base this on the prior program's structure but make sure it works correctly.

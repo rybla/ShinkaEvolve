@@ -1,0 +1,35 @@
+The user is asking me to improve the current program. Let me analyze what's happening:
+
+The current `generate_sample` function is very simple - it just generates 4 possible simple cases:
+1. Bool type with Bool literal
+2. Int type with Int literal  
+3. String type with String literal
+4. A function type (Int -> ty) with a lambda
+
+This produces very small terms and types, no variable usage, and no lambda applications.
+
+The prior program had a more sophisticated approach with:
+- `generate_type` with depth control
+- `generate_term` with depth control and context
+- `generate_literal_or_var` that can use variables from context
+- `generate_lambda` for lambda terms
+- `generate_application` for application terms
+
+I need to replace the current simple `generate_sample` with a more sophisticated version that:
+1. Generates larger types (up to 10 nodes)
+2. Generates larger terms (up to 100 nodes)
+3. Uses variables from context
+4. Applies lambdas to arguments
+5. Has more unique subterms
+
+But I also need to maintain good_ratio = 1.00 (all terms well-typed).
+
+Let me write a better implementation that builds on the prior program's approach but fixes the issues (the prior had good_ratio of 0.82, meaning some terms were ill-typed).
+
+The key insight is that I need to:
+1. Generate a type first
+2. Generate a term that has that exact type
+3. Use context to track bound variables so we can reference them
+4. Build up complexity through lambda and application constructs
+
+Let me create the improved code:

@@ -1,8 +1,64 @@
-The user is saying my previous edit failed because there was an issue extracting code from a "patch string". This seems like a system error. Let me try providing a cleaner response with the proper format.
+The user is asking me to provide a complete new program that improves upon the current one. Let me analyze what I need to do:
 
-I need to provide:
-1. <NAME> - A short name
-2. <DESCRIPTION> - Description of what I'm doing
-3. <CODE> - The complete new program code
+1. The current program has good_ratio = 1.00 (perfect correctness) - this must be maintained
+2. Current scores: tm_sizes_average: 1.87, unique_subterms_proportions_average: 0.25
 
-Let me write this properly.
+To improve, I should:
+1. Keep the depth-limited approach that ensures termination
+2. Keep the context tracking for variables
+3. Try to increase tm_sizes_average and unique_subterms_proportions_average
+
+Looking at prior programs:
+- Higher tm_sizes_average correlates with higher scores (1.31→1.38→1.84→1.87)
+- Higher unique_subterms_proportions_average correlates with higher scores (0.13→0.15→0.23→0.25)
+
+I need to provide a complete, valid Python program with the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END markers.
+
+Let me write the improved program:
+
+```python
+from typing import Literal, Tuple
+import random
+import tqdm
+
+"""
+`Ty` and `Tm` define the shape of a simply-typed lambda-calculus deeply embedded in Python. 
+...
+"""
+
+type Ty = BoolTy | IntTy | StringTy | FunTy
+type BoolTy = Tuple[Literal["Bool"]]
+type IntTy = Tuple[Literal["Int"]]
+type StringTy = Tuple[Literal["String"]]
+type FunTy = Tuple[Literal["Fun"], Ty, Ty]
+
+
+type Tm = LitTm | VarTm | LamTm | AppTm
+type LitTm = (
+    Tuple[Literal["Bool"], bool]
+    | Tuple[Literal["Int"], int]
+    | Tuple[Literal["String"], str]
+
+
+)
+type VarTm = Tuple[Literal["Var"], str]
+type LamTm = Tuple[Literal["Lam"], str, Ty, Tm]
+type AppTm = Tuple[Literal["App"], Tm, Tm]
+
+
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10, context=None) -> Tuple[Ty, Tm]:
+    if context is None:
+        context = []
+    
+    # At depth 0, only generate literals
+    if depth == 0:
+        i = rng.randrange(0
+
+I'll focus on creating a program that maintains the core logic while introducing more variability in term generation. The key is to balance complexity with correctness, using depth and context to guide the generation process. By carefully selecting literal values and controlling term construction, I can potentially increase the unique subterms and size metrics while preserving perfect type correctness.
+
+The generation strategy involves strategic depth management, ensuring that at depth 0 we only produce simple literals, while deeper levels allow more complex lambda and application constructs. This approach provides a structured way to generate diverse yet well-typed lambda calculus terms.
+
+I'll select literals across different types - booleans, integers, and strings - to maximize variability. The lambda and application generation maintains context tracking, enabling potential variable references and more sophisticated term construction.
+
+The method uses a probabilistic approach with controlled randomness, balancing between literal generation, lambda abstractions, and function applications at different recursion depths.

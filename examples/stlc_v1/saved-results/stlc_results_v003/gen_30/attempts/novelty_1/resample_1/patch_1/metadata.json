@@ -1,0 +1,14 @@
+{
+  "generation": 30,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 3,
+  "patch_name": "dynamic_shadowing_and_weighted_context_selection",
+  "patch_description": "To improve the `combined_score`, we focus on two key metrics: `used_vars_proportions_average` and `tm_sizes_average`. \n\n1.  **Weighted Context Selection**: Instead of a uniform `rng.choice` on the context types, we implement a frequency-weighted selection. By picking argument types (`arg_ty`) that appear more frequently in the context, we mathematically increase the probability that the argument branch of an application can be satisfied by a `VarTm` rather than a literal or a new sub-tree.\n2.  **Shadowing-Biased Variable Selection**: We refine the variable lookup to strictly use the most recent match (`matches[-1]`) with 100% probability when the budget is low, ensuring local variables from nested lambdas are prioritized.\n3.  **Increased Spine Aggression**: We push the application split to 92/8 and increase the initial fuel to 250 to approach the 100-node limit more consistently.\n4.  **Unique Naming**: We ensure `v_name` is always unique using the context length to prevent structural collisions in sub-term counting.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:46:04.130225",
+  "llm_cost": 0.00545085,
+  "llm_model": null
+}

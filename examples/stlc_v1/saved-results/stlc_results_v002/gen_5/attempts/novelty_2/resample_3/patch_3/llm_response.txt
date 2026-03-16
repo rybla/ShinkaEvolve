@@ -1,16 +1,40 @@
-The error suggests there was a problem with the patch format. Let me provide a complete new program that improves the performance metrics.
+The user is asking me to make an edit to improve the performance of the code. Let me analyze the current state and propose a targeted improvement.
 
-Looking at the current implementation:
-1. It only generates very small types and terms (size ~1.38)
-2. It doesn't generate lambda terms that use variables
-3. It doesn't apply lambdas to arguments
-4. It has very few unique subterms
+Looking at the current code in the EVOLVE-BLOCK-START section:
 
-I need to rewrite the generate_sample function to:
-1. Generate larger types (up to 10 nodes)
-2. Generate larger terms (up to 100 nodes)
-3. Actually use variables introduced by lambdas
-4. Apply lambdas to arguments
-5. Have more unique subterms
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
 
-Let me write a complete new program:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+The issues:
+1. The recursive call `generate_sample(rng)` doesn't pass `depth` - this is a bug
+2. No variables are ever generated
+3. No applications are ever generated
+4. Types and terms are very small
+
+I need to write a more sophisticated generator. Let me create a complete replacement that:
+1. Generates larger types (up to 10 nodes)
+2. Generates larger terms (up to 100 nodes)
+3. Uses variables from context
+4. Applies lambdas to arguments
+5. Creates unique subterms
+
+I need to add the necessary imports and helper functions. Let me write the complete replacement.

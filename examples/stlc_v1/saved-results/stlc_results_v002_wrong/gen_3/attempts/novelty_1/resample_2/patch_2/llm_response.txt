@@ -1,0 +1,32 @@
+Let me analyze the current program and the metrics to understand what needs to be improved.
+
+Current metrics:
+- Combined score to maximize: 10.30
+- good_ratio: 1.00
+- tm_sizes_average: 1.38
+- ty_sizes_average: 1.38
+- used_vars_proportions_average: 0.00
+- applied_lambdas_proportions_average: 0.00
+- unique_subterms_proportions_average: 0.15
+
+The key issues are:
+1. Terms are very small (1.38 average vs max 100)
+2. Types are very small (1.38 average vs max 10)
+3. Variables are never used (0.00)
+4. Lambdas are never applied (0.00)
+5. Unique subterms are low (0.15)
+
+The current implementation:
+- Only generates primitive types (Bool, Int, String) in base cases
+- Always creates `Fun` type with `Int` domain
+- Never creates variables that reference lambda parameters
+- Never applies lambdas to arguments
+
+I need to rewrite the generate_sample function to:
+1. Generate larger types (up to 10 nodes)
+2. Generate larger terms (up to 100 nodes)
+3. Use variables introduced by lambdas
+4. Apply lambdas to arguments
+5. Have more unique subterms
+
+Let me write a new implementation:

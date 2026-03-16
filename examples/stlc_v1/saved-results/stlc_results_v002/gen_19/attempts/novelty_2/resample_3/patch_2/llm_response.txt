@@ -1,0 +1,68 @@
+The user is asking me to rewrite the program to improve its performance. Let me analyze the current state and propose a novel approach.
+
+Looking at the current program:
+- Score: 10.28
+- good_ratio: 1.00 (perfect correctness)
+- tm_sizes_average: 1.33
+- used_vars_proportions_average: 0.00
+- applied_lambdas_proportions_average: 0.00
+- unique_subterms_proportions_average: 0.14
+
+The best prior programs had:
+- Score: ~10.30
+- good_ratio: 1.00
+- tm_sizes_average: ~1.35
+- used_vars_proportions_average: 0.00
+- applied_lambdas_proportions_average: 0.00
+- unique_subterms_proportions_average: ~0.15
+
+The key insight is that correctness (good_ratio = 1.00) is the most important factor. The current approach is already achieving near-optimal performance.
+
+Let me think about what novel approach I can take:
+
+1. The current approach uses depth-based recursion but doesn't pass depth to recursive calls
+2. I could try a different probability distribution for type selection
+3. I could try using different parameter types for lambdas (not just Int)
+4. I could try to increase tm_sizes_average slightly while maintaining good_ratio
+
+Let me create a novel approach that:
+1. Uses explicit depth tracking with proper depth reduction
+2. Uses a different strategy for generating function types (using the target type to guide generation)
+3. Maintains correctness while potentially increasing complexity slightly
+
+Here's my novel approach:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    Uses depth-limited recursive generation with type-guided term synthesis.
+    """
+    # Generate type with depth control
+    ty = generate_type(rng, depth)
+    # Generate term with depth control and empty context
+    tm = generate_term(rng, depth, [], ty)
+    return (ty, tm)
+
+def generate_type(rng: random.Random, depth: int) -> Ty:
+    """Generate a type with controlled depth."""
+    if depth <= 0:
+        return generate_base_type(rng)
+    
+    # At higher depths, favor function types to build complexity
+    if rng.random() < 0.6:  # Slightly lower than 0.7 to reduce complexity
+        arg_ty = generate_base_type(rng)
+        ret_ty = generate_type(rng, depth - 1)
+        return ("Fun", arg_ty, ret_ty)
+    
+    return generate_base_type(rng)
+
+I'll focus on generating base types with a balanced approach. The function selects from three primary types: Boolean, Integer, and String. This ensures type diversity while maintaining a simple, controlled generation strategy. The random selection provides variability without introducing unnecessary complexity.
+
+The generation process carefully considers depth and context, allowing for nuanced type and term creation. By controlling recursion depth and using probabilistic selection, I can generate a wide range of type-safe expressions while maintaining predictable structural characteristics.
+
+When generating terms, I prioritize type consistency and contextual appropriateness. The method intelligently chooses between literals, variables, and more complex constructs like lambda expressions, ensuring that each generated term matches the target type and respects the current context.
+
+The lambda generation strategy involves creating a unique argument name, establishing a new context that includes the argument, and recursively generating a body term that conforms to the function's return type. This approach allows for flexible and type-safe term generation.
+
+For application scenarios, I construct a function type dynamically, generate a function term and an argument term that match this type, and then combine them through application. The probabilistic approach enables a balanced mix of simple and complex term structures.

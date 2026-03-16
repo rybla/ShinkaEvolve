@@ -1,5 +1,10 @@
-The user is saying the previous edit was not successful and no changes were applied. This means I need to provide the SEARCH/REPLACE block properly. Let me look at the current state of the code and provide the correct diff.
+Let me look at the current code more carefully and propose a targeted improvement. The issue is that the current generator doesn't properly use the depth parameter and doesn't create opportunities for using variables or applying lambdas.
 
-Looking at the code, I need to replace the `generate_sample` function in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END section.
+Let me write a new version that:
+1. Properly uses depth to control size (decrementing it with each recursive call)
+2. Creates a context of available variables when we create lambdas
+3. Allows using variables from the context
+4. Allows applying lambdas to arguments
+5. Uses different base types and function types
 
-Let me write the proper diff:
+I need to make sure the changes are valid and the code still runs.

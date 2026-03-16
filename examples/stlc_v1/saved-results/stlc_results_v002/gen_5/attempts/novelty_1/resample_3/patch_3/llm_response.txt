@@ -1,7 +1,8 @@
-I need to provide a valid SEARCH/REPLACE block. Let me carefully look at the exact code that needs to be replaced and make sure my diff is correct.
+The user is saying my previous edit was not successful. Let me look at what happened - I started to write a response but didn't actually provide a valid SEARCH/REPLACE block. I need to provide the actual diff format.
 
-The code between EVOLVE-BLOCK-START and EVOLVE-BLOCK-END is:
+Let me look at the current code in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END section and provide a proper replacement.
 
+The current code is:
 ```python
 # EVOLVE-BLOCK-START
 
@@ -30,4 +31,4 @@ def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
 # EVOLVE-BLOCK-END
 ```
 
-I need to replace this with a better implementation. Let me make sure the SEARCH text matches exactly.
+I need to replace this with a more sophisticated implementation. Let me write the diff properly.

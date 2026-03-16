@@ -1,22 +1,47 @@
-Let me analyze the task more carefully. I need to rewrite the program to improve its performance metrics. The current program has:
+The user is saying my previous edit was not successful. Let me re-read the current program and make a more targeted change.
 
-- Score: 10.31
-- good_ratio: 1.00
-- tm_sizes_average: 1.41
-- ty_sizes_average: 1.41
-- used_vars_proportions_average: 0.00
-- applied_lambdas_proportions_average: 0.00
-- unique_subterms_proportions_average: 0.16
+Looking at the current program, I need to find the exact code block to replace. Let me look at the current program again:
 
-The key issues are:
-1. No variable usage (used_vars_proportions_average: 0.00)
-2. No applications (applied_lambdas_proportions_average: 0.00)
-3. Low tm_sizes_average and ty_sizes_average
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10, context=None) -> Tuple[Ty, Tm]:
+    if context is None:
+        context = []
+    
+    # At depth 0, only generate literals
+    if depth == 0:
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", True))
+        elif i == 1:
+            return (("Int",), ("Int", 27))
+        else:
+            return (("String",), ("String", "hello world"))
+    
+    # At depth > 0, choose from literals, Lam, and App
+    i = rng.randrange(0, 5)  # 5 options
+    
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    elif i == 3:
+        # Generate lambda - with 30% chance to use a variable from context
+        if context and rng.random() < 0.3:
+            var_name = rng.choice(context)
+            return (("Fun", ("Int",), ("Int",)), ("Lam", "x", ("Int",), ("Var", var_name)))
+        else:
+            ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+            return (("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm))
+    else:
+        # Generate application
+        arg_ty, arg_tm = generate_sample(rng, depth - 1, context)
+        func_ty = ("Fun", arg_ty, arg_ty)
+        func_tm = ("Lam", "x", arg_ty, ("Var", "x"))
+        return (arg_ty, ("App", func_tm, arg_tm))
+# EVOLVE-BLOCK-END
+```
 
-I need to implement a more sophisticated generator that:
-1. Tracks bound variables with a `bound_vars` parameter
-2. Uses type-safe application with fallback
-3. Generates unique variable names with f-strings
-4. Uses probabilistic termination
-
-Let me write the complete new program:
+The lambda case at index 3 has a conditional that either picks a variable from context 30% of the time or recurses with an extended context. I should simplify this by always recursing with the extended context, which will generate more complex terms and likely improve the score.

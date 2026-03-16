@@ -1,0 +1,12 @@
+I need to provide the edit in the correct format. Let me analyze what I need to change and provide the exact SEARCH/REPLACE block.
+
+Looking at the current program:
+- It has `generate_sample(rng: random.Random, depth=10)` 
+- The function body needs to be completely replaced to add:
+  1. bound_vars parameter
+  2. Variable usage
+  3. Application terms
+  4. Proper depth control
+  5. Unique variable names
+
+Let me provide the exact diff format.

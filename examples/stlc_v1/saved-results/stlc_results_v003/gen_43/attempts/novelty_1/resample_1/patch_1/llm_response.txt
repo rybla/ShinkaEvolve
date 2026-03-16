@@ -1,0 +1,118 @@
+<NAME>
+asymmetric_beta_spine_generator
+</NAME>
+
+<DESCRIPTION>
+The algorithm implements an extreme asymmetric budget splitting strategy (95/5) to force deep left-leaning application spines, which significantly boosts `tm_sizes_average`. To maximize `applied_lambdas_proportions`, it uses a "Beta-Redex Injection" technique: when generating an application, it frequently bypasses standard recursion for the function side and manually constructs a `LamTm`, ensuring an applied lambda exists in the spine. Variable reuse is maximized by a 95% bias toward selecting argument types that already exist in the context, allowing the argument branch to be immediately satisfied by a `VarTm`. High-entropy naming and literal generation ensure `unique_subterms_proportions` remain near-perfect.
+</DESCRIPTION>
+
+<CODE>
+```python
+from typing import Literal, Tuple, List
+import random
+
+"""
+`Ty` and `Tm` define the shape of a simply-typed lambda-calculus deeply embedded in Python.
+"""
+
+type Ty = BoolTy | IntTy | StringTy | FunTy
+type BoolTy = Tuple[Literal["Bool"]]
+type IntTy = Tuple[Literal["Int"]]
+type StringTy = Tuple[Literal["String"]]
+type FunTy = Tuple[Literal["Fun"], Ty, Ty]
+
+type Tm = LitTm | VarTm | LamTm | AppTm
+type LitTm = (
+    Tuple[Literal["Bool"], bool]
+    | Tuple[Literal["Int"], int]
+    | Tuple[Literal["String"], str]
+)
+type VarTm = Tuple[Literal["Var"], str]
+type LamTm = Tuple[Literal["Lam"], str, Ty, Tm]
+type AppTm = Tuple[Literal["App"], Tm, Tm]
+
+# EVOLVE-BLOCK-START
+
+def generate_sample(rng: random.Random) -> Tuple[Ty, Tm]:
+    """
+    Generates STLC terms with extreme spine depth, high variable reuse, 
+    and forced beta-redexes to maximize all performance metrics.
+    """
+
+    def gen_type(budget: int) -> Ty:
+        if budget <= 1 or rng.random() < 0.2:
+            return rng.choice([("Bool",), ("Int",), ("String",)])
+        left_b = rng.randint(1, max(1, budget - 1))
+        return ("Fun", gen_type(left_b), gen_type(max(1, budget - left_b)))
+
+    def gen_term(target_ty: Ty, ctx: List[Tuple[str, Ty]], budget: int) -> Tm:
+        # 1. Context-Driven Variable Selection (Shadowing Bias)
+        matches = [name for name, ty in ctx if ty == target_ty]
+        
+        # 2. Hard Floor / Terminal Cases
+        if budget <= 2:
+            if matches and rng.random() < 0.98:
+                # Use the most recently bound variable to encourage dense shadowing
+                return ("Var", matches[-1])
+            
+            if target_ty[0] == "Fun":
+                v_name = f"v{len(ctx)}_{rng.getrandbits(16)}"
+                return ("Lam", v_name, target_ty[1], gen_term(target_ty[2], ctx + [(v_name, target_ty[1])], 1))
+            
+            # High-entropy literals for uniqueness
+            if target_ty[0] == "Bool": return ("Bool", rng.choice([True, False]))
+            if target_ty[0] == "Int": return ("Int", rng.getrandbits(30))
+            return ("String", f"s_{rng.getrandbits(30)}")
+
+        # 3. Lambda Forcing (Functional Abstraction)
+        if target_ty[0] == "Fun" and rng.random() < 0.88:
+            v_name = f"v{len(ctx)}_{rng.getrandbits(16)}"
+            return ("Lam", v_name, target_ty[1], gen_term(target_ty[2], ctx + [(v_name, target_ty[1])], budget - 1))
+
+        # 4. Beta-Redex Injection & Asymmetric Application
+        # To maximize used_vars, pick an arg_ty that exists in the context with 95% probability
+        if ctx and rng.random() < 0.95:
+            arg_ty = rng.choice(ctx)[1]
+        else:
+            arg_ty = gen_type(1)
+            
+        fun_ty = ("Fun", arg_ty, target_ty)
+
+        # Extreme Asymmetry: 95% budget to the function side
+        split_f = max(1, int(budget * 0.95))
+        split_a = max(1, budget - split_f - 1)
+
+        # Beta-Redex Injection: Force the function side to be a Lambda with 35% probability
+        # This directly boosts applied_lambdas_proportions_average
+        if budget > 50 and rng.random() < 0.35:
+            v_name = f"v{len(ctx)}_{rng.getrandbits(16)}"
+            # The lambda must take arg_ty and return target_ty
+            injected_lam = ("Lam", v_name, arg_ty, gen_term(target_ty, ctx + [(v_name, arg_ty)], split_f - 1))
+            return ("App", injected_lam, gen_term(arg_ty, ctx, split_a))
+
+        return ("App", 
+                gen_term(fun_ty, ctx, split_f), 
+                gen_term(arg_ty, ctx, split_a))
+
+    # Initial parameters: High fuel (500) to push size past 100 nodes
+    # Small target type to allow more room for application spines
+    target_type = gen_type(rng.randint(2, 4))
+    term = gen_term(target_type, [], 500)
+
+    return target_type, term
+
+# EVOLVE-BLOCK-END
+
+import lc
+
+def run() -> lc.RunOutput:
+    """Run the analysis"""
+    size = 1000
+    rng = random.Random()
+    return lc.run(
+        size=size,
+        rng=rng,
+        generate_sample=generate_sample,
+    )
+```
+</CODE>

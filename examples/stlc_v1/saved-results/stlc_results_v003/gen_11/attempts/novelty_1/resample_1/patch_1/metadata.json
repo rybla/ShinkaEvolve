@@ -1,0 +1,14 @@
+{
+  "generation": 11,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "asymmetric_budget_stlc_generator",
+  "patch_description": "This implementation optimizes the combined score by merging the high term size of the current program with the asymmetric budget splitting and variable prioritization of the crossover inspiration. \n\nKey improvements:\n1. **Asymmetric Budget Splitting**: Allocates ~70% of the budget to the function side of an application. This encourages deeper application chains and higher `applied_lambdas_proportions`.\n2. **Variable Prioritization**: Increases the probability of selecting a variable from the context (90% when budget is low) to maximize `used_vars_proportions`.\n3. **Context-Aware Type Generation**: When generating an application, it occasionally picks an argument type already present in the context to increase the likelihood of variable usage.\n4. **Structural Integrity**: Maintains a 1.0 `good_ratio` by ensuring base cases (literals) are always available if no matching variable exists.\n5. **Size Optimization**: Targets a type size of 10 and a term budget of 100 to maximize AST complexity while staying within limits.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:43:16.277358",
+  "llm_cost": 0.010199,
+  "llm_model": null
+}

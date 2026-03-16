@@ -1,32 +1,17 @@
-The user is saying my previous edit wasn't applied. Let me look at the current program again and make a targeted improvement.
+Looking at the analysis provided, the current program has a score of 10.62, while the best prior program had 10.64. The key difference seems to be:
 
-Current program:
+1. The best prior program had a 30% chance to use a variable from context in the lambda branch
+2. The current program always recurses without using variables from context
+
+Let me look at the current code more carefully:
+
 ```python
-def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
-    i = rng.randrange(0, 4 if depth > 0 else 3)
-
-    if i == 0:
-        return (("Bool",), ("Bool", True))
-    elif i == 1:
-        return (("Int",), ("Int", 27))
-    elif i == 2:
-        return (("String",), ("String", "hello world"))
-    else:
-        ty, tm = generate_sample(rng)
-        return (
-            ("Fun", ("Int",), ty),
-            ("Lam", "x", ("Int",), tm),
-        )
+elif i == 3:
+    # Generate lambda - FIX: add parameter to context
+    ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+    return (("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm))
 ```
 
-The issue is that:
-1. It doesn't track bound variables
-2. It doesn't use variables in the body
-3. It doesn't create App nodes
+This is missing the 30% chance to use a variable from context. This is likely why the score is slightly lower than the best prior program (10.62 vs 10.64).
 
-I need to add:
-1. A `bound_vars` parameter to track variables in scope
-2. Use those variables (return Var nodes)
-3. Create App nodes that apply variables
-
-Let me make a targeted edit that adds context tracking and variable usage.
+Let me add back the 30% chance to use a variable from context in the lambda branch.

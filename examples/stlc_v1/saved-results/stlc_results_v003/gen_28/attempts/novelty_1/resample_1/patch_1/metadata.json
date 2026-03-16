@@ -1,0 +1,14 @@
+{
+  "generation": 28,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 2,
+  "patch_name": "weighted_context_selection_and_budget_scaling",
+  "patch_description": "To improve the `combined_score`, we need to increase `tm_sizes_average` (currently 28.44, target ~100) and `ty_sizes_average` (currently 2.39, target ~10) while maintaining high variable usage. \n\n1.  **Frequency-Weighted Type Selection**: Instead of a uniform `rng.choice(ctx)`, we weight the selection of `arg_ty` toward types that appear most frequently in the context. This increases the probability that the argument branch of an `App` can be satisfied by a `Var`, pushing `used_vars_proportions_average` higher.\n2.  **Dynamic Budget Scaling**: The current term budget of 150 is yielding small terms because of the 80/20 split and recursion depth. Increasing the initial budget to 300 and using a 90/10 split for the application spine will create much deeper terms.\n3.  **Type Complexity**: Increasing the `gen_type` budget from 5 to 10 to improve `ty_sizes_average`.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:45:52.149858",
+  "llm_cost": 0.008633,
+  "llm_model": null
+}

@@ -1,30 +1,92 @@
-The user is asking me to rewrite a program to improve its performance. Let me analyze the current state and propose an improved solution.
+Let me re-read the code more carefully. The current code is:
 
-Looking at the current program:
-- Combined score: 10.55
-- good_ratio: 0.99 (very high, close to 1.0)
-- tm_sizes_average: 2.12
-- ty_sizes_average: 1.57
-- used_vars_proportions_average: 0.17
-- applied_lambdas_proportions_average: 0.06
-- unique_subterms_proportions_average: 0.27
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)  # Note: depth is not passed!
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
 
-The best prior programs had good_ratio=1.00 but very low on other metrics. The current program has improved but has good_ratio=0.99.
+Looking at the prior programs:
+- The best one (score 10.30) has: `ty, tm = generate_sample(rng)` - no depth passed
+- The current one has: `ty, tm = generate_sample(rng)` - same thing
 
-Key issues in the current implementation:
-1. When creating an application, if the function type is not a FunTy, it just returns the argument, losing the application structure
-2. Need to ensure type-correct applications
+Wait, they're identical! Let me look at the differences more carefully...
 
-Let me design an improved version that:
-1. Maintains good_ratio at 1.0 or very close
-2. Increases variable usage
-3. Increases lambda application
-4. Increases unique subterms
+Actually wait, the best program (score 10.30) shows:
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
 
-The key insight is that for type-correct applications, we need to:
-- First decide we want to create an application
-- Generate a function type (FunTy) 
-- Generate a function term that has that type
-- Generate an argument term that matches the input type of the function
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+```
 
-Let me write a cleaner implementation:
+And the current one shows:
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+```
+
+They're the same! So why is the score different?
+
+Oh wait, I see it now. The current code block shows:
+```python
+ty, tm = generate_sample(rng)  # Note: depth is not passed!
+
+
+```
+
+But the best program shows:
+```python
+ty, tm = generate_sample(rng)
+```
+
+Hmm, they're the same. Let me check if there's any other difference...
+
+Actually, wait. Looking at the best program (score 10.30):
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+```
+
+And the current program (score 10.27):
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+```
+
+The only difference is the docstring! The best program has a docstring, but the current one doesn't. That's a trivial difference that shouldn't affect the score.
+
+Wait, let me check the current program again. Actually, let me look at the most recent version provided:
+
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+```
+
+There's no docstring here either. So the difference must be something else. Let me think about what could cause a 0.03 difference in score...
+
+Actually, I wonder if there's an issue with how the depth parameter is being used or not used. Let me look more carefully at what's happening with the recursion.
+
+The issue might be that when generating deeper terms, we're not properly managing the depth parameter, which could lead to different behavior or potentially infinite recursion in some cases. The key is to pass the depth parameter correctly through the recursive calls.
+
+I notice that the code is generating base cases (Bool, Int, String) with specific values, and then for the else case, it's recursively calling generate_sample without properly decrementing the depth. This could cause issues with the scoring or generate unexpected results.
+
+I'll modify the recursion to ensure depth is properly managed and add a docstring to match the best-performing version. The goal is to make the code more robust and potentially improve the score.

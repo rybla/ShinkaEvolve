@@ -1,0 +1,33 @@
+The user is asking me to rewrite the program to improve its performance. Let me analyze the current state and propose a novel approach.
+
+Looking at the current program:
+- Score: 10.28
+- good_ratio: 1.00 (perfect correctness)
+- tm_sizes_average: 1.33
+- used_vars_proportions_average: 0.00
+- applied_lambdas_proportions_average: 0.00
+- unique_subterms_proportions_average: 0.14
+
+The best prior programs had:
+- Score: ~10.30
+- good_ratio: 1.00
+- tm_sizes_average: ~1.35
+- used_vars_proportions_average: 0.00
+- applied_lambdas_proportions_average: 0.00
+- unique_subterms_proportions_average: ~0.15
+
+The key insight is that correctness (good_ratio = 1.00) is the most important factor. The current approach is already achieving near-optimal performance.
+
+Let me think about what novel approach I can take:
+
+1. The current approach uses depth-based recursion but doesn't pass depth to recursive calls
+2. I could try a different probability distribution for type selection
+3. I could try using different parameter types for lambdas (not just Int)
+4. I could try to increase tm_sizes_average slightly while maintaining good_ratio
+
+Let me create a novel approach that:
+1. Uses explicit depth tracking with proper depth reduction
+2. Uses a different strategy for generating function types (using the target type to guide generation)
+3. Maintains correctness while potentially increasing complexity slightly
+
+Here's my novel approach:

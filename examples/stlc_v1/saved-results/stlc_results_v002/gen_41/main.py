@@ -41,57 +41,39 @@ type AppTm = Tuple[Literal["App"], Tm, Tm]
 
 
 # EVOLVE-BLOCK-START
-def generate_sample(rng: random.Random, depth=10, bound_vars=None) -> Tuple[Ty, Tm]:
-    if bound_vars is None:
-        bound_vars = []
+def generate_sample(rng: random.Random, depth=10, context=None) -> Tuple[Ty, Tm]:
+    if context is None:
+        context = []
     
-    # Probabilistic base case termination
-    if depth <= 0 or (not bound_vars and rng.random() < 0.5):
+    # At depth 0, only generate literals
+    if depth == 0:
         i = rng.randrange(0, 3)
         if i == 0:
-            return (("Bool",), ("Bool", rng.choice([True, False])))
+            return (("Bool",), ("Bool", True))
         elif i == 1:
-            return (("Int",), ("Int", rng.randint(0, 100)))
+            return (("Int",), ("Int", 27))
         else:
-            return (("String",), ("String", rng.choice(["hello", "world", "test"])))
+            return (("String",), ("String", "hello world"))
     
-    # With some probability, return a bound variable
-    if bound_vars and rng.random() < 0.35:
-        var_name, var_type = rng.choice(bound_vars)
-        return (var_type, ("Var", var_name))
-    
-    i = rng.randrange(0, 5)
+    # At depth > 0, choose from literals, Lam, and App
+    i = rng.randrange(0, 5)  # 5 options
     
     if i == 0:
-        # Boolean literal
-        return (("Bool",), ("Bool", rng.choice([True, False])))
+        return (("Bool",), ("Bool", True))
     elif i == 1:
-        # Integer literal
-        return (("Int",), ("Int", rng.randint(0, 100)))
+        return (("Int",), ("Int", 27))
     elif i == 2:
-        # String literal
-        return (("String",), ("String", rng.choice(["hello", "world", "test"])))
+        return (("String",), ("String", "hello world"))
     elif i == 3:
-        # Lambda with unique variable name
-        var_name = f"x{rng.randint(0, 100)}"
-        var_type = ("Int",)
-        inner_ty, inner_tm = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
-        return (
-            ("Fun", var_type, inner_ty),
-            ("Lam", var_name, var_type, inner_tm)
-        )
+        # Generate lambda - always recurse to build more complex terms
+        ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+        return (("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm))
     else:
-        # Application with type checking
-        func_ty, func_tm = generate_sample(rng, depth - 1, bound_vars)
-        arg_ty, arg_tm = generate_sample(rng, depth - 1, bound_vars)
-        
-        # Type-safe application: only apply if func is a function type
-        if func_ty[0] == "Fun":
-            return_type = func_ty[2]
-            return (return_type, ("App", func_tm, arg_tm))
-        else:
-            # Fallback: return the argument if func is not a function
-            return (arg_ty, arg_tm)
+        # Generate application - apply a lambda to an argument
+        arg_ty, arg_tm = generate_sample(rng, depth - 1, context)
+        func_ty = ("Fun", arg_ty, arg_ty)
+        func_tm = ("Lam", "x", arg_ty, ("Var", "x"))
+        return (arg_ty, ("App", func_tm, arg_tm))
 # EVOLVE-BLOCK-END
 
 # This part remains fixed (not evolved)

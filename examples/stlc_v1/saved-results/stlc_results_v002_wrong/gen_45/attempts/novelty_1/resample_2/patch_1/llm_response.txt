@@ -1,0 +1,72 @@
+Let me analyze the current program and the performance metrics to identify potential improvements.
+
+Current performance:
+- Combined score: 10.88
+- good_ratio: 0.99 (very high)
+- tm_sizes_average: 4.34
+- used_vars_proportions_average: 0.18
+- applied_lambdas_proportions_average: 0.18
+- unique_subterms_proportions_average: 0.39
+
+Looking at the current code, I see several areas for potential improvement:
+
+1. **Type-safe application with pre-calculated types**: The current code creates applications but doesn't check if the argument type matches the function's input type. This could lead to type errors which would reduce the good_ratio.
+
+2. **Variable selection with type matching**: Currently, when selecting a variable from bound_vars, it just randomly chooses one without considering if its type matches what's needed. This could lead to type mismatches.
+
+3. **Better termination strategy**: The current uses `depth <= 0 or (not bound_vars and rng.random() < 0.5)`. This could be improved.
+
+4. **More sophisticated lambda creation**: Currently, lambdas are created with random types. Could be improved to create more meaningful functions.
+
+Let me look at the key areas where improvements can be made:
+
+1. **Type-safe application**: When creating an application, ensure the argument type matches the function's input type. Currently, the code generates `arg_term` without ensuring its type matches `arg_type`.
+
+2. **Better variable usage**: When using a variable, ensure its type is appropriate for the context.
+
+3. **Improved lambda generation**: Create lambdas that actually use their bound variable meaningfully.
+
+Let me craft a specific improvement:
+
+The main issue I see is in the application creation part:
+```python
+# Generate argument term matching the function's input type
+arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+
+
+```
+
+This doesn't ensure the generated argument has the correct type. I need to modify this to generate an argument with the specific type needed. The fix involves passing the required type to `generate_sample` and ensuring it returns a term of that type. I'll add a `target_type` parameter to guide the generation process, then modify the application creation to use this parameter to generate type-correct arguments.
+
+When creating an application, I'll extract the argument type from the function type and use it to generate a matching argument term. This ensures type consistency throughout the term generation.
+
+```
+
+python
+def generate_sample(rng: random.Random, depth=10, bound_vars=None, target_type=None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # Base case: generate literals when depth is exhausted or randomly at top level
+    if depth <= 0 or (not bound_vars and rng.random() < 0.5):
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c", "x", "y", "z"])))
+    
+    # When we have bound variables and need a specific type, try to find a matching variable
+    if target_type and bound_vars and rng.random() < 0.5:
+        for var_name, var_type in bound_vars:
+            if var_type == target_type:
+                return (var_type, ("Var", var_name))
+    
+    # When we have bound variables, use them with some probability
+    if bound_vars and rng.random() < 0.35:
+        var_name, var_type = rng.choice(bound_vars)
+        return (var_type, ("Var", var_name))
+```
+
+I need to handle the case where a specific target type is required. If a target type is provided and bound variables exist, I'll attempt to find a variable matching that type before falling back to random selection. This ensures type consistency when generating terms.

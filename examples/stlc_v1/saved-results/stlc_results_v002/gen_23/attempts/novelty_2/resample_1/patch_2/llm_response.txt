@@ -1,0 +1,19 @@
+Let me analyze the task more carefully. I need to rewrite the `generate_sample` function to improve the performance metrics. The key metrics to improve are:
+
+1. tm_sizes_average - currently 1.33, needs to be much higher (max 100)
+2. ty_sizes_average - currently 1.33, needs to be much higher (max 10)
+3. used_vars_proportions_average - currently 0.00, needs to be > 0
+4. applied_lambdas_proportions_average - currently 0.00, needs to be > 0
+5. unique_subterms_proportions_average - currently 0.14, needs to be higher
+
+The current implementation is too simple - it only generates literals or very simple lambdas with Int type. I need a type-directed approach where I:
+1. First generate a random type with bounded size
+2. Then generate a well-typed term that has that type
+
+Let me design a new algorithm:
+
+1. Generate a type with bounded size (up to 10 nodes)
+2. Generate a term with that type using a context of available variables
+3. Use both lambda abstraction and application to create larger terms
+
+Let me write the new implementation:

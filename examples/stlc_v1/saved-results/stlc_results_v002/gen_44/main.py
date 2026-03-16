@@ -3,7 +3,7 @@ import random
 import tqdm
 
 """
-`Ty` and `Tm` define the shape of a simply-typed lambda-calculus deeply embedded in Python. 
+`Ty` and `Tm` define the shape of a simply-typed lambda-calculus deeply embedded in Python.
 
 Each value, be it the encoding of a type or a term, is a tuple where the first component of the tuple is the "constructor" and the rest of the components are the arguments. For example, this value encodes the `Bool` type:
 
@@ -41,11 +41,39 @@ type AppTm = Tuple[Literal["App"], Tm, Tm]
 
 
 # EVOLVE-BLOCK-START
-# Create an application - need type-correct function and argument
-# First generate a function type
-arg_type = rng.choice([("Bool",), ("Int",), ("String",)])
-ret_type = rng.choice([("Bool",), ("Int",), ("String",)])
-func_type = ("Fun", arg_type, ret_type)
+def generate_sample(rng: random.Random, depth=10, context=None) -> Tuple[Ty, Tm]:
+    if context is None:
+        context = []
+
+    # At depth 0, only generate literals
+    if depth == 0:
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", True))
+        elif i == 1:
+            return (("Int",), ("Int", 27))
+        else:
+            return (("String",), ("String", "hello world"))
+
+    # At depth > 0, choose from literals, Lam, and App
+    i = rng.randrange(0, 5)  # 5 options
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    elif i == 3:
+        # Generate lambda - always recurse to build more complex terms
+        ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+        return (("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm))
+    else:
+        # Generate application - apply a lambda to an argument
+        arg_ty, arg_tm = generate_sample(rng, depth - 1, context)
+        func_ty = ("Fun", arg_ty, arg_ty)
+        func_tm = ("Lam", "x", arg_ty, ("Var", "x"))
+        return (arg_ty, ("App", func_tm, arg_tm))
 # EVOLVE-BLOCK-END
 
 # This part remains fixed (not evolved)

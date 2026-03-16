@@ -1,0 +1,17 @@
+The user is asking me to improve the performance of the lambda calculus generator. Let me analyze the current state and propose a targeted improvement.
+
+Looking at the current program in the EVOLVE-BLOCK-START section, it only generates very simple terms - mostly just literals. The metrics show:
+- tm_sizes_average: 1.35 (very small)
+- used_vars_proportions_average: 0.00 (no variables used)
+- applied_lambdas_proportions_average: 0.00 (no lambda applications)
+
+I need to propose a change that will generate larger, more complex terms while maintaining type correctness.
+
+Let me write a more sophisticated generator that:
+1. Uses depth control to generate larger types (up to 10 nodes)
+2. Uses depth control to generate larger terms (up to 100 nodes)
+3. Uses variables from context
+4. Applies lambdas to arguments
+5. Has more unique subterms
+
+I'll replace the current generate_sample function with a more sophisticated version.

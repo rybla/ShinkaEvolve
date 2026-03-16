@@ -1,2 +1,51 @@
+The user is asking me to improve the performance of the code. Looking at the current program, it generates very simple types and terms with small sizes. The goal is to maximize the combined score by generating:
 
-Let me try again with the correct format. I need to provide a SEARCH/REPLACE block that replaces the current generate_sample function with a better one.
+1. Bigger types (up to 10 nodes in AST)
+2. Bigger terms (up to 100 nodes in AST)
+3. More variable usage
+4. More lambda applications
+5. More unique subterms
+
+The current implementation only generates 4 simple cases and doesn't use the depth parameter properly. I need to create a more sophisticated generator that builds complex, well-typed terms.
+
+Let me write an improved version that:
+1. Uses depth to control complexity
+2. Generates larger types with nested function types
+3. Generates larger terms with lambdas and applications
+4. Tracks variables in context and uses them
+5. Applies lambdas to arguments
+6. Creates unique subterms
+
+I need to provide a SEARCH/REPLACE block. Let me look at the current code in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END section.
+
+The current code is:
+
+```python
+# EVOLVE-BLOCK-START
+
+
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+
+
+# EVOLVE-BLOCK-END
+```
+
+I need to replace this with a more sophisticated generator. Let me write the improved version.

@@ -1,17 +1,30 @@
-The user is asking me to make an improvement to the current program. Let me analyze what changes need to be made.
+The user is saying my edit wasn't applied. Let me re-read the instructions and provide a proper SEARCH/REPLACE block.
 
-Looking at the current program:
-- It has a good_ratio of 1.00 (perfect!)
-- But used_vars_proportions_average: 0.00 (no variables used!)
-- And applied_lambdas_proportions_average: 0.00 (no function applications!)
+I need to make a targeted edit to the current program. Let me look at what I want to change:
 
-The key insight from the meta-review and prior programs is that to break through the ~10.30 ceiling, we need to:
-1. Add variable usage tracking (bound_vars)
-2. Add function applications (App terms)
-3. Maintain type safety to keep good_ratio high
+The current code has:
+```python
+elif i == 3:
+    # Generate lambda - with 30% chance to use a variable from context
+    if context and rng.random() < 0.3:
+        var_name = rng.choice(context)
+        return (("Fun", ("Int",), ("Int",)), ("Lam", "x", ("Int",), ("Var", var_name)))
+    else:
+        ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+        return (("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm))
+```
 
-Let me create an improved version that adds these features while maintaining the high good_ratio.
+I want to change it to remove the 30% chance and always add the parameter to context, similar to the best prior program:
 
-The edit should be within the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END markers.
+```python
+elif i == 3:
+    # Generate lambda - add parameter to context
+    ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+    return (("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm))
+```
 
-I need to provide a SEARCH/REPLACE block. Let me do that now.
+Wait, but that might reduce the used_vars_proportions_average since we're not explicitly generating Var nodes anymore. Let me think about this more carefully.
+
+Actually, by always adding the parameter to context, we enable the possibility of using variables in deeper recursive calls. This should increase the overall diversity of terms.
+
+Let me make this change.

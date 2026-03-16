@@ -1,13 +1,38 @@
-Let me analyze the problem again. The user wants me to modify the generate_sample function to improve the performance metrics. Let me look at what needs to be changed.
+Let me analyze the task more carefully. I need to write a generator that produces types and terms of the simply-typed lambda-calculus. Looking at the metrics:
 
-The current code has these issues:
-1. The depth parameter is not being used properly in recursion
-2. Types are too small (only 1.38 average)
-3. Terms are too small (only 1.38 average)
-4. No variable usage (0%)
-5. No lambda applications (0%)
-6. Few unique subterms (0.15)
+Current program:
+- Combined score: 10.30
+- good_ratio: 1.00 (perfect!)
+- tm_sizes_average: 1.35 (too small)
+- ty_sizes_average: 1.35 (too small)
+- used_vars_proportions_average: 0.00 (not using variables)
+- applied_lambdas_proportions_average: 0.00 (not applying lambdas)
+- unique_subterms_proportions_average: 0.15 (low)
 
-I need to replace the generate_sample function with a better implementation.
+Prior program (with better structure):
+- Combined score: 9.24
+- good_ratio: 0.82 (some invalid terms)
+- tm_sizes_average: 4.89 (better)
+- ty_sizes_average: 2.90 (better)
+- used_vars_proportions_average: 0.03
+- applied_lambdas_proportions_average: 0.17
+- unique_subterms_proportions_average: 0.49
 
-Let me write the SEARCH/REPLACE block properly.
+The key insight is:
+1. We need to generate larger types (max 10 nodes) and terms (max 100 nodes)
+2. We need to use variables more (from lambda bindings)
+3. We need to apply lambdas to arguments
+4. We need more unique subterms
+5. But we must maintain good_ratio = 1.00 (all terms must be well-typed)
+
+The current implementation only generates simple literals or single lambdas. It doesn't use the depth parameter properly.
+
+Let me design a new approach that:
+1. Properly uses depth to generate larger types (up to 10 nodes)
+2. Uses context to track bound variables
+3. Generates applications to create larger terms
+4. Uses variables from context more often
+5. Creates more lambda applications
+6. Maintains type correctness (good_ratio = 1.00)
+
+I'll base it on the prior program's structure but with improvements to ensure good_ratio stays at 1.00.

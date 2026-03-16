@@ -1,0 +1,30 @@
+Let me analyze the performance metrics and prior programs to understand what improvements can be made.
+
+Current program performance:
+- Combined score: 10.28
+- good_ratio: 1.00 (perfect!)
+- tm_sizes_average: 1.34
+- ty_sizes_average: 1.34
+- used_vars_proportions_average: 0.00 (no variables used!)
+- applied_lambdas_proportions_average: 0.00 (no applications!)
+- unique_subterms_proportions_average: 0.13
+
+Looking at the prior programs, I see that:
+1. The first program had a score of 7.11 with used_vars_proportions_average: 0.06 and applied_lambdas_proportions_average: 0.03 - it tried to use variables and applications but had lower good_ratio (0.68)
+2. Programs 2-6 all have similar patterns - they get around 10.28-10.31 with good_ratio=1.00 but used_vars_proportions_average=0.00 and applied_lambdas_proportions_average=0.00
+
+The key insight from the system message is that Program 1 (the best one with score 10.5488) used:
+1. `bound_vars` parameter to track bound variables
+2. `rng.random() < 0.4` to probabilistically choose variables
+3. Unique variable names with `f"x{rng.randint(0, 100)}"`
+4. Type-safe application: checks `func_type[0] == "Fun"` before applying
+5. Hybrid termination: `depth <= 0 or (not bound_vars and rng.random() < 0.5)`
+
+The current program is stuck at ~10.28 because:
+1. It never uses variables (used_vars_proportions_average: 0.00)
+2. It never applies lambdas (applied_lambdas_proportions_average: 0.00)
+
+
+3. It only generates literals and simple lambdas that return literals
+
+To improve, I need to track bound variables and introduce variable usage with type-safe application checks. I'll use unique variable names and implement probabilistic termination to generate more diverse terms. This should push the score toward the 10.54+ range by actually leveraging the lambda calculus constructs.

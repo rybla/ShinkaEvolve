@@ -1,0 +1,106 @@
+<NAME>
+fix_dict_and_refine_generation
+</NAME>
+
+<DESCRIPTION>
+The previous implementation had a critical bug: `Dict` was not imported, causing `good_ratio` to drop and term sizes to collapse. I will fix the import issue by using standard `list` for context, and more importantly, I'll refine the generator to push term sizes closer to the 100-node limit while ensuring variable usage is maximized.
+
+Specifically:
+1. Replaced `Dict` with a list of tuples for the context (avoiding import errors).
+2. Increased the base case probability of picking a variable from context to improve `used_vars_proportions`.
+3. Adjusted the budget splitting in `App` to ensure it consumes more of the 100-node limit.
+4. Added a "force variable" path when variables are available but the budget is low.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    def gen_term(self, target_ty: Ty, ctx: Dict[str, Ty], budget: int) -> Tm:
+        # ctx maps variable name string to Ty
+        
+        # Try to use a variable from context to maximize used_vars_proportions
+        valid_vars = [name for name, ty in ctx.items() if ty == target_ty]
+        
+        # Terminal conditions
+        if budget <= 1:
+            if valid_vars and self.rng.random() > 0.1:
+                return ("Var", self.rng.choice(valid_vars))
+            return self.gen_literal(target_ty)
+
+        # Probabilistic weightings for AST nodes
+        # If target is a Fun type, Lambda is highly preferred
+        if target_ty[0] == "Fun" and self.rng.random() > 0.1:
+            var_name = f"v{self.var_counter}"
+            self.var_counter += 1
+            new_ctx = ctx.copy()
+            new_ctx[var_name] = target_ty[1]
+            body = self.gen_term(target_ty[2], new_ctx, budget - 1)
+            return ("Lam", var_name, target_ty[1], body)
+
+        # Prefer App to increase term size and applied_lambdas_proportions
+        if budget > 3 and self.rng.random() > 0.3:
+            # Generate an argument type
+            arg_ty = self.gen_type(3)
+            fun_ty = ("Fun", arg_ty, target_ty)
+            
+            # Divide budget
+            left_b = budget // 2
+            right_b = budget - left_b - 1
+            
+            # To increase applied_lambdas, we often generate a Lam on the left
+            left_tm = self.gen_term(fun_ty, ctx, left_b)
+            right_tm = self.gen_term(arg_ty, ctx, right_b)
+            return ("App", left_tm, right_tm)
+=======
+    def gen_term(self, target_ty: Ty, ctx: list[Tuple[str, Ty]], budget: int) -> Tm:
+        # Try to use a variable from context to maximize used_vars_proportions
+        valid_vars = [name for name, ty in ctx if ty == target_ty]
+        
+        # Terminal conditions
+        if budget <= 1:
+            if valid_vars:
+                return ("Var", self.rng.choice(valid_vars))
+            return self.gen_literal(target_ty)
+
+        # If target is a Fun type, Lambda is highly preferred to create structure
+        if target_ty[0] == "Fun" and (self.rng.random() > 0.1 or budget < 5):
+            var_name = f"v{self.var_counter}"
+            self.var_counter += 1
+            new_ctx = ctx + [(var_name, target_ty[1])]
+            body = self.gen_term(target_ty[2], new_ctx, budget - 1)
+            return ("Lam", var_name, target_ty[1], body)
+
+        # Prefer App to increase term size and applied_lambdas_proportions
+        if budget > 2:
+            # Generate an argument type - keep it small to favor term size over type complexity here
+            arg_ty = self.gen_type(2)
+            fun_ty = ("Fun", arg_ty, target_ty)
+            
+            # Divide budget: leave some for the right branch, but feed the left
+            left_b = 2 * budget // 3
+            right_b = budget - left_b - 1
+            
+            left_tm = self.gen_term(fun_ty, ctx, left_b)
+            right_tm = self.gen_term(arg_ty, ctx, right_b)
+            return ("App", left_tm, right_tm)
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+def generate_sample(rng: random.Random) -> Tuple[Ty, Tm]:
+    gen = STLCGenerator(rng)
+    # 1. Generate a type within node limit (Max 10)
+    target_ty = gen.gen_type(10)
+    # 2. Generate a term matching that type (Max 100 nodes target)
+    # We aim for ~80 nodes to stay safe under the 100 limit but keep it high
+    term = gen.gen_term(target_ty, {}, 85)
+    
+    return target_ty, term
+=======
+def generate_sample(rng: random.Random) -> Tuple[Ty, Tm]:
+    gen = STLCGenerator(rng)
+    # Target 10 nodes for type, 100 nodes for term
+    target_ty = gen.gen_type(10)
+    # Initial ctx is empty list
+    term = gen.gen_term(target_ty, [], 99)
+    return target_ty, term
+>>>>>>> REPLACE
+</DIFF>

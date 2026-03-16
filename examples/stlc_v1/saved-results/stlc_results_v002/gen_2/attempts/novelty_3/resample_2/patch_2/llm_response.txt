@@ -1,60 +1,19 @@
-The user is asking me to improve the generator function in the code. Let me analyze the current state and propose a better solution.
+I need to make changes to the code. Let me analyze the current code and propose improvements.
 
-Looking at the current code in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END section:
+Looking at the current generate_sample function:
+1. It only generates 4 different kinds of samples (Bool, Int, String literals, or a nested lambda wrapping another sample)
+2. It has no way to generate variables (no context tracking)
+3. It has no way to generate applications
+4. The types and terms are very small
 
-```python
-def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
-    """
-    Generate a sample type and term using a random seed.
-    """
+I need to replace the entire generate_sample function and related helpers to generate larger, more complex terms while maintaining well-typedness.
 
-    i = rng.randrange(0, 4 if depth > 0 else 3)
+Let me write a proper implementation that:
+1. Generates larger types (up to 10 nodes)
+2. Generates larger terms (up to 100 nodes)
+3. Uses variables from context
+4. Applies lambdas to arguments
+5. Has unique subterms
+6. Maintains good_ratio = 1.00 (all well-typed)
 
-    if i == 0:
-        return (("Bool",), ("Bool", True))
-    elif i == 1:
-        return (("Int",), ("Int", 27))
-    elif i == 2:
-        return (("String",), ("String", "hello world"))
-    else:
-        ty, tm = generate_sample(rng)
-        return (
-            ("Fun", ("Int",), ty),
-            ("Lam", "x", ("Int",), tm),
-        )
-```
-
-The issues are:
-1. It never generates variables (VarTm)
-2. It never generates applications (AppTm)
-3. The depth parameter is passed but not used to limit recursion
-4. Terms are very small (1.38 average)
-5. No variable usage (0.00)
-6. No lambda applications (0.00)
-
-I need to rewrite this to:
-1. Track available variables (with their types)
-2. Generate variables from available variables
-3. Generate applications
-4. Use depth to control size
-5. Ensure type safety
-
-Let me write a proper generator:
-
-```python
-def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
-    """
-    Generate a sample type and term using a random seed.
-    """
-    # Generate a type first, then generate a term of that type
-    ty = generate_type(rng, depth)
-    # Generate a term with the generated type
-    tm = generate_term_of_type(rng, depth, ty, [])
-    return (ty, tm)
-
-
-```
-
-Now I need helper functions to generate types and terms. For types, I'll randomly choose between base types (Bool, Int, String) and function types, using depth to control complexity. For terms, I'll need to generate literals, variables from the available context, lambda abstractions, and applications - all while maintaining type safety.
-
-```
+I'll need to replace the generate_sample function and add helper functions.

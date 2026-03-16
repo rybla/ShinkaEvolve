@@ -1,23 +1,35 @@
-The user wants me to suggest improvements to the current program. Let me analyze the situation:
+Looking at the current program and its performance metrics, I need to find a way to improve the combined score of 10.62.
 
-1. The current program has:
-   - Combined score: 10.28
-   - good_ratio: 1.00 (perfect!)
-   - used_vars_proportions_average: 0.00 (no variables used!)
-   - applied_lambdas_proportions_average: 0.00 (no applications!)
+Current metrics:
+- good_ratio: 1.00 (perfect - this is key!)
+- tm_sizes_average: 1.87
+- ty_sizes_average: 1.32
+- used_vars_proportions_average: 0.11
+- applied_lambdas_proportions_average: 0.11
+- unique_subterms_proportions_average: 0.25
 
-2. From the system prompt, the best programs (score 10.88, 10.54) used:
-   - `bound_vars` parameter to track bound variables
-   - Probabilistic variable selection with `rng.random() < 0.35`
-   - Unique variable names with `f"x{rng.randint(0, 100)}"`
-   - Type-safe application with fallbacks
+The key insight is that good_ratio is 1.00, which means all generated samples are well-typed. Any change I make must maintain this.
 
-Let me propose an improvement that adds:
-1. A `bound_vars` parameter to track variables in scope
-2. Variable usage (when bound_vars is not empty)
-3. Application of functions to arguments with type checking
-4. Unique variable names using f-strings
+Looking at the program structure, I see a few potential improvements:
 
-This should improve the used_vars_proportions_average and applied_lambdas_proportions_average metrics.
+1. The current distribution is: 60% literals (3/5), 20% lambdas (1/5), 20% apps (1/5) at depth > 0
+2. At depth 0, it's 100% literals
 
-Let me write the edit:
+One thing I notice is that the unique_subterms_proportions_average is 0.25, which is already pretty good. The used_vars_proportions_average and applied_lambdas_proportions_average are both 0.11.
+
+Looking at what could help:
+1. Generate more complex/nested terms to increase tm_sizes_average
+2. Use more diverse types (Bool, String) in addition to Int
+3. Create more interesting applications that aren't just identity functions
+
+Let me think about a targeted improvement. The current code always uses Int type for lambdas. What if we vary the types more? This could increase unique_subterms_proportions.
+
+Also, I notice the App generation always creates an identity function. What if we make the function body more interesting?
+
+Let me try adding type variety - using Bool, Int, String for lambda parameter types. This could increase unique_subterms_proportions without breaking correctness.
+
+Actually, wait - I need to think about this more carefully. 
+
+I'm working with a simply-typed lambda calculus where types must align for applications. The current approach fixes parameter types as Int, but I can diversify this by randomly selecting from Bool, Int, and String. This means when generating a lambda, the parameter type becomes a random choice, and the body needs to respect that type constraint. For the identity function case, I need to ensure the body variable matches the parameter type to maintain type correctness.
+
+When generating applications, I'm applying a function to an argument, so both need compatible types. I can either apply a lambda to a literal of matching type, or apply one lambda to another. Let me implement this by randomly selecting the parameter type and ensuring the body respects that choice.

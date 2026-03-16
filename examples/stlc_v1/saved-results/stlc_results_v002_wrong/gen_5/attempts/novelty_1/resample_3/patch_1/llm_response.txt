@@ -1,0 +1,117 @@
+Let me analyze the current program and understand what needs to be improved.
+
+The current `generate_sample` function is very simple and has several issues:
+
+1. It only generates 4 types: Bool, Int, String, and Int -> ty (where ty is recursively generated)
+2. The terms are very simple - just literals or a lambda wrapping another term
+3. The `depth` parameter is passed but never used properly
+4. There's no use of variables - the generated terms don't reference bound variables
+5. There's no application of lambdas
+6. There's very little unique subterms
+
+Looking at the metrics:
+- tm_sizes_average: 1.38 (very small, max is 100)
+- ty_sizes_average: 1.38 (very small, max is 10)
+- used_vars_proportions_average: 0.00 (no variable usage)
+- applied_lambdas_proportions_average: 0.00 (no lambda applications)
+- unique_subterms_proportions_average: 0.15 (very low, max is 1.0)
+
+The goal is to generate bigger, more complex types and terms that actually use the features of lambda calculus.
+
+Let me think about what I need to implement:
+
+1. **Type generation**: I need to recursively generate function types with proper depth control
+2. **Term generation**: I need to generate variables, lambdas, applications, and literals
+3. **Variable tracking**: I need to keep track of available variables and their types
+4. **Proper recursion**: Use the depth parameter to control size
+
+Key improvements:
+1. Generate proper function types (FunTy) with arbitrary base types
+2. Generate variables (VarTm) that reference bound variables
+3. Generate applications (AppTm) that apply functions to arguments
+4. Track the context (available variables with their types)
+5. Use the depth to limit the size
+
+Let me write a more sophisticated generator:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+    return generate_with_context(rng, depth, {})
+
+def generate_with_context(rng: random.Random, depth: int, context: Dict[str, Ty]) -> Tuple[Ty, Tm]:
+    """
+    Generate a type and term with a given context of available variables.
+    """
+    # First, decide what to generate based on depth
+    if depth <= 0:
+        # At depth 0, only generate base types and literals
+        return generate_base(rng)
+    
+    # With some probability, generate a variable if available
+    if context and rng.random() < 0.3:
+        var_name = rng.choice(list(context.keys()))
+        return (context[var_name], ("Var", var_name))
+    
+    # With some probability, generate a lambda
+    if rng.random() < 0.4:
+        # Generate parameter type and body
+        param_ty = generate_type(rng, depth - 1)
+        param_name = f"x{rng.randint(0, 1000)}"
+        new_context = {param_name: param_ty, **context}
+        _, body = generate_with_context(rng, depth - 1, new_context)
+        return (("Fun", param_ty, generate_type(rng, depth - 1)), ("Lam", param_name, param_ty, body))
+    
+    # Otherwise generate an application
+    func_ty, func = generate_with_context(rng, depth - 1, context)
+    if isinstance(func_ty, tuple) and func_ty[0] == "Fun":
+        arg_ty = func_ty[1]
+        _, arg = generate_with_context(rng, depth - 1, context)
+        return (func_ty[2], ("App", func, arg))
+    
+    # Fallback to base case
+    return generate_base(rng)
+
+I need to reconsider this approach. The key insight is that when generating an application, both the function and argument must type-check correctly - the argument's type needs to match the function's parameter type. So I should generate the function first (which gives me its type), then generate an argument that matches that expected type. For lambdas, I need to generate a parameter type, create a new context with that parameter, then generate a body in that context and combine them into the function type.
+
+Here's a cleaner implementation:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """Generate a sample type and term using a random seed."""
+    return generate_with_context(rng, depth, {})
+
+def generate_with_context(rng: random.Random, depth: int, context: Dict[str, Ty]) -> Tuple[Ty, Tm]:
+    """Generate a type and term with a given context of available variables."""
+    
+    # Base case: depth exhausted or randomly choose to generate a simple value
+    if depth <= 0 or (not context and rng.random() < 0.5):
+        return generate_base(rng, context)
+    
+    # Choose what to generate based on depth and available variables
+    choices = []
+    if context:
+        choices.append('var')
+    choices.extend(['literal', 'lam', 'app'])
+    
+    # Filter choices based on depth
+    if depth < 3:
+        choices = [c for c in choices if c in ['var', 'literal']]
+    
+    choice = rng.choice(choices)
+    
+    if choice == 'var' and context:
+        # Return a variable from context
+        var_name = rng.choice(list(context.keys()))
+        return (context[var_name], ("Var", var_name))
+    elif choice == 'literal':
+        return generate
+```
+
+I need to handle the depth parameter more carefully - it's being passed but not actually used to control recursion properly. Also, I should ensure the type generation stays within reasonable bounds.
+
+Looking at the metrics, I'm getting very small term sizes around 1.38 when the target is up to 100, and type sizes around 1.38 when they could be up to 10. The variable usage and lambda application metrics are both 0.00, which suggests I'm not generating complex enough expressions. The unique subterms proportion is only 0.15.
+
+I should build a more sophisticated generator that properly uses the depth parameter to create bigger types and terms, incorporates variables from the context, generates lambda expressions and applications, and tracks unique subterms effectively.

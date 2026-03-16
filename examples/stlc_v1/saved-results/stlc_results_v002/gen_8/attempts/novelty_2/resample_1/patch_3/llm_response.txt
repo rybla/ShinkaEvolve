@@ -1,0 +1,24 @@
+The user is asking me to improve the lambda calculus generator. Let me carefully look at the current state of the code in the EVOLVE-BLOCK-START section and propose a targeted improvement.
+
+Looking at the current program in the EVOLVE-BLOCK-START section:
+- It generates simple literals and simple lambdas
+- No depth control
+- No context management
+- No applications
+
+The metrics show:
+- good_ratio: 1.00 (perfect)
+- tm_sizes_average: 1.35 (too small, target is up to 100)
+- ty_sizes_average: 1.35 (too small, target is up to 10)
+- used_vars_proportions_average: 0.00 
+- applied_lambdas_proportions_average: 0.00
+- unique_subterms_proportions_average: 0.15
+
+I need to write a replacement for the entire EVOLVE-BLOCK-START section that:
+1. Uses depth control to generate larger types and terms
+2. Maintains type safety (good_ratio = 1.00)
+3. Adds context management for variables
+4. Generates applications
+5. Uses variables from context
+
+Let me create a new generator that builds on the simple approach but adds depth control and proper type management. I'll need to import List from typing as well.

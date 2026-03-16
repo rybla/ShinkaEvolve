@@ -1,0 +1,21 @@
+I need to look at the current program more carefully and propose a targeted improvement. Let me analyze what's happening:
+
+The current `generate_sample` function is very simple - it only generates literals or very simple lambdas wrapping literals. This results in:
+- Very small term sizes (1.35)
+- No variable usage
+- No lambda applications
+- Low unique subterms
+
+The key issue is that the current implementation doesn't use any depth parameter properly - it ignores the `depth` argument passed to `generate_sample`.
+
+Let me create a more sophisticated generator that:
+1. Properly uses depth to control complexity
+2. Generates larger types (up to 10 nodes)
+3. Generates larger terms (up to 100 nodes)
+4. Uses variables from context
+5. Applies lambdas to arguments
+6. Has more unique subterms
+
+But importantly, it must ALWAYS produce well-typed terms (good_ratio = 1.00 is crucial!).
+
+Let me write a targeted improvement:

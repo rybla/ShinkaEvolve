@@ -1,13 +1,43 @@
+The user is saying the previous edit was not successful. Let me re-read the task and provide a new, targeted improvement.
 
-The previous edit wasn't applied. Let me look at the current code more carefully and understand what changes I need to make.
+Looking at the current program and the prior programs, they're all essentially the same. The key metrics show:
+- good_ratio: 1.00 (perfect correctness - this is the most important)
+- tm_sizes_average: ~1.33
+- used_vars_proportions_average: 0.00 (no variable usage)
+- applied_lambdas_proportions_average: 0.00 (no lambda application)
+- unique_subterms_proportions_average: ~0.14
 
-Looking at the current code in the EVOLVE-BLOCK-START section:
+The best prior program had a score of 10.30, and the current one has 10.28. The difference is very small.
+
+Looking at the analysis provided:
+1. Correctness is the primary score driver (good_ratio is most significant)
+2. Type-Term coupling is important - generate both simultaneously
+3. Context-aware variable tracking is needed for non-zero variable utilization
+4. Constructor-first selection ensures termination
+
+The current implementation:
+- Uses depth-limited recursion (depth > 0 vs depth == 0)
+- Has a 3:1 ratio of literals to functions
+- Uses fixed parameter type ("Int",) for lambdas
+- Never uses Var constructor
+- Never uses App constructor
+
+To improve, I should add:
+1. Variable usage - track bound variables and allow Var to reference them
+2. Maybe add App (lambda application)
+
+But I need to be careful not to break correctness. Let me think about a conservative approach:
+
+1. Add a context parameter to track available variables
+2. When generating a lambda, add the parameter to the context
+3. When generating the body, occasionally use a variable from the context instead of recursing
+
+Let me write a modified version:
 
 ```python
-# EVOLVE-BLOCK-START
-def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+def generate_sample(rng: random.Random, depth=10, context=set()) -> Tuple[Ty, Tm]:
     i = rng.randrange(0, 4 if depth > 0 else 3)
-
+    
     if i == 0:
         return (("Bool",), ("Bool", True))
     elif i == 1:
@@ -15,53 +45,25 @@ def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
     elif i == 2:
         return (("String",), ("String", "hello world"))
     else:
-        ty, tm = generate_sample(rng)  # Note: depth is not decremented!
-        return (
-            ("Fun", ("Int",), ty),
-            ("Lam", "x", ("Int",), tm),
-        )
-# EVOLVE-BLOCK-END
-```
-
-I need to modify this to:
-1. Track bound variables (the current code doesn't pass `bound_vars`)
-2. Occasionally use bound variables via `Var`
-3. Occasionally apply lambdas via `App`
-4. Vary the primitive values to improve unique_subterms
-
-Let me think about the implementation:
-
-```python
-def generate_sample(rng: random.Random, depth=10, bound_vars: list = None) -> Tuple[Ty, Tm]:
-    if bound_vars is None:
-        bound_vars = []
-    
-    # At low depth or randomly, generate base cases
-    if depth <= 0 or rng.random() < 0.3:
-        i = rng.randrange(0, 3)
-        if i == 0:
-            return (("Bool",), ("Bool", rng.choice([True, False])))
-        elif i == 1:
-            return (("Int",), ("Int", rng.randint(0, 100)))
+        # When generating a function, we need to handle variable usage carefully
+        # We'll generate the body with the parameter in scope
+        param_ty = ("Int",)
+        body_ty, body_tm = generate_sample(rng, depth - 1, context | {"x"})
+        
+        # Determine whether to use the variable or generate a new term
+        if context and rng.random() < 0.3:
+            # Use a variable from context
+            var_name = rng.choice(list(context))
+            return (
+                ("Fun", param_ty, body_ty),
+                ("Lam", "x", param_ty, ("Var", var_name)),
+            )
         else:
-            return (("String",), ("String", rng.choice(["a", "b", "c"])))
-    
-    # When variables are available, occasionally reference them
-    if bound_vars and rng.random() < 0.2:
-        var_name = rng.choice(bound_vars)
-        return (("Int",), ("Var", var_name))
-    
-    # Choose between creating a lambda or applying one
-    if rng.random() < 0.5:
-        var = rng.choice(["x", "y", "z"])
-        # Create lambda with a new bound variable
-        inner_ty, inner_tm = generate_sample(rng, depth - 1, bound_vars + [var])
-        return (("Fun", ("Int",), inner_ty), ("Lam", var, ("Int",), inner_tm))
-    else:
-        # Apply lambda to argument
-        func_ty, func_tm = generate_sample(rng, depth - 1, bound_vars)
-        arg_ty, arg_tm = generate_sample(rng, depth - 1, bound_vars)
-        return (arg_ty, ("App", func_tm, arg_tm))
+            # Generate a new term
+            return (
+                ("Fun", param_ty, body_ty),
+                ("Lam", "x", param_ty, body_tm),
+            )
 ```
 
-This approach introduces variable references and applications while maintaining type correctness by tracking bound variables and ensuring the generated terms remain well-typed.
+I'll carefully manage variable usage to maintain type consistency and correctness while introducing more complexity to the generation process.

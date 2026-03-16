@@ -1,46 +1,46 @@
-Let me analyze the current program and the prior programs to understand what's happening.
+Let me analyze the current program and the prior programs to understand what drives the performance metrics.
 
-Current program has:
-- good_ratio: 1.00 (perfect type correctness)
-- tm_sizes_average: 1.34
-- ty_sizes_average: 1.34
-- used_vars_proportions_average: 0.00 (NOT using variables!)
-- applied_lambdas_proportions_average: 0.00 (NOT applying lambdas!)
-- unique_subterms_proportions_average: 0.13 (low uniqueness)
-- Combined score: 10.28
+Current program metrics:
+- Combined score: 10.64
+- good_ratio: 1.00 (perfect correctness!)
+- tm_sizes_average: 1.92
+- ty_sizes_average: 1.35
+- used_vars_proportions_average: 0.11
+- applied_lambdas_proportions_average: 0.11
+- unique_subterms_proportions_average: 0.26
 
-The key insight from the prior programs is that the best ones (score ~10.30) have:
-- good_ratio: 1.00 (perfect)
-- used_vars_proportions_average: 0.00
-- applied_lambdas_proportions_average: 0.00
+Looking at the prior programs:
+1. First program: score 10.28, good_ratio 1.00, no vars, no apps
+2. Second program: score 10.31, good_ratio 1.00, no vars, no apps
+3. Third program: score 10.60, good_ratio 1.00, 11% vars, 11% apps
+4. Fourth program: score 10.62, good_ratio 1.00, 11% vars, 11% apps
 
-But there was one program that tried to use variables and application (the first one with score 7.11), and it had:
-- good_ratio: 0.68 (lower!)
-- used_vars_proportions_average: 0.06
-- applied_lambdas_proportions_average: 0.03
-- unique_subterms_proportions_average: 0.07
+Current program: score 10.64, good_ratio 1.00, 11% vars, 11% apps
 
-So it seems like there's a trade-off: trying to use variables and apply lambdas hurts the good_ratio!
+The key insight is that maintaining good_ratio = 1.00 is absolutely critical. The score is driven by:
+1. Perfect correctness (good_ratio = 1.0)
+2. Having some complexity (tm_sizes, used_vars, applied_lambdas, unique_subterms)
 
-Looking at the current code:
-```python
-def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
-    i = rng.randrange(0, 4 if depth > 0 else 3)
+The current program has:
+- Proper depth-limited recursion for termination
+- Adding variables to context when creating lambdas (context + ["x"])
+- Application constructor (App)
+- A balanced mix of literals vs constructors
 
-    if i == 0:
-        return (("Bool",), ("Bool", True))
-    elif i == 1:
-        return (("Int",), ("Int", 27))
-    elif i == 2:
-        return (("String",), ("String", "hello world"))
-    else:
-        ty, tm = generate_sample(rng)  # Recursive call WITHOUT depth decrement!
-        return (
-            ("Fun", ("Int",), ty),
-            ("Lam", "x", ("Int",), tm),  # Lambda with "x" but never references it!
-        )
-```
+To improve, I need to:
+1. Maintain good_ratio = 1.00 (most important!)
+2. Increase the variety/complexity metrics while maintaining correctness
 
-The problem is that the recursive call doesn't reduce depth, so it recurses infinitely. I need to decrement depth in the recursive call. The lambda creates a variable "x" but never uses it in the body - that's why used_vars_proportions_average is 0.00. I should either use the variable or not create it at all.
+Looking at what could improve:
+- Increase tm_sizes_average (more complex terms)
+- Increase used_vars_proportions (more variable usage)
 
-To improve unique_subterms_proportions_average, I could vary the literal values instead of always returning True, 27, and "hello world". To improve good_ratio, I need to ensure type correctness in the lambda body. The main opportunity is to decrement depth properly to control recursion depth.
+
+- Increase applied_lambdas_proportions (more App constructors)
+- Increase unique_subterms_proportions (more variety in structure)
+
+The current App construction always uses identity functions `("Lam", "x", arg_ty, ("Var", "x"))`, which limits both term variety and variable usage. To expand complexity, I should vary the function being applied—perhaps using more sophisticated lambda bodies that reference variables from context. This would simultaneously boost multiple metrics: the term size grows from deeper nesting, variable usage increases from referencing bound variables, and the lambda proportion rises from more varied applications.
+
+The type system needs flexibility too. Currently everything defaults to Int types, but I could incorporate Bool and String types to create more diverse function signatures like `Bool -> Bool` or `String -> String`, generating more unique type structures.
+
+I should balance literal generation with function construction. Using a 4:2 ratio favoring literals maintains correctness while adding complexity. The core improvement involves making App more sophisticated—it should create functions that actually reference context variables rather than just identity functions, enabling variable usage and generating more intricate term structures.

@@ -1,0 +1,14 @@
+{
+  "generation": 8,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "context_aware_application_types",
+  "patch_description": "This optimization improves the choice of intermediate types `A` during the generation of application nodes `(App f x)`. \n\nInstead of generating a completely random `arg_ty` (which often leads to a recursive search for a term that cannot be satisfied by existing variables, forcing the generator to create deep trees that might hit budget limits), we prioritize using types that are already present in the typing context `ctx`. \n\nBy selecting an `arg_ty` that some variable `v` in the context already possesses, the probability that the argument `x` can be a simple `VarTm` increases significantly. This helps in three ways:\n1. It improves `used_vars_proportions_average`.\n2. It makes term generation more \"dense\" and less likely to fall back to literals.\n3. It allows the budget to be spent more effectively on the function side of the application, potentially increasing `applied_lambdas_proportions_average`.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:42:46.697784",
+  "llm_cost": 0.004695,
+  "llm_model": null
+}

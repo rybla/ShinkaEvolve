@@ -1,0 +1,50 @@
+The user is saying the previous edit was not successful. Let me re-read the current program and think about what changes to make.
+
+Looking at the current program:
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)  # Note: depth is not decremented!
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+The key issues:
+1. It creates lambdas but never uses the bound variable "x"
+2. It never creates App terms
+3. It uses fixed literals
+
+I need to make targeted improvements. Let me think about what specific changes would help:
+
+1. Add a case to use the bound variable in the lambda body (identity function)
+2. Add a case for App (function application)
+3. Use more varied primitive values
+
+But I need to be careful about type correctness. Let me think about how to do this properly.
+
+For the lambda case, instead of always generating a recursive lambda, I should:
+1. Sometimes create an identity function: `("Lam", "x", ("Int",), ("Var", "x"))`
+2. Sometimes create a recursive lambda (current behavior)
+
+For App, I need to ensure the function type is correct. This is tricky.
+
+Let me try a simpler approach: add a small chance to generate an identity function within the lambda case, while keeping the overall structure safe.
+
+Actually, looking more carefully at the code structure, I think the best approach is to:
+
+
+1. Keep the base cases (literals) as they are - they work well
+2. Modify the lambda case to sometimes create an identity function
+3. Add a small chance to create an application
+
+Let me write a more careful version that maintains type safety while improving the metrics.

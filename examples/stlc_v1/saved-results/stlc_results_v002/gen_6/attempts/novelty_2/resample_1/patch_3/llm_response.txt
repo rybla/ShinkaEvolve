@@ -1,1 +1,43 @@
-Let me try again with a different approach. I'll provide the complete code directly.
+The user is asking me to improve the performance of the lambda-calculus generator. Let me analyze the current state and propose a targeted improvement.
+
+Looking at the current code in the EVOLVE-BLOCK-START section:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+This code has several problems:
+1. The recursive call `generate_sample(rng)` doesn't pass `depth` or any parameters
+2. It always uses `("Int",)` as the argument type for lambdas
+3. It always uses `"x"` as the variable name, causing variable capture issues
+4. It doesn't generate applications
+5. It doesn't use variables from context
+
+The metrics show:
+- good_ratio: 1.00 (all well-typed)
+- tm_sizes_average: 1.35 (very small)
+- used_vars_proportions_average: 0.00 (no variable usage)
+- applied_lambdas_proportions_average: 0.00 (no lambda applications)
+- unique_subterms_proportions_average: 0.15 (few unique subterms)
+
+I need to improve the code to generate larger, more complex terms while maintaining type correctness.
+
+Let me write a proper implementation:

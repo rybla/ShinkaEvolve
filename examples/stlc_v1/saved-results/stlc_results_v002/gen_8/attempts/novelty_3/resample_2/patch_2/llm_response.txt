@@ -1,0 +1,27 @@
+The user is asking me to improve the performance of the lambda calculus generator. Looking at the current metrics:
+
+Current program metrics:
+- Combined score: 10.30
+- good_ratio: 1.00
+- tm_sizes_average: 1.35
+- ty_sizes_average: 1.35
+- used_vars_proportions_average: 0.00
+- applied_lambdas_proportions_average: 0.00
+- unique_subterms_proportions_average: 0.15
+
+The current implementation is very simple - it only generates 4 fixed samples and doesn't really use the depth parameter properly. I need to create a more sophisticated generator that:
+
+1. Generates bigger types (up to 10 nodes)
+2. Generates bigger terms (up to 100 nodes)
+3. Uses variables from context
+4. Applies lambdas to arguments
+5. Has unique subterms
+
+Let me write a proper generator that addresses all these issues. I'll need to:
+
+1. Implement generate_type with depth control to build bigger types
+2. Implement generate_term with depth control that can generate lambdas, applications, variables, and literals
+3. Track context (bound variables) to enable variable usage
+4. Make sure terms are always well-typed
+
+Let me create the SEARCH/REPLACE block:

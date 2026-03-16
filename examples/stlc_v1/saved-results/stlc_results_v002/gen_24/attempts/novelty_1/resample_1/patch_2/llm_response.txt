@@ -1,0 +1,25 @@
+Let me analyze the problem more carefully. The current program has a context parameter but it's not being used properly:
+
+1. The context is initialized as `[]` but never populated - when we create a lambda, we should add the variable to the context
+2. The depth parameter is passed but the context isn't being properly threaded through recursive calls
+
+Looking at the metrics:
+- used_vars_proportions_average: 0.00 - this means no Var nodes are being generated that reference bound variables
+- applied_lambdas_proportions_average: 0.00 - no App nodes are being generated
+
+The issue with the current code is:
+1. When generating a function, the context is not being updated with the new variable "x"
+2. The recursive call doesn't pass the updated context
+
+Let me fix this properly. I'll create a new algorithm that:
+1. Properly tracks bound variables in context
+2. Has a chance to use those variables (Var nodes)
+3. Can also generate applications (App nodes) for more complex terms
+4. Maintains correctness (good_ratio = 1.00)
+
+Here's my approach:
+- When creating a lambda, add the parameter to context before generating the body
+- With some probability, use a variable from context instead of generating a new term
+- With some probability, create an application
+
+Let me write the code:

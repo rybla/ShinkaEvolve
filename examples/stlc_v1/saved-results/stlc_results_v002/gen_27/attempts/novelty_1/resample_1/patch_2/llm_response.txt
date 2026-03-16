@@ -1,27 +1,49 @@
-The user is saying the previous edit was not successful and no changes were applied. Let me re-read the task and provide a proper SEARCH/REPLACE block.
+Let me analyze the problem and provide a proper solution.
 
-Looking at the current program, I need to make targeted improvements. The key issues are:
-1. `used_vars_proportions_average: 0.00` - never uses variables
-2. `applied_lambdas_proportions_average: 0.00` - never applies lambdas
-3. `unique_subterms_proportions_average: 0.15` - low uniqueness
+The issue is that the context is never populated when creating lambdas. Looking at the current code:
 
-The current algorithm creates lambdas but never uses the bound variable "x" in the body. It also never creates App terms.
+```python
+else:
+    # Generate function type and term
+    # Use context to potentially reference bound variables
+    if context and rng.random() < 0.3:  # 30% chance to use a variable
+        var_name = rng.choice(context)
+        return (
+            ("Fun", ("Int",), ("Int",)),
+            ("Lam", "x", ("Int",), ("Var", var_name)),
+        )
+    else:
+        ty, tm = generate_sample(rng, depth - 1, context)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
 
-To improve while maintaining good_ratio=1.00, I need to:
-1. Sometimes use the bound variable in lambda bodies (Var)
-2. Sometimes apply lambdas to arguments (App)
-3. Vary the literals more
+The problem is:
+1. When `i == 3` (lambda case), the context is never updated with "x" before generating the body
+2. Even in the recursive case, we pass `context` but never add "x" to it
 
-Let me create a modified version that:
-1. Uses depth properly to control recursion
-2. Sometimes creates identity functions (lambdas that return their variable)
-3. Sometimes applies lambdas to arguments
-4. Varies the literals
+The fix is to add "x" to the context when generating the lambda body:
 
-Here's my plan:
-- When depth > 0, choose between creating a lambda or an application
-- When creating a lambda, sometimes use the bound variable (identity function pattern)
-- When creating an application, apply a function to an argument
-- When depth <= 0, return base cases with varied literals
+```python
+else:
+    # Generate function type and term
+    # Use context to potentially reference bound variables
+    if context and rng.random() < 0.3:  # 30% chance to use a variable
+        var_name = rng.choice(context)
+        return (
+            ("Fun", ("Int",), ("Int",)),
+            ("Lam", "x", ("Int",), ("Var", var_name)),
+        )
+    else:
+        # Add "x" to context for the lambda body
+        new_context = context + ["x"]
+        ty, tm = generate_sample(rng, depth - 1, new_context)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
 
-Let me write the edit:
+This should populate the context so variables can actually be used. I need to output the complete code with the proper format.

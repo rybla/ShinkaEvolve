@@ -3,7 +3,7 @@ import random
 import tqdm
 
 """
-`Ty` and `Tm` define the shape of a simply-typed lambda-calculus deeply embedded in Python. 
+`Ty` and `Tm` define the shape of a simply-typed lambda-calculus deeply embedded in Python.
 
 Each value, be it the encoding of a type or a term, is a tuple where the first component of the tuple is the "constructor" and the rest of the components are the arguments. For example, this value encodes the `Bool` type:
 
@@ -41,42 +41,20 @@ type AppTm = Tuple[Literal["App"], Tm, Tm]
 
 
 # EVOLVE-BLOCK-START
-def generate_sample(rng: random.Random, depth=10, bound_vars: list = None) -> Tuple[Ty, Tm]:
-    if bound_vars is None:
-        bound_vars = []
-    
-    # Base case: generate literals when depth is exhausted or randomly
-    if depth <= 0 or (not bound_vars and rng.random() < 0.6):
-        # Vary the primitive values to increase unique subterms
-        i = rng.randrange(0, 3)
-        if i == 0:
-            return (("Bool",), ("Bool", rng.choice([True, False])))
-        elif i == 1:
-            return (("Int",), ("Int", rng.randint(0, 100)))
-        else:
-            return (("String",), ("String", rng.choice(["a", "b", "c"])))
-    
-    # When we have bound variables, use them with some probability
-    if bound_vars and rng.random() < 0.25:
-        var_name, var_type = rng.choice(bound_vars)
-        return (var_type, ("Var", var_name))
-    
-    # Generate function or application based on remaining depth
-    i = rng.randrange(0, 2)
-    if i == 0 and depth > 1:
-        # Create a lambda with a fresh variable
-        var_name = f"x{rng.randint(0, 1000)}"
-        var_type = rng.choice([("Bool",), ("Int",), ("String",)])
-        _, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
-        return (("Fun", var_type, body[1]), ("Lam", var_name, var_type, body))
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
     else:
-        # Create an application
-        func_type, func_term = generate_sample(rng, depth - 1, bound_vars)
-        arg_type, arg_term = generate_sample(rng, depth - 1, bound_vars)
-        if isinstance(func_type, tuple) and func_type[0] == "Fun":
-            return (func_type[2], ("App", func_term, arg_term))
-        else:
-            return generate_sample(rng, depth - 1, bound_vars)
+        ty, tm = generate_sample(rng)  # Note: depth is not passed!
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
 # EVOLVE-BLOCK-END
 
 # This part remains fixed (not evolved)

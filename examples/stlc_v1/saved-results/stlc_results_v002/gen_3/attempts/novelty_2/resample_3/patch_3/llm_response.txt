@@ -1,0 +1,48 @@
+The user is asking me to improve the performance of the current program. Let me analyze what's happening:
+
+The current `generate_sample` function is very simple - it randomly chooses between generating base types (Bool, Int, String) or a simple lambda that takes Int and returns something. This creates very small terms and doesn't use variables or apply lambdas.
+
+Looking at the metrics:
+- Current combined_score: 10.30
+- Prior combined_score: 9.24
+
+Wait, the current program has a HIGHER combined score (10.30 vs 9.24). But the requirements say:
+- The generator must produce bigger types (max 10 nodes)
+- The generator must produce bigger terms (max 100 nodes)
+- More variable usage
+- More lambda applications
+- More unique subterms
+
+The current program has:
+- tm_sizes_average: 1.35 (very small, max is 100)
+- ty_sizes_average: 1.35 (very small, max is 10)
+- used_vars_proportions_average: 0.00
+- applied_lambdas_proportions_average: 0.00
+- unique_subterms_proportions_average: 0.15
+
+The prior program had:
+- tm_sizes_average: 4.89
+- ty_sizes_average: 2.90
+- used_vars_proportions_average: 0.03
+- applied_lambdas_proportions_average: 0.17
+- unique_subterms_proportions_average: 0.49
+
+But the prior program had a lower combined_score (9.24 vs 10.30). This suggests that perhaps the "good_ratio" is weighted heavily in the combined score, and the prior program had a lower good_ratio (0.82 vs 1.00).
+
+So the key is: we need to maintain good_ratio=1.00 while also increasing the sizes, variable usage, lambda applications, and unique subterms.
+
+I need to propose a change to the code. Let me write a SEARCH/REPLACE block.
+
+The current code in the EVOLVE-BLOCK-START section is:
+
+
+I'll focus on systematically expanding the generation process. I'll start by increasing depth parameters and introducing more sophisticated type and term generation strategies. The goal is to create more complex lambda calculus structures while maintaining type safety and variety. 
+
+Specifically, I'll modify the generation approach to:
+- Use deeper type recursion
+- Generate more complex function types
+- Create opportunities for variable usage
+- Increase lambda application possibilities
+- Ensure type correctness throughout generation
+
+The implementation will require careful tracking of type constraints and generating meaningful lambda calculus expressions that push the boundaries of the current minimal generation approach.

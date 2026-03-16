@@ -1,0 +1,16 @@
+Let me analyze the problem more carefully and provide a complete solution.
+
+Looking at the metrics:
+- Current program has good_ratio: 1.00 but very low sizes and no variable usage
+- Prior program had good_ratio: 0.82 but much better sizes and some variable usage
+
+The scoring seems to favor good_ratio heavily, but we need to improve the other metrics while maintaining good_ratio.
+
+Let me design a new approach that:
+1. Generates larger types (up to 10 nodes)
+2. Generates larger terms (up to 100 nodes)
+3. Uses variables from context more often
+4. Applies lambdas to arguments
+5. Has more unique subterms
+
+I'll use a recursive generation approach with better depth control and context management.

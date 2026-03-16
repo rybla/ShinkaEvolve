@@ -1,15 +1,32 @@
-The user is asking me to make an improvement to the current program. Let me analyze what changes need to be made.
+The user is saying my previous edit wasn't successful, but I haven't actually made an edit yet. Let me look at the current program and propose a specific change.
 
-Looking at the current program:
-- It has a good_ratio of 1.00 (perfect!)
-- But used_vars_proportions_average: 0.00 (no variables used!)
-- And applied_lambdas_proportions_average: 0.00 (no function applications!)
+Looking at the current program, I need to make a targeted improvement. The key metrics are:
+- Combined score: 10.60
+- good_ratio: 1.00 (perfect)
+- tm_sizes_average: 1.84
+- used_vars_proportions_average: 0.11
+- applied_lambdas_proportions_average: 0.11
+- unique_subterms_proportions_average: 0.23
 
-The key insight from the meta-review and prior programs is that to break through the ~10.30 ceiling, we need to:
-1. Add variable usage tracking (bound_vars)
-2. Add function applications (App terms)
-3. Maintain type safety to keep good_ratio high
+The best prior program got 10.62 with:
+- tm_sizes_average: 1.87
+- unique_subterms_proportions_average: 0.25
 
-Let me create an improved version that adds these features while maintaining the high good_ratio.
+One thing I notice is that the current program has a 30% chance to use a variable from context in the lambda case, but this might be reducing the diversity of terms. Let me try removing that randomness and always adding the parameter to context when generating a lambda.
 
-The edit should be within the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END markers.
+Actually, looking more carefully at the current code:
+
+```python
+elif i == 3:
+    # Generate lambda - with 30% chance to use a variable from context
+    if context and rng.random() < 0.3:
+        var_name = rng.choice(context)
+        return (("Fun", ("Int",), ("Int",)), ("Lam", "x", ("Int",), ("Var", var_name)))
+    else:
+        ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+        return (("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm))
+```
+
+The issue is that when we take the 30% branch, we're not adding "x" to the context - we're just returning early with a Var. This limits the depth of variable references.
+
+Let me remove the 30% chance and always add the parameter to context. This should increase the diversity of terms (higher unique_subterms_proportions_average) and potentially improve the score.

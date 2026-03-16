@@ -1,0 +1,77 @@
+Looking at the performance metrics, I can see that:
+- good_ratio is already 1.00 (perfect)
+- tm_sizes_average and ty_sizes_average are low (around 1.38)
+- used_vars_proportions_average is 0.00 - variables are never used
+- applied_lambdas_proportions_average is 0.00 - lambdas are never applied
+- unique_subterms_proportions_average is 0.15 - very low, repetitive structures
+
+The current program always creates lambda terms that wrap the same recursive call, but never actually uses the variable (`Var` constructor) or applies lambdas (`App` constructor).
+
+To improve the score, I need to:
+1. Use variables in lambda bodies (to increase `used_vars_proportions_average`)
+2. Apply lambdas to arguments (to increase `applied_lambdas_proportions_average`)
+3. Create more unique subterms (to increase `unique_subterms_proportions_average`)
+
+Let me think about how to modify the algorithm:
+
+1. When creating a lambda, I should sometimes use `Var` to reference the bound variable instead of always using the recursive call
+2. I should add an `App` case to apply functions to arguments
+3. I should vary the generated terms more
+
+Here's my plan:
+- Add a case where, when depth > 0, we generate a lambda but use `Var` in the body
+- Add a case for `AppTm` to apply lambdas to arguments
+- Make the generation more varied
+
+Let me write the modified code:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+    
+    if depth <= 0:
+        # Base cases - only literals when depth is exhausted
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", True))
+        elif i == 1:
+            return (("Int",), ("Int", 27))
+        else:
+            return (("String",), ("String", "hello world"))
+    
+    # When depth remains, choose from multiple generation strategies
+    i = rng.randrange(0, 6)
+    
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    elif i == 3:
+        # Lambda that uses the bound variable
+        ty, tm = generate_sample(rng, depth - 1)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), ("Var", "x")),
+        )
+    elif i == 4:
+        # Lambda that applies the bound variable to an argument
+        arg_ty, arg_tm = generate_sample(rng, depth - 1)
+        body_ty, body_tm = generate_sample(rng, depth - 1)
+        return (
+            ("Fun", arg_ty, body_ty),
+            ("Lam", "x", arg_ty, ("App", ("Var", "x"), arg_tm)),
+        )
+    else:
+        # Recursive case - lambda wrapping a recursive call
+        ty, tm = generate_sample(rng, depth - 1)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+The key improvements are adding lambda cases that actually use the bound variable through `Var` and `App`, which should increase the proportions of used variables and applied lambdas while creating more diverse term structures.

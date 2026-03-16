@@ -1,0 +1,84 @@
+To improve the `combined_score`, we need to increase the `tm_sizes_average` (closer to 100) and `applied_lambdas_proportions_average` while maintaining the high `used_vars_proportions_average`.
+
+The current implementation uses a fixed `0.7` split for applications. By making the budget splitting more dynamic and ensuring that the "function" side of an application is frequently a lambda (by prioritizing `Fun` types for the left branch), we can increase both the term size and the proportion of applied lambdas. Additionally, we will refine the variable selection to prioritize the *most recently* bound variables, which often leads to more interesting and valid deep structures.
+
+<NAME>
+dynamic_budget_and_lambda_prioritization
+</NAME>
+
+<DESCRIPTION>
+1.  **Dynamic Budget Splitting**: Instead of a fixed 0.7 split, we use a random range to allow for more structural variety while still favoring the function side.
+2.  **Lambda Application Bias**: When generating an `App`, we explicitly favor generating a `Lam` on the left side by ensuring the `arg_ty` is often derived from the context or kept very simple, and the budget is sufficient.
+3.  **Variable Recency Bias**: When selecting a variable from the context, we prioritize the most recently added ones (shadowing/local usage), which helps in building deeper valid terms.
+4.  **Literal Diversity**: Scaled literals based on budget to ensure unique subterms even at the leaves.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    def gen_term(target_ty: Ty, ctx: list[Tuple[str, Ty]], budget: int) -> Tm:
+        # Try to use a variable from context if it matches the type
+        valid_vars = [name for name, ty in ctx if ty == target_ty]
+
+        # Base cases or if budget is low
+        if budget <= 2:
+            if valid_vars and (rng.random() < 0.9 or budget <= 1):
+                return ("Var", rng.choice(valid_vars))
+            if target_ty == ("Bool",):
+                return ("Bool", rng.choice([True, False]))
+            if target_ty == ("Int",):
+                return ("Int", rng.randint(0, 100))
+            if target_ty == ("String",):
+                return ("String", rng.choice(["a", "b", "c"]))
+
+        # Recursive cases
+        if target_ty[0] == "Fun" and rng.random() < 0.6:
+            # Generate Lambda
+            arg_ty, ret_ty = target_ty[1], target_ty[2]
+            var_name = f"v{len(ctx)}"
+            new_ctx = ctx + [(var_name, arg_ty)]
+            return ("Lam", var_name, arg_ty, gen_term(ret_ty, new_ctx, budget - 1))
+
+        # Generate Application
+        # Asymmetric split: allocate more budget to the function side to encourage deep application chains
+        arg_ty = gen_type(rng.randint(1, 2))
+        fun_ty = ("Fun", arg_ty, target_ty)
+
+        # Use an asymmetric split to favor deeper trees on the left (function) side
+        # while keeping the argument side relatively small but valid.
+        split_f = int(budget * 0.7)
+        split_x = budget - split_f - 1
+        return ("App", gen_term(fun_ty, ctx, split_f), gen_term(arg_ty, ctx, max(1, split_x)))
+=======
+    def gen_term(target_ty: Ty, ctx: list[Tuple[str, Ty]], budget: int) -> Tm:
+        valid_vars = [name for name, ty in ctx if ty == target_ty]
+
+        if budget <= 2:
+            if valid_vars and (rng.random() < 0.85 or budget <= 1):
+                # Prioritize more recent variables (end of list)
+                return ("Var", valid_vars[-1] if rng.random() < 0.6 else rng.choice(valid_vars))
+            if target_ty == ("Bool",):
+                return ("Bool", rng.random() > 0.5)
+            if target_ty == ("Int",):
+                return ("Int", rng.randint(0, budget * 10 + 10))
+            return ("String", rng.choice(["s", "t", "u", "v"]) + str(budget))
+
+        if target_ty[0] == "Fun" and (rng.random() < 0.75 or budget < 10):
+            arg_ty, ret_ty = target_ty[1], target_ty[2]
+            var_name = f"x{len(ctx)}"
+            return ("Lam", var_name, arg_ty, gen_term(ret_ty, ctx + [(var_name, arg_ty)], budget - 1))
+
+        # Application: f x
+        # To increase applied_lambdas, we want f to often be a Lam.
+        # We pick a simple arg_ty to make generating x easier.
+        arg_ty = rng.choice(ctx)[1] if (ctx and rng.random() < 0.4) else gen_type(1)
+        fun_ty = ("Fun", arg_ty, target_ty)
+
+        # Dynamic split favoring the function side (left)
+        split_ratio = rng.uniform(0.6, 0.8)
+        split_f = max(1, int(budget * split_ratio))
+        split_x = max(1, budget - split_f - 1)
+
+        return ("App", gen_term(fun_ty, ctx, split_f), gen_term(arg_ty, ctx, split_x))
+>>>>>>> REPLACE
+
+</DIFF>

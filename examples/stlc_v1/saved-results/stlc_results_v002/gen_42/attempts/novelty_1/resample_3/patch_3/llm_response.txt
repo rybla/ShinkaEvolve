@@ -1,39 +1,46 @@
+Let me look at the current program more carefully and understand what changes need to be made.
 
-Let me re-read the instructions. I need to make changes to the code inside the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END markers. Let me look at the exact code that's there now and make a proper edit.
-
-The current code in the EVOLVE-BLOCK is:
+The current program is:
 
 ```python
-# EVOLVE-BLOCK-START
-
-
-def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
-    """
-    Generate a sample type and term using a random seed.
-    """
-
-    i = rng.randrange(0, 4 if depth > 0 else 3)
-
+def generate_sample(rng: random.Random, depth=10, context=None) -> Tuple[Ty, Tm]:
+    if context is None:
+        context = []
+    
+    # At depth 0, only generate literals
+    if depth == 0:
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", True))
+        elif i == 1:
+            return (("Int",), ("Int", 27))
+        else:
+            return (("String",), ("String", "hello world"))
+    
+    # At depth > 0, choose from literals, Lam, and App
+    i = rng.randrange(0, 5)  # 5 options
+    
     if i == 0:
         return (("Bool",), ("Bool", True))
     elif i == 1:
         return (("Int",), ("Int", 27))
     elif i == 2:
         return (("String",), ("String", "hello world"))
+    elif i == 3:
+        # Generate lambda - always recurse to build more complex terms
+        ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+        return (("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm))
     else:
-        ty, tm = generate_sample(rng)
-        return (
-            ("Fun", ("Int",), ty),
-            ("Lam", "x", ("Int",), tm),
-        )
-
-
-# EVOLVE-BLOCK-END
+        # Generate application - apply a lambda to an argument
+        arg_ty, arg_tm = generate_sample(rng, depth - 1, context)
+        func_ty = ("Fun", arg_ty, arg_ty)
+        func_tm = ("Lam", "x", arg_ty, ("Var", "x"))
+        return (arg_ty, ("App", func_tm, arg_tm))
 ```
 
-I need to modify this to:
-1. Use the bound variable in the lambda (to increase used_vars_proportions_average)
-2. Vary the literal values (to increase unique_subterms_proportions_average)
-3. Add application of lambdas (to increase applied_lambdas_proportions_average)
+I need to propose a change. Looking at the metrics:
+- used_vars_proportions_average: 0.11 (low)
+- applied_lambdas_proportions_average: 0.11 (low)
+- unique_subterms_proportions_average: 0.26 (could be higher)
 
-Let me write a proper edit that does this.
+The key issue is that the lambda case doesn't leverage the context to reference variables. I should modify the lambda generation to occasionally use a variable from the context instead of always creating a fresh variable. This would increase the used_vars_proportions and potentially improve unique_subterms_proportions by creating more varied term structures.

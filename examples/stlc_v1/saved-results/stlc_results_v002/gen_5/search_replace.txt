@@ -1,7 +1,9 @@
-The user is asking me to modify the generate_sample function in the code. Let me look at the exact code that needs to be replaced.
+The user is saying the previous edit was not successful. Let me look at the current state of the code more carefully.
 
-The code is:
+Looking at the current program in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END:
+
 ```python
+
 def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
     """
     Generate a sample type and term using a random seed.
@@ -21,11 +23,16 @@ def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
             ("Fun", ("Int",), ty),
             ("Lam", "x", ("Int",), tm),
         )
+
 ```
 
-I need to replace this with a better implementation that:
-1. Uses depth properly to generate larger types (up to 10 nodes) and terms (up to 100 nodes)
-2. Creates applications to use variables
-3. Tracks bound variables so we can reference them
+This is the code I need to modify. The issue is that I'm not actually changing anything - I need to provide a SEARCH block that matches the current code exactly, and a REPLACE block with the new code.
 
-Let me write the new implementation carefully.
+Let me make sure I copy the code exactly as it appears, including all whitespace and indentation.
+
+The current code has:
+- 2 blank lines after # EVOLVE-BLOCK-START
+- def generate_sample... with proper indentation
+- The rest of the function
+
+Let me try again with the exact code.

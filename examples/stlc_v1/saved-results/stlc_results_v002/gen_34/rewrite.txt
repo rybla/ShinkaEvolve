@@ -1,0 +1,1 @@
+ty, tm = generate_sample(rng, depth - 1, context)

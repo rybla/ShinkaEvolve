@@ -1,0 +1,44 @@
+Let me analyze the current situation:
+
+1. The current generator produces very simple terms - mostly just literals
+2. The metrics show:
+   - good_ratio: 1.00 (all terms are well-typed)
+   - tm_sizes_average: 1.38 (very small terms)
+   - ty_sizes_average: 1.38 (very small types)
+   - used_vars_proportions_average: 0.00 (never uses variables!)
+   - applied_lambdas_proportions_average: 0.00 (never applies lambdas)
+   - unique_subterms_proportions_average: 0.15 (few unique subterms)
+
+The key issues are:
+1. The type sizes are very small (max 1.38 when max should be 10)
+2. The term sizes are very small (max 1.38 when max should be 100)
+3. Variables are never used (0.00 proportion)
+4. Lambdas are never applied (0.00 proportion)
+5. Unique subterms are low
+
+Looking at the current code:
+- It generates literals (Bool, Int, String) most of the time
+- When it does generate a function, it always uses ("Int",) as the argument type and creates a lambda
+- The lambda always uses variable "x" - never varies the variable name
+- The term inside the lambda is always a recursive call to generate_sample - it never generates variable references
+- There's no mechanism to track bound variables and use them in the body
+
+To improve:
+1. Need to track bound variables so we can reference them
+2. Need to generate larger types (up to 10 nodes)
+3. Need to generate larger terms (up to 100 nodes)
+4. Need to apply lambdas to arguments
+5. Need to use variables that were introduced by lambdas
+
+Let me design a better generator:
+
+Key improvements:
+1. Use a proper depth parameter to control size - decrease depth as we recurse
+
+
+2. Build a context of available variables that can be referenced in the term body
+3. Occasionally generate variable references from the context instead of always creating new lambdas
+4. Create applications by applying lambdas to arguments
+5. Generate more complex function types by composing multiple type constructors
+
+The core strategy is to leverage the depth parameter more effectively—decreasing it with each recursive call ensures we reach the size limits. I need to maintain a context of introduced variables so they can be referenced in function bodies. The main constructors should be: generate a random variable from context (with low probability when context exists), create a lambda that introduces a new variable, apply a lambda to an argument, or generate a literal. Type generation should recursively build function types by composing base types with function types.

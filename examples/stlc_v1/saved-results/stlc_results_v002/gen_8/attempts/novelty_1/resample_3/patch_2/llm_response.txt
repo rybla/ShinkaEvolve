@@ -1,0 +1,17 @@
+Looking at the current code in the EVOLVE-BLOCK-START section, I need to make targeted improvements. The current implementation:
+
+1. Ignores the depth parameter completely
+2. Has a recursive call without depth `generate_sample(rng)` which is broken
+3. Generates very small terms
+
+I need to fix these issues while maintaining good_ratio of 1.00. Let me create a better implementation.
+
+The key changes I need to make:
+1. Actually use the depth parameter to control complexity
+2. Fix the recursive call issue
+3. Generate larger types (up to 10 nodes)
+4. Generate larger terms (up to 100 nodes)
+5. Use variables from context
+6. Apply lambdas more often
+
+Let me write a complete replacement for the generate_sample function and its helpers.

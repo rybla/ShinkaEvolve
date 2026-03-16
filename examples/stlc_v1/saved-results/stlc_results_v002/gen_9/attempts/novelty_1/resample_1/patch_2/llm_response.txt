@@ -1,0 +1,42 @@
+Let me analyze the problem more carefully and create a completely different algorithm approach.
+
+The current implementation is very simple - it just generates base types and a single lambda wrapper. The prior implementation tried to be more sophisticated but the metrics show it didn't work well either (combined score 9.24 vs current 10.30).
+
+Wait, looking more carefully at the metrics:
+- Current: Combined score 10.30, good_ratio 1.00
+- Prior: Combined score 9.24, good_ratio 0.82
+
+The current simpler implementation actually has a HIGHER combined score! But the current implementation has:
+- tm_sizes_average: 1.35 (very small)
+- used_vars_proportions_average: 0.00
+- applied_lambdas_proportions_average: 0.00
+- unique_subterms_proportions_average: 0.15
+
+So the task is to improve these metrics while maintaining good_ratio at 1.00.
+
+The key insight is that I need to generate:
+1. Larger types (target up to 10 nodes)
+2. Larger terms (target up to 100 nodes)
+3. More variable usage
+4. More lambda applications
+5. More unique subterms
+
+But the current approach just generates tiny terms. Let me think of a completely different algorithm.
+
+One approach: **Size-directed generation with explicit size targets**
+
+Instead of using depth as the primary control, I'll use explicit size targets. I'll:
+1. Randomly select a target type size (1-10)
+2. Randomly select a target term size (1-100)
+3. Generate a type of approximately that size
+4. Generate a term of approximately that size
+
+Another key insight: to get more variable usage and lambda applications, I need to:
+1. Build up context with lambdas
+2. More aggressively use variables from context
+3. Generate applications that apply functions to arguments
+
+Let me try a completely different approach: **Iterative expansion**
+
+
+I'll start with a simple term and systematically expand it by wrapping lambdas around it, introducing variables, and creating applications. This iterative process will help me build more complex and interesting term structures while maintaining type safety.

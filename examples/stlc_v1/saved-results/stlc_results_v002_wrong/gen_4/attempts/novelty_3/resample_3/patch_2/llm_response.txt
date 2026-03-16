@@ -1,0 +1,26 @@
+The user wants me to rewrite the program to improve its performance on the metrics. Let me analyze what's needed:
+
+1. Current metrics:
+   - good_ratio: 1.00 (all terms are well-typed)
+   - tm_sizes_average: 1.38 (very small, should be up to 100)
+   - ty_sizes_average: 1.38 (very small, should be up to 10)
+   - used_vars_proportions_average: 0.00 (no variables used)
+   - applied_lambdas_proportions_average: 0.00 (no lambda applications)
+   - unique_subterms_proportions_average: 0.15 (low)
+
+The current implementation is extremely basic - it just returns literals or a simple lambda wrapping another sample. It doesn't:
+- Generate larger types
+- Generate larger terms
+- Use variables
+- Apply lambdas
+- Create unique subterms
+
+I need to create a more sophisticated generator. Let me design a novel approach:
+
+1. **Type generation**: Generate types with up to 10 nodes using a budget system
+2. **Term generation**: Generate terms with up to 100 nodes, tracking available variables
+3. **Variable usage**: Introduce variables in lambdas and use them in applications
+4. **Lambda application**: Apply lambdas to arguments
+5. **Unique subterms**: Create varied subterms
+
+Let me write the code:

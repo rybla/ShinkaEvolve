@@ -1,0 +1,14 @@
+{
+  "generation": 21,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "spine_first_context_aware_generator",
+  "patch_description": "This approach shifts from simple tree-based recursion to a \"spine-first\" construction. It prioritizes creating deep application spines (to maximize `tm_sizes_average`) and specifically targets the `used_vars_proportions_average` by maintaining a \"type-to-available-vars\" map. Instead of generating random argument types, it looks at the current context and forces the generator to create applications using types that are already inhabited by local variables. This ensures variables are consumed as arguments or function heads. Additionally, it uses a precise node-counting budget to stay within the 100-node limit while pushing as close as possible to it, and forces lambda abstractions when the target type is a function to maximize `applied_lambdas_proportions_average`.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:44:44.226088",
+  "llm_cost": 0.0063755,
+  "llm_model": null
+}

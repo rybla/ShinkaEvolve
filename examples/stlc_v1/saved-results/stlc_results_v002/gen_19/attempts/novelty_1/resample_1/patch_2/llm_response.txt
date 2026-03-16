@@ -1,0 +1,47 @@
+The edit didn't go through. Let me check the current program again and make sure I'm providing the exact text to search for.
+
+Looking at the current program in the task:
+
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)  # Note: depth is not passed!
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+# EVOLVE-BLOCK-END
+```
+
+Wait, I need to check again - the comment says "Note: depth is not passed!" but maybe the actual code does pass depth? Let me look at the original again...
+
+Actually looking at the current program more carefully, the issue is that `generate_sample(rng)` doesn't pass depth. But I need to be more careful about what exactly I'm searching for.
+
+Let me re-read the exact code block:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)  # Note: depth is not passed!
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+I'll modify the recursive call to decrement the depth parameter, ensuring proper termination and preventing potential infinite recursion. The updated recursive call will pass `depth - 1` to control the depth of generated samples.

@@ -1,40 +1,36 @@
-Let me analyze the programs more carefully and create a proper crossover.
+Let me analyze the problem and create a new improved program.
 
 Looking at the current program:
-- It tries to use variables and apply lambdas
-- It has some bugs (using `_` in the Fun type, not handling non-Fun types properly in App)
-- Score: 10.55 with good_ratio: 0.99
+- It generates simple literals (Bool, Int, String) or simple lambdas
+- It has good_ratio = 1.00 (perfect correctness)
+- It has tm_sizes_average: 1.33, ty_sizes_average: 1.33
+- It has used_vars_proportions_average: 0.00
+- It has applied_lambdas_proportions_average: 0.00
+- It has unique_subterms_proportions_average: 0.14
 
-The crossover inspiration:
-- Uses fixed literals (True, 27, "hello world")
-- Creates lambdas without decrementing depth (infinite recursion until base case)
-- Has perfect good_ratio: 1.00
-- Doesn't use variables or apply lambdas
-- Score: 10.29
+The best prior program had score 10.30 with:
+- good_ratio: 1.00
+- tm_sizes_average: 1.35
+- ty_sizes_average: 1.35
+- used_vars_proportions_average: 0.00
+- applied_lambdas_proportions_average: 0.00
+- unique_subterms_proportions_average: 0.15
 
-The current program has better metrics except for good_ratio. The crossover inspiration has perfect good_ratio but poor other metrics.
+To improve, I need to:
+1. Keep good_ratio = 1.00 (most important)
+2. Increase tm_sizes_average and ty_sizes_average
+3. Add some variable usage (used_vars_proportions_average > 0)
+4. Add some applications (applied_lambdas_proportions_average > 0)
+5. Increase unique_subterms_proportions_average
 
-The key is to:
-1. Fix the bugs in the current program that cause type errors
-2. Maintain the variable usage and lambda application features
-3. Try to get closer to good_ratio = 1.00
+The key insight is that I need to maintain correctness while adding more complexity. Let me design a depth-limited recursive generator that:
+1. At depth 0: generates literals or variables from context
+2. At depth > 0: generates lambdas or applications with decreasing depth
 
-Let me look at the current program bugs more carefully:
+I'll make sure:
+- Lambda parameters are added to context when generating the body
+- Variables are only used when their type matches the target type
+- Applications are type-correct (function type matches)
+- Types and terms are generated together to ensure consistency
 
-1. In the lambda case:
-```python
-_, body = generate_sample(rng, depth - 1, bound_vars + [(var_name, var_type)])
-return (("Fun", var_type, _), ("Lam", var_name, var_type, body))
-```
-This uses `_` which is the type returned by generate_sample, but it's in the wrong position. The function type should be `("Fun", var_type, body_type)` where body_type is the type of the body.
-
-2. In the application case:
-```python
-if func_type[0] == "Fun":
-    return (func_type[2], ("App", func_term, arg_term))
-else:
-    return (arg_type, arg_term)
-```
-This returns arg_type when func_type is not a Fun, which could cause type errors.
-
-Let me create a fixed version that maintains the good features of both programs.
+Let me write the code:

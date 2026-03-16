@@ -1,0 +1,109 @@
+<NAME>
+spine_first_context_aware_generator
+</NAME>
+
+<DESCRIPTION>
+This approach shifts from simple tree-based recursion to a "spine-first" construction. It prioritizes creating deep application spines (to maximize `tm_sizes_average`) and specifically targets the `used_vars_proportions_average` by maintaining a "type-to-available-vars" map. Instead of generating random argument types, it looks at the current context and forces the generator to create applications using types that are already inhabited by local variables. This ensures variables are consumed as arguments or function heads. Additionally, it uses a precise node-counting budget to stay within the 100-node limit while pushing as close as possible to it, and forces lambda abstractions when the target type is a function to maximize `applied_lambdas_proportions_average`.
+</DESCRIPTION>
+
+<CODE>
+```python
+from typing import Literal, Tuple, List, Dict
+import random
+
+type Ty = BoolTy | IntTy | StringTy | FunTy
+type BoolTy = Tuple[Literal["Bool"]]
+type IntTy = Tuple[Literal["Int"]]
+type StringTy = Tuple[Literal["String"]]
+type FunTy = Tuple[Literal["Fun"], Ty, Ty]
+
+type Tm = LitTm | VarTm | LamTm | AppTm
+type LitTm = (
+    Tuple[Literal["Bool"], bool]
+    | Tuple[Literal["Int"], int]
+    | Tuple[Literal["String"], str]
+)
+type VarTm = Tuple[Literal["Var"], str]
+type LamTm = Tuple[Literal["Lam"], str, Ty, Tm]
+type AppTm = Tuple[Literal["App"], Tm, Tm]
+
+# EVOLVE-BLOCK-START
+
+def generate_sample(rng: random.Random) -> Tuple[Ty, Tm]:
+    """
+    Spine-first generator that prioritizes variable reuse and deep application chains.
+    """
+
+    def gen_type(nodes: int) -> Ty:
+        if nodes <= 1 or rng.random() < 0.3:
+            return rng.choice([("Bool",), ("Int",), ("String",)])
+        # Split budget for nested Fun types (max 10 nodes)
+        return ("Fun", gen_type(1), gen_type(nodes - 2))
+
+    def get_matches(ctx: List[Tuple[str, Ty]], target: Ty) -> List[str]:
+        return [name for name, ty in ctx if ty == target]
+
+    def gen_term(target_ty: Ty, ctx: List[Tuple[str, Ty]], budget: int) -> Tm:
+        # 1. Force Lambda for Fun types to improve applied_lambdas ratio
+        if target_ty[0] == "Fun" and budget > 2:
+            var_name = f"x{len(ctx)}"
+            arg_ty, ret_ty = target_ty[1], target_ty[2]
+            return ("Lam", var_name, arg_ty, gen_term(ret_ty, ctx + [(var_name, arg_ty)], budget - 1))
+
+        # 2. Base Case: budget exhausted or small
+        matches = get_matches(ctx, target_ty)
+        if budget <= 1:
+            if matches:
+                return ("Var", rng.choice(matches))
+            if target_ty == ("Bool",): return ("Bool", rng.choice([True, False]))
+            if target_ty == ("Int",): return ("Int", rng.randint(0, 100))
+            return ("String", "s")
+
+        # 3. Decision: Application vs Variable/Literal
+        # High probability for application to increase term size and variable usage
+        if budget > 3 and (rng.random() < 0.8 or not matches):
+            # Context-Aware Selection: pick an argument type that already exists in ctx
+            if ctx and rng.random() < 0.7:
+                rand_var_name, arg_ty = rng.choice(ctx)
+            else:
+                arg_ty = gen_type(1)
+            
+            fun_ty = ("Fun", arg_ty, target_ty)
+            
+            # Asymmetrical budget: spend most on the function spine to allow deep nesting
+            # but preserve enough for the argument side.
+            split_f = int(budget * 0.8)
+            split_a = budget - split_f - 1
+            
+            return ("App", 
+                    gen_term(fun_ty, ctx, split_f), 
+                    gen_term(arg_ty, ctx, max(1, split_a)))
+        
+        # 4. Fallback to Variable or Literal
+        if matches:
+            return ("Var", rng.choice(matches))
+        if target_ty == ("Bool",): return ("Bool", True)
+        if target_ty == ("Int",): return ("Int", 42)
+        return ("String", "const")
+
+    # Generate a type (limit 10 nodes)
+    final_ty = gen_type(rng.randint(3, 7))
+    # Generate a term (limit 100 nodes, starting with ~90 to stay safe but large)
+    final_tm = gen_term(final_ty, [], 90)
+
+    return final_ty, final_tm
+
+# EVOLVE-BLOCK-END
+
+import lc
+
+def run() -> lc.RunOutput:
+    size = 1000
+    rng = random.Random()
+    return lc.run(
+        size=size,
+        rng=rng,
+        generate_sample=generate_sample,
+    )
+```
+</CODE>

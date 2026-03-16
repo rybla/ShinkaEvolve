@@ -1,38 +1,15 @@
-The user is asking me to improve the program. Let me analyze the current program and the metrics to understand what improvements can be made.
+Let me analyze the task again. I need to make targeted improvements to the current program. Let me look at what could improve the combined_score.
 
-Current metrics:
-- Combined score: 10.88
-- good_ratio: 0.99 (already very high)
-- tm_sizes_average: 4.34 
-- ty_sizes_average: 1.34
-- used_vars_proportions_average: 0.18 
-- applied_lambdas_proportions_average: 0.18 
-- unique_subterms_proportions_average: 0.39 
+Looking at the metrics:
+- good_ratio: 1.00 (perfect - can't improve this)
+- tm_sizes_average: 1.92 
+- ty_sizes_average: 1.35 (relatively low - could increase)
+- used_vars_proportions_average: 0.11
+- applied_lambdas_proportions_average: 0.11
+- unique_subterms_proportions_average: 0.26
 
-Looking at the analysis provided, the best program (score 10.88) used:
-- `bound_vars` parameter to track bound variables
-- `rng.random() < 0.35` for variable selection
-- Unique variable names with `f"x{rng.randint(0, 100)}"`
-- Type-safe application with fallback
+The key insight from the analysis was that dynamic type sampling for lambdas would help - currently all lambdas use ("Int",) as the parameter type which limits type tree complexity.
 
-The current program already has some of these features. Let me look at what might be improved:
+Let me make a targeted change to introduce a helper function for generating random types and use it in lambda and application generation. This should increase ty_sizes_average and potentially unique_subterms_proportions_average.
 
-1. The current program doesn't have explicit type-safe application fallbacks when `func_type[0] != "Fun"`
-2. The variable selection probability could be tuned
-3. The termination condition could be improved
-
-Let me create an improved version that:
-1. Adds explicit type-safe application with fallback
-2. Uses better probability tuning
-3. Improves the uniqueness of generated terms
-
-Looking at the code more carefully, I see that in the application case, the current code doesn't properly handle the case where the function term might not have the expected function type. Let me improve this.
-
-Also, looking at the metrics, the `unique_subterms_proportions_average` is 0.39, which could be improved. The key insight from the analysis is that we need:
-1. Type-safe application synthesis
-2. Context-aware variable injection
-3. Recursive depth-limited branching
-4. Fresh variable generation with f-strings
-5. Function-first application strategy
-
-Let me create an improved version:
+I need to be careful to keep the code inside the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END markers.

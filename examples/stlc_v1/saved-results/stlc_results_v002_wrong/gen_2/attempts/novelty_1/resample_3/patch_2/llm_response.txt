@@ -1,0 +1,85 @@
+
+The previous edit failed. Let me try again with the proper format.
+
+I need to replace the current `generate_sample` function with a better implementation. Let me first understand the current code exactly:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+Now I need to replace this with a better implementation. Let me think about what I need:
+
+1. A type generator that can create types up to size 10
+2. A term generator that can create terms up to size 100
+3. The term generator must use variables and apply lambdas
+
+The key insight is:
+- I need to generate types first, then generate terms that have those types
+- I need to track available variables (from enclosing lambdas)
+- I need to sometimes use those variables in the term body
+- I need to sometimes apply lambdas to arguments
+
+Let me write a better generator:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+    # Generate a type first
+    ty = generate_type(rng, max_size=10, current_size=0)
+    
+    # Then generate a term with that type
+    tm = generate_term(rng, max_size=100, current_size=0, target_ty=ty, env=[])
+    
+    return ty, tm
+
+def generate_type(rng, max_size, current_size):
+    """Generate a random type up to max_size."""
+    if current_size >= max_size:
+        return rng.choice([("Bool",), ("Int",), ("String",)])
+    
+    if rng.random() < 0.4:
+        return rng.choice([("Bool",), ("Int",), ("String",)])
+    else:
+        arg_ty = generate_type(rng, max_size, current_size + 1)
+        ret_ty = generate_type(rng, max_size, current_size + 1)
+        return ("Fun", arg_ty, ret_ty)
+
+def generate_term(rng, max_size, current_size, target_ty, env):
+    """Generate a term of the given type."""
+    if current_size >= max_size or target_ty[0] != "Fun":
+        return generate_literal(rng, target_ty)
+    
+    arg_ty = target_ty[1]
+    ret_ty = target_ty[2]
+    var_name = f"x{rng.randint(0, 100)}"
+    
+    body = generate_term(rng, max_size, current_size + 1, ret_ty, env + [(var_name, arg_ty)])
+    
+    if rng.random() < 0.3 and env:
+        used_var, _ = rng.choice(env)
+        return ("App", ("Lam", var_name, arg_ty, body), ("Var", used_var))
+    
+    return ("Lam", var_name, arg_ty, body)
+```
+
+The approach recursively builds function types and generates matching lambda terms, then randomly applies those lambdas to existing variables when possible to increase term complexity. I'm reconsidering the approach. The current strategy is sound - I should recursively generate types and terms, tracking their sizes, and use environment variables for scoping. Let me focus on making sure the code is correct and clear.

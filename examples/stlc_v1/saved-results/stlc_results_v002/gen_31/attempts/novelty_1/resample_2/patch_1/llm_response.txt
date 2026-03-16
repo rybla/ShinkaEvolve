@@ -1,0 +1,62 @@
+Let me analyze the current program and its performance metrics:
+
+1. **Combined score**: 10.28 (needs to be maximized)
+2. **good_ratio**: 1.00 (perfect - all generated terms are well-typed)
+3. **tm_sizes_average**: 1.31 (term sizes are very small, max is 100)
+4. **ty_sizes_average**: 1.31 (type sizes are very small, max is 10)
+5. **used_vars_proportions_average**: 0.01 (almost no variables are being used)
+6. **applied_lambdas_proportions_average**: 0.00 (no lambdas are being applied to arguments)
+7. **unique_subterms_proportions_average**: 0.13 (relatively low)
+
+The main issues I can see:
+1. Term and type sizes are very small (only ~1.3 nodes on average when max is 100 for terms and 10 for types)
+2. Used variables proportion is almost 0 (0.01)
+3. Applied lambdas proportion is 0
+4. Unique subterms is relatively low (0.13)
+
+Looking at the current implementation:
+- The recursion depth starts at 10 but the base cases (literals) are chosen with probability 3/4 (when i < 3), so most terms are just literals
+- The function type is always `Int -> ...` which limits variety
+- When using variables from context, it only creates a simple `("Lam", "x", ("Int",), ("Var", var_name))` pattern
+- There are no applications being generated
+
+To improve the performance, I need to:
+1. Increase term and type sizes significantly
+2. Actually use variables from context more often
+3. Generate applications (AppTm) which is completely missing
+4. Use more variety in the base types
+
+Let me design a better algorithm:
+
+Key changes:
+1. **Reduce the probability of base cases**: Currently, 3 out of 4 choices lead to literals. I should make literals less frequent to build bigger terms.
+
+
+2. **Implement AppTm generation**: Applications are crucial for creating more complex and interesting term structures. I'll introduce a mechanism to generate application nodes that combine existing terms.
+3. **Expand type generation**: Instead of sticking to `Int` as the sole base type, I'll diversify the type generation process to include multiple base types and more complex type constructions.
+4. **Enhance variable usage**: I'll create more opportunities for referencing variables from the context, moving beyond the current minimal 30% chance.
+
+The new approach will dynamically adjust generation probabilities, introducing more complexity and structural variety to the generated terms and types.
+
+I'm developing a recursive generation strategy that tracks context depth and allows for sophisticated term construction. By maintaining a context with type information, I can create more nuanced and contextually appropriate variable references and function applications.
+
+The generation mechanism will leverage probabilistic choices at each recursion level, enabling a rich set of term and type possibilities while preventing excessive recursion through depth management.
+
+My approach ensures type safety by:
+- Carefully selecting variable references that match expected types
+- Constructing function types that maintain type consistency
+- Using depth and random selection to control term complexity
+
+The strategy introduces multiple generation paths:
+- Base type literals
+- Variable references from available context
+- Lambda abstractions with type-preserving body generation
+- Function applications that respect type constraints
+
+This refined method allows generating more intricate and semantically meaningful lambda calculus representations while maintaining structural integrity. I'll continue the thought by completing the partial line and then summarizing the key actions:
+
+.5 and depth > 0 else 0.0)
+
+I'll select a random type from the available base types, creating a new variable context with generated parameter names. When generating lambda abstractions, I'll recursively create the body while maintaining the parameter's type in the context. This approach ensures type-consistent term generation by tracking variable types throughout the recursive process.
+
+The context management allows precise type tracking, preventing ill-typed term generation by carefully propagating type information through each recursive step. By combining type generation with context-aware term construction, I can systematically build well-typed lambda calculus expressions.

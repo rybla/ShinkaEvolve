@@ -1,0 +1,57 @@
+Let me understand the task:
+
+1. I need to improve the current `generate_sample` function to produce better types and terms according to the metrics:
+   - **ty_sizes_average**: max 10 nodes in type AST
+   - **tm_sizes_average**: max 100 nodes in term AST
+   - **used_vars_proportions_average**: how much variables are used
+   - **applied_lambdas_proportions_average**: how much lambdas are applied to arguments
+   - **unique_subterms_proportions_average**: unique subterms (application and lambda subterms)
+
+2. The current implementation is very basic:
+   - It only returns literals (Bool, Int, String) or a simple lambda wrapping a recursive call
+   - It doesn't track depth properly
+   - It doesn't use variables at all
+   - It doesn't apply lambdas
+   - It doesn't generate unique subterms
+
+Let me design a better algorithm:
+
+1. **Type generation**:
+   - Need to generate types with up to 10 nodes
+   - Types can be Bool, Int, String, or Fun
+   - Should generate larger types more often
+
+2. **Term generation**:
+   - Need to generate terms with up to 100 nodes
+   - Terms can be literals, variables, lambdas, or applications
+   - Should track variables in scope
+   - Should apply lambdas to arguments
+   - Should generate unique subterms
+
+Key insights:
+- Need to track the "budget" for type and term sizes
+- Need to maintain a list of available variables
+- Need to sometimes generate variables that will be used later
+- Need to apply lambdas to arguments
+- Need to generate a variety of subterms
+
+Let me design a novel approach:
+- Use a "budget" system where we allocate nodes to type and term parts
+- Use a context for variables in scope
+- Generate applications that use variables from scope
+- Ensure terms are well-typed by generating them alongside their types
+
+Here's my plan:
+1. Generate a random type with a budget system
+
+
+2. Generate a random term with a budget system, maintaining type consistency
+3. Make sure variables are used and lambdas are applied
+
+I'll implement this with a novel approach that differs from the original:
+- Track depth and size explicitly
+- Maintain context of available variables
+- Generate applications that use variables in scope
+- Ensure type consistency
+
+The algorithm will use separate generation functions for types and terms, with budget tracking and variable context management to ensure well-typed, reusable terms.

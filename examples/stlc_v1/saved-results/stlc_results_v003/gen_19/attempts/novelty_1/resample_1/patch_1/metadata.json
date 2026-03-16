@@ -1,0 +1,14 @@
+{
+  "generation": 19,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "spine_heavy_context_recycler",
+  "patch_description": "The new algorithm optimizes for `tm_sizes_average` and `used_vars_proportions_average` by implementing a 75/25 asymmetric budget split and a context-aware type selection for applications. \n\nKey improvements:\n1. **Context-Driven Application**: Instead of generating random argument types for `AppTm`, it picks a type from the existing context with 60% probability. This creates more opportunities for `VarTm` usage, boosting variable density.\n2. **Lambda Forcing**: When the target type is a function, it forces a `LamTm` with 80% probability, ensuring structural alignment and increasing the depth of the context.\n3. **Left-Heavy Spines**: By allocating 75% of the budget to the function part of an application, the generator produces deep left-heavy spines, significantly increasing the average term size.\n4. **Shadowing-Aware Selection**: Variable selection uses a \"most-recent\" preference to ensure that even in deep contexts, variables are utilized effectively.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:44:30.168711",
+  "llm_cost": 0.0062255,
+  "llm_model": null
+}

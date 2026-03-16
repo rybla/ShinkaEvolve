@@ -1,10 +1,42 @@
-The user is asking me to rewrite the program to improve its performance. Let me look at the current program and the metrics.
+The user is asking me to make an edit to improve the performance of the code. Let me analyze the current state and propose a targeted improvement.
 
-The current `generate_sample` function is very simple - it only generates literals or a simple lambda wrapping another sample. It doesn't track variables or use them, doesn't create applications, and doesn't generate complex types.
+Looking at the current code in the EVOLVE-BLOCK-START section:
 
-I need to provide the complete new program code in the format specified:
-- <NAME> - a shortened name
-- <DESCRIPTION> - explanation
-- <CODE> - the full code
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
 
-Let me write a complete solution that improves the metrics.
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+The issues:
+1. The recursive call `generate_sample(rng)` doesn't pass `depth`, so it uses default depth=10
+2. No variables are ever generated
+3. No applications are ever generated
+4. Types and terms are very small
+
+I need to write a more sophisticated generator. Let me create one that:
+1. Generates larger types (up to 10 nodes)
+2. Generates larger terms (up to 100 nodes)
+3. Uses variables from context
+4. Applies lambdas to arguments
+5. Creates unique subterms
+
+I'll need to add the List import from typing.
+
+Let me propose the edit now.

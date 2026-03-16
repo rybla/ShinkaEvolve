@@ -1,0 +1,175 @@
+--- a/original.py
++++ b/original.py
+@@ -1,118 +1,131 @@
+ from typing import Literal, Tuple
+ import random
+ import tqdm
+ 
+ """
+ `Ty` and `Tm` define the shape of a simply-typed lambda-calculus deeply embedded in Python.
+ 
+ Each value, be it the encoding of a type or a term, is a tuple where the first component of the tuple is the "constructor" and the rest of the components are the arguments. For example, this value encodes the `Bool` type:
+ 
+     ('Bool',)
+ 
+ As another example, this value encodes the function type from `Bool` to `Bool`, which is often written `Bool -> Bool`:
+ 
+     ('Fun', ('Bool',), ('Bool',))
+ 
+ As another example, this value encodes the function term, which takes a single `String` input and just returns that input (also known as the identity function):
+ 
+     ('Lam', 'x', ('String',), ('Var', 'x'))
+ 
+ Note that ALL lambda terms must have a type annotation as the 1st argument, where in the above example the type annotation was the ('String',).
+ 
+ Closely read the above below type aliases to understand the complete structure of this deep embedding of the lambda calculus in Python.
+ """
+ 
+ type Ty = BoolTy | IntTy | StringTy | FunTy
+ type BoolTy = Tuple[Literal["Bool"]]
+ type IntTy = Tuple[Literal["Int"]]
+ type StringTy = Tuple[Literal["String"]]
+ type FunTy = Tuple[Literal["Fun"], Ty, Ty]
+ 
+ 
+ type Tm = LitTm | VarTm | LamTm | AppTm
+ type LitTm = (
+     Tuple[Literal["Bool"], bool]
+     | Tuple[Literal["Int"], int]
+     | Tuple[Literal["String"], str]
+ )
+ type VarTm = Tuple[Literal["Var"], str]
+ type LamTm = Tuple[Literal["Lam"], str, Ty, Tm]
+ type AppTm = Tuple[Literal["App"], Tm, Tm]
+ 
+ 
+ # EVOLVE-BLOCK-START
+ 
+-
+ def generate_sample(rng: random.Random) -> Tuple[Ty, Tm]:
+     """
+-    Generate a sample type and term using a random seed.
++    Generates well-typed STLC terms using asymmetric budget splitting, 
++    context-aware type selection, and forced lambda abstraction.
+     """
+ 
+     def gen_type(budget: int) -> Ty:
+-        if budget <= 1:
++        if budget <= 1 or rng.random() < 0.3:
+             return rng.choice([("Bool",), ("Int",), ("String",)])
+-        if rng.random() < 0.3:
+-            return rng.choice([("Bool",), ("Int",), ("String",)])
++        
++        # Split budget for function types
++        b_left = rng.randint(1, max(1, budget - 1))
++        return ("Fun", gen_type(b_left), gen_type(max(1, budget - b_left - 1)))
+ 
+-        left_budget = rng.randint(1, budget - 1)
+-        return ("Fun", gen_type(left_budget), gen_type(budget - left_budget))
++    def gen_term(target_ty: Ty, ctx: List[Tuple[str, Ty]], budget: int) -> Tm:
++        # 1. Variable Selection with Shadowing Preference
++        matches = [name for name, ty in ctx if ty == target_ty]
++        
++        # Base Case / Hard Floor
++        if budget <= 2:
++            if matches and rng.random() < 0.98:
++                # Prioritize the most recently added variable (shadowing)
++                return ("Var", matches[-1])
++            
++            if target_ty[0] == "Bool":
++                return ("Bool", rng.choice([True, False]))
++            if target_ty[0] == "Int":
++                return ("Int", rng.randint(0, 500))
++            if target_ty[0] == "String":
++                return ("String", rng.choice(["s1", "s2", "s3"]))
++            
++            # If target is Fun but budget is exhausted, must return a valid Lam
++            if target_ty[0] == "Fun":
++                v_name = f"v{len(ctx)}"
++                return ("Lam", v_name, target_ty[1], gen_term(target_ty[2], ctx + [(v_name, target_ty[1])], 1))
+ 
+-    def gen_term(target_ty: Ty, ctx: list[Tuple[str, Ty]], budget: int) -> Tm:
+-        # Try to use a variable from context if it matches the type
+-        valid_vars = [name for name, ty in ctx if ty == target_ty]
++        # 2. Forced Abstraction Density
++        # If the target is a function, produce a Lambda with high probability
++        if target_ty[0] == "Fun" and rng.random() < 0.85:
++            arg_ty, ret_ty = target_ty[1], target_ty[2]
++            v_name = f"v{len(ctx)}"
++            return ("Lam", v_name, arg_ty, gen_term(ret_ty, ctx + [(v_name, arg_ty)], budget - 1))
+ 
+-        # Base cases or if budget is low
+-        if budget <= 2:
+-            if valid_vars and (rng.random() < 0.9 or budget <= 1):
+-                return ("Var", rng.choice(valid_vars))
+-            if target_ty == ("Bool",):
+-                return ("Bool", rng.choice([True, False]))
+-            if target_ty == ("Int",):
+-                return ("Int", rng.randint(0, 100))
+-            if target_ty == ("String",):
+-                return ("String", rng.choice(["a", "b", "c"]))
++        # 3. Context-Driven Application
++        # To maximize variable usage, pick an argument type from the context if possible
++        if ctx and rng.random() < 0.75:
++            arg_ty = rng.choice(ctx)[1]
++        else:
++            arg_ty = gen_type(1)
+ 
+-        # Recursive cases
+-        if target_ty[0] == "Fun" and rng.random() < 0.6:
+-            # Generate Lambda
+-            arg_ty, ret_ty = target_ty[1], target_ty[2]
+-            var_name = f"v{len(ctx)}"
+-            new_ctx = ctx + [(var_name, arg_ty)]
+-            return ("Lam", var_name, arg_ty, gen_term(ret_ty, new_ctx, budget - 1))
++        fun_ty = ("Fun", arg_ty, target_ty)
++        
++        # 85/15 Asymmetric Split: Create deep left-heavy spines
++        split_f = int(budget * 0.85)
++        split_x = budget - split_f - 1
++        
++        return ("App", 
++                gen_term(fun_ty, ctx, max(1, split_f)), 
++                gen_term(arg_ty, ctx, max(1, split_x)))
+ 
+-        # Generate Application
+-        # Asymmetric split: allocate more budget to the function side to encourage deep application chains
+-        arg_ty = gen_type(rng.randint(1, 2))
+-        fun_ty = ("Fun", arg_ty, target_ty)
+-
+-        # Use an asymmetric split to favor deeper trees on the left (function) side
+-        # while keeping the argument side relatively small but valid.
+-        split_f = int(budget * 0.7)
+-        split_x = budget - split_f - 1
+-        return ("App", gen_term(fun_ty, ctx, split_f), gen_term(arg_ty, ctx, max(1, split_x)))
+-
+-    # Target type size ~10 nodes, Term size ~100 nodes
+-    target_type = gen_type(10)
++    # Generate a reasonably complex target type (max 10 nodes)
++    target_type = gen_type(rng.randint(4, 10))
++    
++    # Generate a large term (max 100 nodes)
++    # We use a budget of 100 to stay within the scoring limit while maximizing size
+     term = gen_term(target_type, [], 100)
+ 
+     return target_type, term
+-
+ 
+ # EVOLVE-BLOCK-END
+ 
+ # This part remains fixed (not evolved)
+ 
+ import lc
+ 
+ 
+ def run() -> lc.RunOutput:
+     """Run the analysis"""
+ 
+     size = 1000
+     rng = random.Random()
+ 
+     return lc.run(
+         size=size,
+         rng=rng,
+         generate_sample=generate_sample,
+     )

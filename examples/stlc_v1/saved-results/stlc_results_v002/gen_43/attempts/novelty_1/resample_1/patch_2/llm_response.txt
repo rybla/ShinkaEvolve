@@ -1,25 +1,44 @@
-The user is asking me to improve the current program. Looking at the current program, it has:
-- good_ratio: 1.00 (perfect)
-- tm_sizes_average: 1.34
-- ty_sizes_average: 1.34
-- used_vars_proportions_average: 0.00 (no variables used!)
-- applied_lambdas_proportions_average: 0.00 (no applications!)
-- unique_subterms_proportions_average: 0.13
+Let me analyze the programs more carefully to understand what improvements can be made through crossover.
 
-The key issues are:
-1. No variables are used (used_vars_proportions_average: 0.00)
-2. No applications (applied_lambdas_proportions_average: 0.00)
+Current program (to improve):
+- Uses depth-based generation with 5 options at depth > 0
+- Has lambda generation with 30% chance to use a variable from context
+- Has application generation
+- Performance: Combined score 10.60
 
-Looking at the best programs from the analysis, they use:
-1. `bound_vars` parameter to track bound variables
-2. Probabilistic variable selection with `rng.random() < 0.35`
-3. Unique variable names with `f"x{rng.randint(0, 100)}"`
-4. Type-safe application with fallback
+Crossover inspiration:
+- Uses simpler approach with 4 options (or 3 at depth 0)
+- Has 30% chance to use a variable from context
+- Performance: Combined score 10.31
 
-Let me create an improved version that:
-1. Adds a `bound_vars` parameter to track variables in scope
-2. Uses probabilistic selection to return variables from context
-3. Creates lambdas with unique variable names
-4. Adds application capability with type checking
+Looking at the best performing prior programs:
+- Program 4: Combined score 10.64, tm_sizes_average: 1.92, unique_subterms_proportions_average: 0.26
 
-I need to make sure the SEARCH block matches exactly what's in the current file.
+The key insight from the best programs:
+1. They use depth == 0 to terminate recursion and only generate literals
+2. They have 5 options at depth > 0 (3 literals + lambda + application)
+3. They add context properly when generating lambdas
+4. They generate applications properly
+
+The current program already has these features. Looking at the differences:
+
+Current program lambda case:
+```python
+elif i == 3:
+    # Generate lambda - with 30% chance to use a variable from context
+    if context and rng.random() < 0.3:
+        var_name = rng.choice(context)
+        return (("Fun", ("Int",), ("Int",)), ("Lam", "x", ("Int",), ("Var", var_name)))
+    else:
+        ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+        return (("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm))
+```
+
+The issue is that when using a variable from context, it doesn't recurse - it just returns a simple term. This limits term size.
+
+Let me think about what crossover improvement would help:
+
+
+I see potential for more dynamic variable usage and deeper term generation. The current approach limits term complexity by not fully exploring recursive possibilities. By increasing variable interaction and ensuring more nuanced term construction, we could potentially expand the term generation strategy.
+
+The goal is to create a more sophisticated approach that balances variable usage, depth progression, and term complexity. This might involve adjusting the probability of variable selection and ensuring more meaningful term construction across different recursion depths.

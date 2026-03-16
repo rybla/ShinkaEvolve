@@ -1,0 +1,14 @@
+{
+  "generation": 23,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 2,
+  "patch_name": "deep_spine_and_type_caching",
+  "patch_description": "To maximize `tm_sizes_average` and `used_vars_proportions_average`, I am implementing two key changes:\n1. **Type-Inhabitant Caching**: When generating an `AppTm`, we now prioritize `arg_ty` values that already exist in the context. This ensures that the argument branch of the application has a much higher probability of selecting a variable from the context rather than generating a new literal, pushing the variable reuse metric higher.\n2. **Explicit Spine Recursion**: The `gen_term` function is adjusted to favor `AppTm` more aggressively when the budget is high, while maintaining the 75/25 budget split to ensure the left-heavy \"spine\" structure that drives up the average term size.\n3. **Context-Aware Type Generation**: `gen_type` is slightly biased to produce types already seen in the context to increase the density of matching variables.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:45:08.109724",
+  "llm_cost": 0.0084835,
+  "llm_model": null
+}

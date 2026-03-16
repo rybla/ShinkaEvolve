@@ -1,0 +1,26 @@
+The user is asking me to improve the performance of the current program. Let me analyze what's happening:
+
+1. Current program has:
+   - Combined score: 10.31
+   - good_ratio: 1.00 (all terms are well-typed)
+   - used_vars_proportions_average: 0.00 (no Var terms being used)
+   - applied_lambdas_proportions_average: 0.00 (no App terms)
+
+2. The issue is that the current program only generates:
+   - Literals (Bool, Int, String)
+   - Lambda abstractions where the body doesn't use the bound variable
+
+Looking at the prior programs, the best one (score 7.11) had:
+- used_vars_proportions_average: 0.06
+- applied_lambdas_proportions_average: 0.03
+
+But it had lower good_ratio (0.68).
+
+The current program has good_ratio: 1.00 but no variable usage or applications.
+
+I need to modify the generate_sample function to:
+1. Track bound variables
+2. Use bound variables in lambda bodies
+3. Add function applications
+
+Let me write the edit properly. The SEARCH block must match exactly what's in the current file.

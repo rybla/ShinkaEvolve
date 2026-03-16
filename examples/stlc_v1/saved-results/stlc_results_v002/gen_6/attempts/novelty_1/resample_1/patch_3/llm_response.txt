@@ -1,24 +1,22 @@
-The user is asking me to make changes to improve the performance of the lambda calculus generator. Let me analyze the current state and propose improvements.
+The user is asking me to make an edit to improve the performance of the code. Let me analyze the current state and propose a targeted improvement.
 
-Looking at the current `generate_sample` function:
-1. It only generates literals or simple lambdas
-2. The depth parameter is not being used effectively
-3. No applications are generated
-4. No variables are used
-5. Terms and types are very small
+Looking at the current program in the EVOLVE-BLOCK-START section, it's a very simple generator that:
+1. Only generates 4 simple cases
+2. Ignores the depth parameter
+3. Always uses "x" as variable name
+4. Doesn't use variables or create applications
 
-I need to rewrite the generate_sample function to:
-1. Use depth to control complexity
-2. Generate larger types (up to 10 nodes)
-3. Generate larger terms (up to 100 nodes)
-4. Generate applications
-5. Use variables from lambda bindings
-6. Apply lambdas to arguments
+The metrics show:
+- good_ratio: 1.00 (perfect - all terms are well-typed)
+- tm_sizes_average: 1.35 (should be up to 100)
+- ty_sizes_average: 1.35 (should be up to 10)
+- used_vars_proportions_average: 0.00 (should be higher)
+- applied_lambdas_proportions_average: 0.00 (should be higher)
+- unique_subterms_proportions_average: 0.15 (should be higher)
 
-Let me write a proper implementation.
+I need to write a SEARCH/REPLACE block that replaces the current generate_sample function with a better implementation. Let me craft this carefully.
 
 The current code is:
-
 ```python
 def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
     """
@@ -41,52 +39,4 @@ def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
         )
 ```
 
-I need to replace this with a better implementation. Let me create a more sophisticated generator.
-
-The key changes:
-1. Generate larger types using depth
-2. Generate applications
-3. Use variables from lambda context
-4. Apply lambdas
-
-Let me write the new implementation:
-
-```python
-def generate_type(rng: random.Random, depth: int) -> Ty:
-    """Generate a random type with size up to depth nodes."""
-    if depth <= 0:
-        # Base types only
-        i = rng.randrange(0, 3)
-        if i == 0:
-            return ("Bool",)
-        elif i == 1:
-            return ("Int",)
-        else:
-            return ("String",)
-    else:
-        # Either base type or function type
-        i = rng.randrange(0, 4)
-        if i == 0:
-            return ("Bool",)
-        elif i == 1:
-            return ("Int",)
-        elif i == 2:
-            return ("String",)
-        else:
-            # Generate function type with recursive calls
-            arg_ty = generate_type(rng, depth // 2)
-            ret_ty = generate_type(rng, depth // 2)
-            return ("Fun", arg_ty, ret_ty)
-```
-
-I'll create a recursive approach to generate more complex types. The function uses depth to control the complexity of the generated type, splitting the depth in half for each recursive call. This allows for increasingly complex type structures while maintaining a maximum size limit.
-
-The implementation ensures a mix of base types and function types, with the probability of generating more complex types increasing as the depth parameter grows. By dividing depth by 2 in recursive calls, we prevent generating excessively large types while still allowing for interesting type variations. I'll generate a random term with a specified type, using depth to control complexity. The function creates variables, literals, lambdas, or applications based on random selection and available context. It ensures the generated term matches the target type by carefully constructing different term structures. The approach uses a context of available variables and recursively builds terms that conform to the desired type signature.
-
-The generation strategy involves:
-- Creating variables from existing context
-- Generating type-appropriate literals
-- Constructing lambdas with type-consistent bodies
-- Building applications by combining existing terms
-
-This method allows flexible, type-safe term generation while maintaining control over structural complexity through the depth parameter.
+I'll replace this with a more sophisticated implementation that properly uses depth control, maintains a context of available variables, and generates more complex terms while maintaining type correctness.

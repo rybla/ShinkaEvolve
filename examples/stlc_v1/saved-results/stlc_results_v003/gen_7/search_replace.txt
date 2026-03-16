@@ -1,0 +1,50 @@
+<NAME>
+asymmetric_budget_splitting_and_var_prioritization
+</NAME>
+
+<DESCRIPTION>
+This modification implements asymmetric budget splitting in `AppTm` generation to favor deeper function chains (e.g., `f x y z`), which are more representative of complex lambda terms. It also increases the probability of using variables from the context to improve the `used_vars_proportions_average` and adjusts the base case logic to ensure the generator stays within the 100-node limit while maximizing term size.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+        # Generate Application
+        # To generate (App f x) : target_ty, we need f : A -> target_ty and x : A
+        arg_ty = gen_type(rng.randint(1, 3))
+        fun_ty = ("Fun", arg_ty, target_ty)
+
+        split = max(1, budget // 2)
+        return ("App", gen_term(fun_ty, ctx, split), gen_term(arg_ty, ctx, split))
+=======
+        # Generate Application
+        # Asymmetric split: allocate more budget to the function side to encourage deep application chains
+        arg_ty = gen_type(rng.randint(1, 2))
+        fun_ty = ("Fun", arg_ty, target_ty)
+
+        # Use an asymmetric split to favor deeper trees on the left (function) side
+        # while keeping the argument side relatively small but valid.
+        split_f = int(budget * 0.7)
+        split_x = budget - split_f - 1
+        return ("App", gen_term(fun_ty, ctx, split_f), gen_term(arg_ty, ctx, max(1, split_x)))
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+    def gen_term(target_ty: Ty, ctx: list[Tuple[str, Ty]], budget: int) -> Tm:
+        # Try to use a variable from context if it matches the type
+        valid_vars = [name for name, ty in ctx if ty == target_ty]
+
+        # Base cases or if budget is low
+        if budget <= 1 or (not target_ty[0] == "Fun" and rng.random() < 0.2):
+            if valid_vars and (rng.random() < 0.7 or budget <= 1):
+                return ("Var", rng.choice(valid_vars))
+=======
+    def gen_term(target_ty: Ty, ctx: list[Tuple[str, Ty]], budget: int) -> Tm:
+        # Try to use a variable from context if it matches the type
+        valid_vars = [name for name, ty in ctx if ty == target_ty]
+
+        # Base cases or if budget is low
+        if budget <= 2:
+            if valid_vars and (rng.random() < 0.9 or budget <= 1):
+                return ("Var", rng.choice(valid_vars))
+>>>>>>> REPLACE
+
+</DIFF>

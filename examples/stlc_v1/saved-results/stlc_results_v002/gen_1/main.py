@@ -3,7 +3,7 @@ import random
 import tqdm
 
 """
-`Ty` and `Tm` define the shape of a simply-typed lambda-calculus deeply embedded in Python.
+`Ty` and `Tm` define the shape of a simply-typed lambda-calculus deeply embedded in Python. 
 
 Each value, be it the encoding of a type or a term, is a tuple where the first component of the tuple is the "constructor" and the rest of the components are the arguments. For example, this value encodes the `Bool` type:
 
@@ -41,29 +41,96 @@ type AppTm = Tuple[Literal["App"], Tm, Tm]
 
 
 # EVOLVE-BLOCK-START
-
-
 def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
     """
     Generate a sample type and term using a random seed.
     """
+    # Generate type with depth control
+    ty = generate_type(rng, depth)
+    # Generate term with depth control and empty context
+    tm = generate_term(rng, depth, [], ty)
+    return (ty, tm)
 
-    i = rng.randrange(0, 4 if depth > 0 else 3)
+def generate_type(rng: random.Random, depth: int) -> Ty:
+    """Generate a type with controlled depth."""
+    if depth <= 0:
+        # Base types only when depth is exhausted
+        return generate_base_type(rng)
+    
+    # At higher depths, favor function types to build complexity
+    if rng.random() < 0.7:
+        arg_ty = generate_base_type(rng)
+        ret_ty = generate_type(rng, depth - 1)
+        return ("Fun", arg_ty, ret_ty)
+    
+    return generate_base_type(rng)
 
+def generate_base_type(rng: random.Random) -> Ty:
+    """Generate a base type."""
+    i = rng.randrange(0, 3)
     if i == 0:
-        return (("Bool",), ("Bool", True))
+        return ("Bool",)
     elif i == 1:
-        return (("Int",), ("Int", 27))
-    elif i == 2:
-        return (("String",), ("String", "hello world"))
+        return ("Int",)
     else:
-        ty, tm = generate_sample(rng)
-        return (
-            ("Fun", ("Int",), ty),
-            ("Lam", "x", ("Int",), tm),
-        )
+        return ("String",)
 
+def generate_term(rng: random.Random, depth: int, context: List[Tuple[str, Ty]], target_ty: Ty) -> Tm:
+    """Generate a term with controlled depth, respecting the target type."""
+    if depth <= 0:
+        # At depth 0, generate literals or variables
+        return generate_literal_or_var(rng, context, target_ty)
+    
+    # Decide between lambda, application, or literal
+    if isinstance(target_ty, tuple) and target_ty[0] == "Fun":
+        # For function types, generate lambda or application
+        if rng.random() < 0.5:
+            return generate_lambda(rng, depth, context, target_ty)
+        else:
+            return generate_application(rng, depth, context, target_ty)
+    
+    # For base types, generate literal or variable
+    return generate_literal_or_var(rng, context, target_ty)
 
+def generate_literal_or_var(rng: random.Random, context: List[Tuple[str, Ty]], ty: Ty) -> Tm:
+    """Generate a literal or variable."""
+    if context and rng.random() < 0.3:
+        # Use a variable from context
+        var_name, var_ty = rng.choice(context)
+        if var_ty == ty:
+            return ("Var", var_name)
+    
+    # Generate a literal matching the type
+    if ty == ("Bool",):
+        return ("Bool", rng.choice([True, False]))
+    elif ty == ("Int",):
+        return ("Int", rng.randint(0, 100))
+    else:
+        return ("String", rng.choice(["hello", "world", "test"]))
+
+def generate_lambda(rng: random.Random, depth: int, context: List[Tuple[str, Ty]], fun_ty: Ty) -> Tm:
+    """Generate a lambda term."""
+    arg_name = f"x{rng.randint(0, 1000)}"
+    arg_ty = fun_ty[1]
+    body_ty = fun_ty[2]
+    
+    # Add argument to context for body generation
+    new_context = context + [(arg_name, arg_ty)]
+    body = generate_term(rng, depth - 1, new_context, body_ty)
+    
+    return ("Lam", arg_name, arg_ty, body)
+
+def generate_application(rng: random.Random, depth: int, context: List[Tuple[str, Ty]], target_ty: Ty) -> Tm:
+    """Generate an application term."""
+    # Generate a function to apply
+    fun_ty = ("Fun", generate_base_type(rng), target_ty)
+    fun = generate_term(rng, depth - 1, context, fun_ty)
+    
+    # Generate an argument
+    arg_ty = fun_ty[1]
+    arg = generate_term(rng, depth - 1, context, arg_ty)
+    
+    return ("App", fun, arg)
 # EVOLVE-BLOCK-END
 
 # This part remains fixed (not evolved)

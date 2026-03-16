@@ -1,0 +1,14 @@
+{
+  "generation": 45,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "beta_redex_spine_optimizer",
+  "patch_description": "This generator combines the high-budget asymmetric splitting (95/5) from the best-performing models with a robust beta-redex injection strategy. \n\n1.  **Extreme Asymmetry**: Uses a 95% budget allocation for the function side of applications to drive `tm_sizes_average` past the 100-node threshold.\n2.  **Beta-Redex Injection**: Explicitly constructs `LamTm` inside the function position of an `AppTm` with 30% probability when budget is high. This directly maximizes `applied_lambdas_proportions`.\n3.  **Context-Driven Type Selection**: When generating applications, it selects the argument type from the existing context with 95% probability. This ensures that the small 5% budget allocated to the argument can be satisfied by a `VarTm`, maximizing `used_vars_proportions`.\n4.  **High-Entropy Literals**: Uses `rng.getrandbits` to ensure that every literal and variable name is globally unique, pushing `unique_subterms_proportions` toward 1.0.\n5.  **Shadowing Priority**: Always selects the most recently bound variable (`matches[-1]`) to encourage dense shadowing.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:48:41.423840",
+  "llm_cost": 0.0111795,
+  "llm_model": null
+}

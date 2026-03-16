@@ -1,0 +1,12 @@
+The user wants me to provide a new improved program. Let me analyze the code and provide a complete new version.
+
+Looking at the metrics:
+- Current: 10.60 with tm_sizes_average 1.84, unique_subterms 0.23
+- Best prior: 10.62 with tm_sizes_average 1.87, unique_subterms 0.25
+
+The issue is the 30% shortcut that creates simple lambda terms. To improve:
+1. Remove the shortcut - always recurse for more complex terms
+2. Keep good_ratio at 1.00
+3. Try to increase tm_sizes and unique_subterms
+
+Let me write a complete new program.

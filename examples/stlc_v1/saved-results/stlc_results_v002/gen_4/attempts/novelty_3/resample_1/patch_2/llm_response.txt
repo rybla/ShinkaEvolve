@@ -1,5 +1,35 @@
-The user is asking me to make an edit to the program. Let me look at what's needed. The previous edit wasn't successful, and I need to provide a valid SEARCH/REPLACE block.
+The user is asking me to rewrite the program to improve its performance metrics. Let me analyze what needs to be done:
 
-Looking at the current program, I need to modify the `generate_sample` function in the EVOLVE-BLOCK-START to EVOLVE-BLOCK-END section.
+Current metrics:
+- Combined score: 10.30
+- good_ratio: 1.00 (perfect - all terms well-typed)
+- tm_sizes_average: 1.35 (needs to increase, target is ~10)
+- ty_sizes_average: 1.35 (needs to increase, target is ~10)
+- used_vars_proportions_average: 0.00 (needs to increase)
+- applied_lambdas_proportions_average: 0.00 (needs to increase)
+- unique_subterms_proportions_average: 0.15 (needs to increase)
 
-Let me create the improved generator:
+The key improvements needed:
+1. Increase type sizes - generate more complex function types up to 10 nodes
+2. Increase term sizes - generate more complex terms up to 100 nodes
+3. Use variables from context (introduced by lambdas)
+4. Apply lambdas to arguments
+5. More unique subterms (application and lambda nodes)
+
+Looking at the prior program's approach (the first block), it had a more sophisticated generator with:
+- generate_type with depth control
+- generate_term with depth control
+- generate_lambda, generate_application, generate_literal_or_var
+
+But that prior program had lower good_ratio (0.82). I need to ensure all generated terms are well-typed.
+
+Let me create a new implementation that:
+1. Generates larger types (up to 10 nodes in AST)
+2. Generates larger terms (up to 100 nodes in AST)
+3. Uses variables from context more often
+4. Applies lambdas to arguments more often
+5. Creates more unique subterms
+
+The key insight is that to use variables, I need to first create lambdas that introduce variables, then use those variables in the body or in applications.
+
+Let me write the code:

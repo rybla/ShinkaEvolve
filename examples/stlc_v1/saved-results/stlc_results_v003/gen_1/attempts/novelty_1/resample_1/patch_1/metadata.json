@@ -1,0 +1,14 @@
+{
+  "generation": 1,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "stlc_recursive_generator",
+  "patch_description": "To improve the metrics, I will implement a more sophisticated recursive generator that:\n1.  **Controls Type Size:** Generates types up to the limit of 10 nodes, favoring `FunTy` to allow for more complex terms.\n2.  **Implements Context-Aware Term Generation:** Tracks bound variables and their types in a context to ensure terms are well-typed and maximize variable usage.\n3.  **Prioritizes Applications and Lambdas:** Actively tries to generate `App` nodes to increase term size and applied lambda proportions, while respecting the 100-node limit.\n4.  **Ensures Well-Typedness:** Uses a bidirectional approach where a type is generated first, and then a term is synthesized to match that specific type.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:41:59.940348",
+  "llm_cost": 0.004407,
+  "llm_model": null
+}

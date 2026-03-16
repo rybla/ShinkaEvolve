@@ -1,39 +1,44 @@
-Let me analyze the performance metrics and the programs to understand what improvements can be made.
+Looking at the current program and the performance metrics:
 
-Looking at the current program:
-- Combined score: 10.27
-- good_ratio: 1.00 (perfect - all samples are well-typed)
-- tm_sizes_average: 1.30
-- ty_sizes_average: 1.30
-- used_vars_proportions_average: 0.00 (no variables are used!)
-- applied_lambdas_proportions_average: 0.00 (no applications!)
-- unique_subterms_proportions_average: 0.13
+Current metrics:
+- Combined score: 10.31
+- good_ratio: 1.00 (perfect correctness - this is the most important!)
+- tm_sizes_average: 1.38
+- ty_sizes_average: 1.38
+- used_vars_proportions_average: 0.00 (no variables are being used!)
+- applied_lambdas_proportions_average: 0.00 (no App constructors)
+- unique_subterms_proportions_average: 0.15
 
-Looking at the prior programs:
-1. First program (score 8.73): Had some variable usage (0.16) but lower good_ratio (0.82)
-2. Second program (score 10.26): Had context tracking, some variable usage (0.02)
-3. Third-Fifth programs (scores 10.26-10.30): Simple recursive approach without depth decrement
+The main issue I see is that `used_vars_proportions_average: 0.00` - the variables are not being used. Looking at the code:
 
-The best performing programs have:
-- good_ratio: 1.00 (all samples are well-typed)
-- Higher tm_sizes_average and ty_sizes_average (bigger terms)
-- Some variable usage
-- Some unique subterms
+```python
+if context and rng.random() < 0.3:  # 30% chance to use a variable
+    var_name = rng.choice(context)
+    return (
+        ("Fun", ("Int",), ("Int",)),
+        ("Lam", "x", ("Int",), ("Var", var_name)),
+    )
+else:
+    ty, tm = generate_sample(rng, depth - 1, context)
+    return (
+        ("Fun", ("Int",), ty),
+        ("Lam", "x", ("Int",), tm),
+    )
+```
 
-The current program has:
-- good_ratio: 1.00 ✓
-- tm_sizes_average: 1.30 (relatively small)
-- used_vars_proportions_average: 0.00 ✗ (no variables!)
-- applied_lambdas_proportions_average: 0.00 ✗ (no applications!)
-- unique_subterms_proportions_average: 0.13
+The problem is:
+1. The context is NEVER updated when creating a Lam - `context` is passed as-is to the recursive call, so "x" is never added to the context
+2. Even when `context` has values, the code checks `if context and rng.random() < 0.3` - but the context is always empty because the variable is never added!
 
-Key insight from the meta-review:
-- The best programs (score 10.5488) used `bound_vars` to track bound variables
-- They used `rng.random() < 0.4` to probabilistically choose variables
-- They used unique variable names with `f"x{rng.randint(0, 100)}"`
+The fix is to add the parameter "x" to the context when recursing:
+```python
+else:
+    new_context = context + ["x"]
+    ty, tm = generate_sample(rng, depth - 1, new_context)
+    return (
+        ("Fun", ("Int",), ty),
+        ("Lam", "x", ("Int",), tm),
+    )
+```
 
-
-- Type-safe application requires checking `func_type[0] == "Fun"` before applying
-- Probabilistic termination uses both depth and random chance for base case selection
-
-To improve, I need to track bound variables in a context, allow variable selection from that context with some probability, use unique variable names, and implement type-safe application with fallbacks. This should increase variable usage and application metrics while maintaining the perfect good_ratio.
+I also notice that the depth parameter is not being used to terminate recursion in the else branch - it should pass `depth - 1` to ensure termination. Additionally, there's a depth check missing in the condition - it should verify `depth > 0` before attempting to use a variable, otherwise we could generate invalid terms at depth 0.

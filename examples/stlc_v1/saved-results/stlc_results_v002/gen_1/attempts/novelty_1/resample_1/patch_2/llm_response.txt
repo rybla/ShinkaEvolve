@@ -1,24 +1,69 @@
+The user is asking me to improve the performance of the lambda calculus generator. Looking at the current code and metrics:
 
-The user wants me to modify the `generate_sample` function to generate larger types and terms, use variables, apply lambdas, and have more unique subterms.
+- tm_sizes_average: 1.35 (very small - target is up to 100)
+- ty_sizes_average: 1.35 (very small - target is up to 10)
+- used_vars_proportions_average: 0.00 (no variable usage)
+- applied_lambdas_proportions_average: 0.00 (no lambda applications)
+- unique_subterms_proportions_average: 0.15 (few unique subterms)
 
-Let me analyze the current code and the metrics again:
+The current `generate_sample` function is very basic and doesn't properly use the depth parameter, doesn't generate applications, doesn't use variables properly, and doesn't generate large enough types and terms.
 
-Current issues:
-1. Types are very small (1.38 average, max 10)
-2. Terms are very small (1.38 average, max 100)
-3. No variables are being used (0.00)
-4. No lambdas are being applied (0.00)
-5. Few unique subterms (0.15)
+I need to propose a SEARCH/REPLACE block that improves this. Let me write a better generator.
 
-The current function doesn't use the depth parameter properly and doesn't generate:
-- Variables (VarTm)
-- Applications (AppTm)
+The key issues:
+1. The depth parameter isn't being used to control complexity
+2. No applications are generated
+3. Variables aren't being used (just bound but not applied)
+4. Types are very small
 
-I need to write a better generator that:
-1. Uses depth to control size
-2. Generates complex types (nested function types)
-3. Generates variables and uses them
-4. Applies lambdas to arguments
-5. Has more unique subterms
+I'll create a more sophisticated generator that:
+1. Uses a size budget approach
+2. Generates larger types (up to 10 nodes)
+3. Generates larger terms (up to 100 nodes)
+4. Creates applications to use variables
+5. Uses variables in applications
 
-Let me write a new version of the generate_sample function.
+Let me write the improved code:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+    # Generate a type with target size up to 10 nodes
+    ty = generate_type(rng, depth)
+    
+    # Generate a term with target size up to 100 nodes, with empty context
+    tm = generate_term(rng, ty, depth=5, context={})
+    
+    return (ty, tm)
+
+
+def generate_type(rng: random.Random, depth: int) -> Ty:
+    """Generate a type with bounded size."""
+    if depth <= 0:
+        # Base types only
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return ("Bool",)
+        elif i == 1:
+            return ("Int",)
+        else:
+            return ("String",)
+    else:
+        # Can generate function types or base types
+        i = rng.randrange(0, 4)
+        if i == 0:
+            return ("Bool",)
+        elif i == 1:
+            return ("Int",)
+        elif i == 2:
+            return ("String",)
+        else:
+            # Function type: generate smaller types for domain and codomain
+            dom = generate_type(rng, depth // 2 - 1)
+            codom = generate_type(rng, depth // 2 - 1)
+            return ("Fun", dom, codom)
+```
+
+Now I need to implement the term generator that builds well-typed terms matching the type signature, using the context to track available variables and their types. I need to reconsider the approach. The current implementation doesn't properly track type sizes or generate meaningful variable usage. I should use a size budget system instead of depth to control complexity, and ensure variables are actually used in applications rather than just bound. Let me restructure this with a cleaner size-based approach.

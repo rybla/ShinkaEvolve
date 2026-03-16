@@ -1,0 +1,14 @@
+{
+  "generation": 2,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "stlc_generator_with_context",
+  "patch_description": "This update replaces the naive generator with a context-aware recursive generator. It tracks available variables (the typing environment) to ensure well-typedness while actively pursuing the optimization goals:\n1. **Type Generation**: Randomly generates types up to size 10.\n2. **Term Generation**: Uses a budget-based approach (max 100 nodes) and a context `gamma` to pick variables.\n3. **Variable Usage**: Prioritizes using variables from the environment to increase the `used_vars` metric.\n4. **Applications**: Frequently generates `App` nodes to increase term size and the `applied_lambdas` metric.\n5. **Base Cases**: Provides literals when the budget is low or no variables of the required type are available.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:42:00.829456",
+  "llm_cost": 0.0046170000000000004,
+  "llm_model": null
+}

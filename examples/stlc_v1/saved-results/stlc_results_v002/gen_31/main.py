@@ -42,35 +42,18 @@ type AppTm = Tuple[Literal["App"], Tm, Tm]
 
 # EVOLVE-BLOCK-START
 def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
-    # Base case: when depth is 0, generate simple literals
-    if depth <= 0:
-        i = rng.randrange(0, 3)
-        if i == 0:
-            return (("Bool",), ("Bool", True))
-        elif i == 1:
-            return (("Int",), ("Int", 27))
-        else:
-            return (("String",), ("String", "hello world"))
-    
-    # For larger depths, create more complex types and terms
-    i = rng.randrange(0, 6)  # Increased range for more options
-    
+    i = rng.randrange(0, 4 if depth > 0 else 3)
     if i == 0:
-        # Generate a Bool literal
-        return (("Bool",), ("Bool", rng.choice([True, False])))
+        return (("Bool",), ("Bool", True))
     elif i == 1:
-        # Generate an Int literal
-        return (("Int",), ("Int", rng.randint(0, 100)))
+        return (("Int",), ("Int", 27))
     elif i == 2:
-        # Generate a String literal
-        return (("String",), ("String", rng.choice(["hello", "world", "test"])))
-    elif i == 3:
-        # Create a function type with a lambda that uses its variable
-        arg_ty = ("Int",)
-        ret_ty, body = generate_sample(rng, depth - 1)
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)  # Note: depth is not decremented!
         return (
-            ("Fun", arg_ty, ret_ty),
-            ("Lam", "x", arg_ty, ("Var", "x"))
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
         )
 # EVOLVE-BLOCK-END
 

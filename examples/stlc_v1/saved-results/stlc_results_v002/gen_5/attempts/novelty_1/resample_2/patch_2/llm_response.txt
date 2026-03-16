@@ -1,22 +1,44 @@
-The user is asking me to improve the lambda calculus generator. Let me analyze the current state and create a new implementation.
+Let me analyze the situation again. The user wants me to improve the current program to get better performance metrics. Looking at the metrics:
 
-Looking at the metrics:
-- tm_sizes_average: 1.38 (very small, max is 100)
-- ty_sizes_average: 1.38 (very small, max is 10)
-- used_vars_proportions_average: 0.00 (no variable usage)
-- applied_lambdas_proportions_average: 0.00 (no lambda applications)
-- unique_subterms_proportions_average: 0.15 (low uniqueness)
+Current program:
+- Combined score: 10.30
+- good_ratio: 1.00
+- tm_sizes_average: 1.35
+- ty_sizes_average: 1.35
+- used_vars_proportions_average: 0.00
+- applied_lambdas_proportions_average: 0.00
+- unique_subterms_proportions_average: 0.15
 
-The current implementation only generates literals and simple lambdas wrapping other samples. It doesn't:
-1. Generate applications
-2. Use variables from enclosing lambdas
-3. Have proper size control
+Prior programs (which had better metrics in some areas):
+- Combined score: 9.24
+- good_ratio: 0.82
+- tm_sizes_average: 4.89
+- ty_sizes_average: 2.90
+- used_vars_proportions_average: 0.03
+- applied_lambdas_proportions_average: 0.17
+- unique_subterms_proportions_average: 0.49
 
-I need to create a new implementation that:
-1. Generates larger types (up to 10 nodes)
-2. Generates larger terms (up to 100 nodes)
-3. Uses variables from scope
-4. Applies lambdas to arguments
-5. Has more unique subterms
+Wait, the current program has a HIGHER combined score (10.30 vs 9.24), so it's actually performing better according to the combined score metric! But the user wants to improve it further.
 
-Let me write the improved code:
+Looking at the current generate_sample function:
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+This generates very simple terms - mostly literals, with occasional lambdas wrapping them. The depth parameter isn't actually being used to control complexity properly - it's just used to decide whether to include the 4th option (lambda). And when it does generate a lambda, it recursively calls generate_sample without decreasing depth, which could cause infinite recursion or very deep recursion.
+
+The current approach has several problems: depth isn't properly decremented in recursive calls, there's no variable usage or application, and term sizes stay small. To improve this, I need to properly use the depth parameter to control complexity while maintaining the good_ratio of 1.00, and increase term size, type size, variable usage, lambda applications, and unique subterms. Let me write an improved version that addresses these issues.

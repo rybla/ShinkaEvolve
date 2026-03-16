@@ -1,54 +1,44 @@
 Let me analyze the current program and the prior programs to understand what improvements can be made.
 
-Current program performance:
-- Combined score: 10.31
-- good_ratio: 1.00 (perfect!)
-- tm_sizes_average: 1.41
-- ty_sizes_average: 1.41
-- used_vars_proportions_average: 0.00 (no variable usage!)
-- applied_lambdas_proportions_average: 0.00 (no applications!)
-- unique_subterms_proportions_average: 0.16
+Current program metrics:
+- Combined score: 10.60
+- good_ratio: 1.00 (perfect correctness)
+- tm_sizes_average: 1.84
+- ty_sizes_average: 1.30
+- used_vars_proportions_average: 0.11
+- applied_lambdas_proportions_average: 0.11
+- unique_subterms_proportions_average: 0.23
 
-Looking at the best prior programs (from the system message), they achieved:
-- Program 1: Score 10.88 with good_ratio=0.9950, used_vars_proportions_average=0.1795, applied_lambdas_proportions_average=0.1821, unique_subterms_proportions_average=0.3927, tm_sizes_average=4.3427
+Looking at the best prior program (score 10.62):
+- good_ratio: 1.00
+- tm_sizes_average: 1.87
+- ty_sizes_average: 1.32
+- used_vars_proportions_average: 0.11
+- applied_lambdas_proportions_average: 0.11
+- unique_subterms_proportions_average: 0.25
 
-Key insights from the best programs:
-1. They use `bound_vars` parameter to track bound variables
-2. They use `rng.random() < 0.35` for probabilistic choice
-3. They generate unique variable names with `f"x{rng.randint(0, 100)}"`
-4. They implement type-safe application with fallback
-5. They use hybrid termination: depth <= 0 or (not bound_vars and rng.random() < 0.5)
+The current program is very close to the best prior program. The main differences are:
+1. The current program has a 30% chance to use a variable from context in the Lam case
+2. The current program has slightly lower tm_sizes_average (1.84 vs 1.87) and unique_subterms_proportions_average (0.23 vs 0.25)
+
+Looking at the metrics, the key drivers seem to be:
+1. good_ratio - must stay at 1.00
+2. tm_sizes_average - higher is better (more complex terms)
+3. used_vars_proportions_average - higher is better (more variable usage)
+4. applied_lambdas_proportions_average - higher is better (more applications)
+5. unique_subterms_proportions_average - higher is better (more unique subterms)
 
 The current program has:
-- 0% variable usage
-- 0% applied lambdas
-- Low unique subterms (0.16)
-- Only 1.41 average term size
+- Same good_ratio as the best (1.00)
+- Lower tm_sizes_average (1.84 vs 1.87)
+- Same used_vars_proportions_average (0.11)
 
-To improve, I need to:
-1. Add support for Var terms (use bound_vars)
-2. Add support for App terms (application)
-3. Use type-safe application with fallback
-4. Use unique variable names
 
-Let me implement these improvements:
+- Same applied_lambdas_proportions_average (0.11)
+- Lower unique_subterms_proportions_average (0.23 vs 0.25)
 
-```python
-def generate_sample(rng: random.Random, depth=10, bound_vars: list = None) -> Tuple[Ty, Tm]:
-    if bound_vars is None:
-        bound_vars = []
-    
-    # Base case with probabilistic termination
-    if depth <= 0 or (not bound_vars and rng.random() < 0.3):
-        i = rng.randrange(0, 3)
-        if i == 0:
-            return (("Bool",), ("Bool", True))
-        elif i == 1:
-            return (("Int",), ("Int", 27))
-        else:
-            return (("String",), ("String", "hello world"))
-```
+To improve, I should increase term complexity and structural variety. The current 30% variable usage chance might be limiting depth, so reducing it could allow deeper recursion and larger terms. I could also introduce more diverse type annotations beyond just Int, and add variety to the lambda body generation to increase unique subterms.
 
-I need to choose between literals, bound variables, lambdas, and applications. The probabilistic choice should favor exploration of new constructs while respecting depth constraints. When depth is limited or no bound variables exist, I'll fall back to literals. Otherwise, I'll randomly select between creating a new variable reference, building a lambda abstraction, or applying functions.
+Looking at the App case, the current approach generates an identity function that doesn't really leverage the context. I should make the application more sophisticated—perhaps applying a lambda that actually uses its argument in a meaningful way, or generating more complex function terms that can be applied to arguments.
 
-For lambda creation, I generate a fresh variable name and recursively build the body with the new variable added to the bound list. With application, I need to ensure type compatibility—the function must be a Fun type and its argument type must match what the function expects. If the function's type doesn't support application, I'll return the function itself as a fallback rather than forcing an invalid application.
+The key insight is that I need to balance correctness with complexity. The depth parameter controls recursion depth, so I should ensure it decreases properly while still generating terms that are valid. I could also vary the types beyond just Int—using Bool or String types would create more interesting function signatures and term structures.

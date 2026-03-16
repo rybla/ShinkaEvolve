@@ -1,35 +1,41 @@
-The user is saying my previous edit wasn't applied. Let me look at what happened - I think I may have just been thinking out loud without actually providing an edit block. Let me provide a proper SEARCH/REPLACE edit now.
+The user is asking me to rewrite the program to improve its performance. Let me analyze the current program and the metrics to figure out what improvements can be made.
 
-Looking at the current program:
-```python
-def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
-    i = rng.randrange(0, 4 if depth > 0 else 3)
+Current program metrics:
+- Combined score: 10.64
+- good_ratio: 1.00 (perfect correctness - this is the most important!)
+- tm_sizes_average: 1.92
+- ty_sizes_average: 1.35
+- used_vars_proportions_average: 0.11
+- applied_lambdas_proportions_average: 0.11
+- unique_subterms_proportions_average: 0.26
 
-    if i == 0:
-        return (("Bool",), ("Bool", True))
-    elif i == 1:
-        return (("Int",), ("Int", 27))
-    elif i == 2:
-        return (("String",), ("String", "hello world"))
-    else:
-        ty, tm = generate_sample(rng)
-        return (
-            ("Fun", ("Int",), ty),
-            ("Lam", "x", ("Int",), tm),
-        )
-```
+Looking at prior programs:
+- Programs with higher scores have higher tm_sizes, used_vars, applied_lambdas, and unique_subterms
+- good_ratio = 1.00 is critical
 
-The issues I see:
-1. The recursive call `generate_sample(rng)` doesn't use the depth parameter - it should be `generate_sample(rng, depth - 1)` to properly control recursion
-2. The lambda creates variable "x" but never uses it - the body is just `tm` which doesn't reference "x"
-3. All literals are fixed values - this limits uniqueness
+The current code:
+1. Has depth-limited recursion
+2. Adds variables to context when creating lambdas
+3. Has App constructor (applied_lambdas)
+4. Uses 5 options at depth > 0: 3 literals + Lam + App
 
-To improve the score while maintaining good_ratio=1.00, I should:
-1. Fix the depth decrement to control recursion properly
-2. Use the bound variable in the lambda body to increase used_vars_proportions_average (but carefully to not break type correctness)
-3. Vary the literal values to increase unique_subterms_proportions_average
+Potential improvements:
+1. The App constructor always creates an identity function `("Lam", "x", arg_ty, ("Var", "x"))`. This doesn't leverage the context for more complex terms.
+2. Could add more variety in the types used
+3. Could increase the probability of using variables from context in more places
 
-Actually, looking at the best programs, they all have used_vars_proportions_average: 0.00 and applied_lambdas_proportions_average: 0.00. So maybe I shouldn't try to use variables.
+Let me design a novel approach that:
+1. Maintains good_ratio = 1.00
+2. Creates more complex terms by having App use context variables
+3. Adds more type variety
+4. Increases unique_subterms through more structural variety
 
+Key insight: The App case currently creates an identity function. If we make the lambda body use a variable from context (when available), we'll increase used_vars_proportions.
 
-The best programs maintain perfect type correctness while generating more complex terms through recursion. I should focus on properly decrementing depth to build larger terms and varying the literal values to increase uniqueness, rather than trying to use variables which seems to hurt type correctness.
+Here's my approach:
+1. Keep depth-limited recursion for termination
+2. Add type variety (not just Int for all functions)
+3. In the App case, if context is available, use a variable from context in the lambda body instead of always using the identity
+4. When context exists, randomly choose between using a simple variable or a more complex nested structure
+
+Let me write the code now.

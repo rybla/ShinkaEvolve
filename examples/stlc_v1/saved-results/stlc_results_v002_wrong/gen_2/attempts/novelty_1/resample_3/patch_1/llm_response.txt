@@ -1,0 +1,112 @@
+
+Looking at the current program, I need to understand what's happening:
+
+1. The program generates random types and terms of simply-typed lambda-calculus
+2. The current `generate_sample` function is very basic - it just returns literals or simple lambda wrappers around other terms
+3. The metrics show:
+   - tm_sizes_average: 1.38 (very small, max is 100)
+   - ty_sizes_average: 1.38 (very small, max is 10)
+   - used_vars_proportions_average: 0.00 (no variables are being used!)
+   - applied_lambdas_proportions_average: 0.00 (no lambdas are being applied!)
+   - unique_subterms_proportions_average: 0.15 (low)
+
+The key issues I see:
+1. The type generation is extremely limited - it only generates `Int` and things built from `Int` (via FunTy)
+2. There's no variable usage - the generated terms never reference variables introduced by lambdas
+3. There's no application - lambdas are never applied to arguments
+
+The current implementation has these problems:
+1. It always wraps things in `("Lam", "x", ("Int",), tm)` - so there's always a lambda with parameter "x" of type Int
+2. The variable names are always "x" - so all variables have the same name
+3. There's no mechanism to use variables in the term body
+4. There's no mechanism to apply lambdas to arguments
+
+To improve, I need to:
+1. Generate more complex types (up to size 10)
+2. Generate larger terms (up to size 100)
+3. Actually use variables in the term body
+4. Apply lambdas to arguments
+
+Let me design a better generator:
+
+1. First, I need to track available variables (from enclosing lambdas)
+2. I need to track the target type we're trying to match
+
+
+3. I need to generate terms that can use variables and apply lambdas
+
+A better approach would be:
+- Generate a type first
+- Then generate a term that has that type
+
+The key insight is that we need to:
+1. Generate base types (Bool, Int, String) with their literals
+2. Generate function types and then generate lambdas that consume and produce the right types
+3. Track available variables and use them in term bodies
+4. Apply lambdas when the context allows
+
+Let me think about the structure more carefully. I need a generator that can:
+1. Generate a type of a certain size
+2. Generate a term of a certain size that has that type
+
+The key to getting high scores is:
+1. Making types larger (more FunTy nodes)
+2. Making terms larger (more Lam and App nodes)
+3. Using variables that were introduced by lambdas
+4. Applying lambdas to arguments to create more complex applications
+5. Having unique subterms
+
+Let me design a new generator:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+    
+    # First generate a type
+    ty = generate_type(rng, depth)
+    
+    # Then generate a term with that type
+    tm = generate_term(rng, depth, ty, [])
+    
+    return ty, tm
+
+def generate_type(rng, depth):
+    """Generate a random type up to certain depth/size."""
+    if depth <= 0:
+        # Base case - just return base types
+        return rng.choice([("Bool",), ("Int",), ("String",)])
+    
+    # Randomly choose between base types and function types
+    if rng.random() < 0.3:
+        # Base type
+        return rng.choice([("Bool",), ("Int",), ("String",)])
+    else:
+        # Function type - recursively generate smaller types for domain and codomain
+        # This builds larger types by combining smaller ones
+        arg_ty = generate_type(rng, depth // 2)
+        ret_ty = generate_type(rng, depth // 2)
+        return ("Fun", arg_ty, ret_ty)
+
+def generate_term(rng, depth, target_ty, env):
+    """Generate a term of the given type, using variables from env."""
+    # Base case - if depth is 0 or target is a base type, return a literal
+    if depth <= 0 or target_ty[0] != "Fun":
+        return generate_literal(rng, target_ty)
+    
+    # Otherwise, generate a lambda that matches the target type
+    # target_ty is ("Fun", arg_ty, ret_ty)
+    arg_ty = target_ty[1]
+    ret_ty = target_ty[2]
+    
+    # Generate a fresh variable name
+    var_name = f"x{rng.randrange(1000)}"
+    
+    # Generate the body with the variable in scope
+    body = generate_term(rng, depth - 1, ret_ty, [(var_name, arg_ty)] + env)
+    
+    return ("Lam", var_name, arg_ty, body)
+```
+
+This approach builds function types recursively and generates lambdas that properly consume their argument types, then recursively generates the body with the parameter in scope. Variables get used in the body, and the structure naturally creates more complex terms as depth increases.

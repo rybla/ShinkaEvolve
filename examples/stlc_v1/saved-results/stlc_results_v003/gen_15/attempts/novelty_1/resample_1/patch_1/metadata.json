@@ -1,0 +1,14 @@
+{
+  "generation": 15,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "TypeDirected_Asymmetric_Shadowing_Generator",
+  "patch_description": "The structural improvements focus on three key areas to maximize metrics:\n1. **Shadowing Preference**: Inside `gen_term`, we now prioritize variables from the most recent scope (the end of the context list). This mimics realistic programming patterns and significantly boosts `used_vars_proportions_average`. \n2. **Lambda Forcing & Probability Tuning**: We increased the probability of generating `LamTm` for function types (75%). This aligns the term structure with the type structure, ensuring `good_ratio=1.0` while increasing depth.\n3. **Application Strategy**: We now proactively pull potential argument types from existing context variables. This ensures that the argument side of an `AppTm` is more likely to be a `VarTm` (high variable usage) rather than a newly generated literal or complex sub-term, while the function side receives 70% of the budget to maintain `tm_sizes_average`.\n4. **Resilient Base Cases**: Added a robust fallback for `Fun` types when budget is exhausted, ensuring the generator never fails type-validity regardless of the budget split.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:43:46.243574",
+  "llm_cost": 0.00971,
+  "llm_model": null
+}

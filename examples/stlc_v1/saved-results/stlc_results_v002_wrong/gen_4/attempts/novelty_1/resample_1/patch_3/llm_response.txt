@@ -1,0 +1,10 @@
+The user is asking me to rewrite the program to improve its performance. Let me look at the current program and the metrics.
+
+The current `generate_sample` function is very simple - it only generates literals or a simple lambda wrapping another sample. It doesn't track variables or use them, doesn't create applications, and doesn't generate complex types.
+
+I need to provide the complete new program code in the format specified:
+- <NAME> - a shortened name
+- <DESCRIPTION> - explanation
+- <CODE> - the full code
+
+Let me write a complete solution that improves the metrics.

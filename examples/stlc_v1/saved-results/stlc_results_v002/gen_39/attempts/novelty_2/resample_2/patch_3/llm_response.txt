@@ -1,43 +1,44 @@
-The user is asking me to make an edit to the code. Let me analyze the current program and propose a targeted improvement.
+The user is saying my previous edit wasn't applied. Let me look at what happened and try again with a proper SEARCH/REPLACE block.
 
-Looking at the current program:
-- It generates simple literals and lambda terms
-- It has no variable usage (used_vars_proportions_average: 0.00)
-- It has no applications (applied_lambdas_proportions_average: 0.00)
+Looking at the current program in the EVOLVE-BLOCK-START section:
 
-From the system prompt analysis, the best programs used:
-1. `bound_vars` parameter to track bound variables
-2. Probabilistic variable selection
-3. Unique variable names with f-strings
-4. Type-safe application with fallbacks
-
-I need to propose a SEARCH/REPLACE block that modifies the generate_sample function. Let me look at the exact code in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END.
-
-The current code is:
 ```python
 # EVOLVE-BLOCK-START
-def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
-    i = rng.randrange(0, 4 if depth > 0 else 3)
-
+def generate_sample(rng: random.Random, depth=10, context=None) -> Tuple[Ty, Tm]:
+    if context is None:
+        context = []
+    
+    # At depth 0, only generate literals
+    if depth == 0:
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", True))
+        elif i == 1:
+            return (("Int",), ("Int", 27))
+        else:
+            return (("String",), ("String", "hello world"))
+    
+    # At depth > 0, choose from literals, Lam, and App
+    i = rng.randrange(0, 5)  # 5 options
+    
     if i == 0:
         return (("Bool",), ("Bool", True))
     elif i == 1:
         return (("Int",), ("Int", 27))
     elif i == 2:
         return (("String",), ("String", "hello world"))
+    elif i == 3:
+        # Generate lambda - FIX: add parameter to context
+        ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+        return (("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm))
     else:
-        ty, tm = generate_sample(rng)
-        return (
-            ("Fun", ("Int",), ty),
-            ("Lam", "x", ("Int",), tm),
-        )
+        # Generate application - need to be careful about types
+        # For simplicity, apply a lambda to a literal
+        arg_ty, arg_tm = generate_sample(rng, depth - 1, context)
+        func_ty = ("Fun", arg_ty, arg_ty)
+        func_tm = ("Lam", "x", arg_ty, ("Var", "x"))
+        return (arg_ty, ("App", func_tm, arg_tm))
 # EVOLVE-BLOCK-END
 ```
 
-I need to replace this with an improved version that:
-1. Adds bound_vars parameter
-2. Uses variables from context
-3. Applies functions with type checking
-4. Uses unique variable names
-
-Let me make sure I copy the exact code including indentation.
+I need to make a targeted improvement. The key metrics show good_ratio at 1.00 (perfect), tm_sizes_average at 1.87, and unique_subterms_proportions_average at 0.25. To push the score higher, I should increase term complexity while maintaining correctness. Adding type diversity—randomizing between Bool, Int, and String types—could expand unique_subterms without breaking the type system. I could also adjust the distribution to favor more lambdas and applications over literals, which would increase tm_sizes_average.

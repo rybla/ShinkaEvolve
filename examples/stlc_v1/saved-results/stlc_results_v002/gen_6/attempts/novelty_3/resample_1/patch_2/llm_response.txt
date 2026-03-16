@@ -1,0 +1,26 @@
+Let me analyze the current program and the metrics to understand what needs to be improved.
+
+Current metrics:
+- Combined score: 10.30
+- good_ratio: 1.00 (all terms are well-typed)
+- tm_sizes_average: 1.35 (term size - should be up to 100)
+- ty_sizes_average: 1.35 (type size - should be up to 10)
+- used_vars_proportions_average: 0.00 (should be higher - variables should be used)
+- applied_lambdas_proportions_average: 0.00 (should be higher - lambdas should be applied)
+- unique_subterms_proportions_average: 0.15 (should be higher - more unique subterms)
+
+The current implementation is very simple - it just generates base types and literals, or wraps them in lambdas. It doesn't:
+1. Generate complex types (function types with depth)
+2. Generate applications
+3. Use variables from context
+4. Generate larger terms
+
+I need to create a generator that:
+1. Generates more complex types (with depth up to 10)
+2. Generates larger terms (with depth up to 100)
+3. Uses variables from context more often
+4. Applies lambdas to arguments
+5. Creates more unique subterms
+6. Maintains good_ratio at 1.00
+
+Let me write a new implementation that addresses these issues.

@@ -1,20 +1,22 @@
-The user is asking me to rewrite the program to improve its performance. Let me analyze the current state and provide a complete new program.
+The user is saying the previous edit was not successful. Let me re-read the task and provide a valid edit.
 
-Looking at the metrics:
-- Current score: 10.31
-- used_vars_proportions_average: 0.00 (never uses variables!)
-- applied_lambdas_proportions_average: 0.00 (never applies lambdas)
-- unique_subterms_proportions_average: 0.16
+Looking at the current program, I need to make targeted improvements. Let me analyze what could be improved:
 
-The key issue is that the current program only generates literals and lambda abstractions, but never:
-1. Uses the bound variable inside the lambda body (Var terms)
-2. Applies one lambda to another (App terms)
+1. The current program has good_ratio = 1.00, which is perfect
+2. tm_sizes_average = 1.87
+3. ty_sizes_average = 1.32
+4. used_vars_proportions_average = 0.11
+5. applied_lambdas_proportions_average = 0.11
+6. unique_subterms_proportions_average = 0.25
 
-I need to implement a more sophisticated approach that:
-1. Tracks bound variables
-2. Can return Var terms that reference bound variables
-3. Can apply functions (App terms)
-4. Uses unique variable names to improve unique_subterms_proportions_average
-5. Maintains type safety
+Looking at the code, I see that:
+- All lambdas use `("Int",)` as the parameter type
+- The App case creates a simple identity function
 
-Let me write a new implementation:
+One key observation: the ty_sizes_average (1.32) is relatively low compared to tm_sizes_average (1.87). This is because we're using a fixed type for lambda parameters.
+
+Let me propose an improvement that:
+1. Randomizes the lambda parameter types (Bool, Int, String) - this should increase ty_sizes_average and unique_subterms_proportions_average
+2. Maintains good_ratio at 1.00
+
+Let me write the edit:

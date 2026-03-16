@@ -1,50 +1,45 @@
 Let me analyze the current program and the performance metrics to understand what needs to be improved.
 
-Current metrics:
-- Combined score to maximize: 10.30
-- good_ratio: 1.00 (all samples are well-typed)
-- tm_sizes_average: 1.38 (very small terms)
-- ty_sizes_average: 1.38 (very small types)
+Current performance metrics:
+- Combined score: 10.30
+- good_ratio: 1.00 (all generated terms are well-typed)
+- tm_sizes_average: 1.35 (very small terms)
+- ty_sizes_average: 1.35 (very small types)
 - used_vars_proportions_average: 0.00 (no variable usage)
 - applied_lambdas_proportions_average: 0.00 (no lambda applications)
-- unique_subterms_proportions_average: 0.15 (low uniqueness)
+- unique_subterms_proportions_average: 0.15 (few unique subterms)
 
-The current generator is very simple and produces:
-1. Very small types (mostly Bool, Int, String)
-2. Very small terms (mostly literals)
-3. No variable usage (no `Var` terms that reference lambda-bound variables)
-4. No lambda applications
-5. Low uniqueness
+The prior program had:
+- Combined score: 9.24
+- good_ratio: 0.82
+- tm_sizes_average: 4.89
+- ty_sizes_average: 2.90
+- used_vars_proportions_average: 0.03
+- applied_lambdas_proportions_average: 0.17
+- unique_subterms_proportions_average: 0.49
 
-Looking at the requirements:
-- Max type size: 10 nodes
-- Max term size: 100 nodes
-- Better terms use variables more (apply them to arguments)
-- Better terms apply lambdas to arguments
-- Better terms have more unique subterms
+Wait, the current program has a higher combined score (10.30 vs 9.24) but it's generating much simpler terms. Let me re-read the requirements:
 
-The current implementation only generates:
-- Literals (Bool, Int, String)
-- Simple lambdas with Int -> ty
-
-The main issues:
-1. No variable generation - we need to generate `Var` terms that reference bound variables
-2. No application generation - we need to generate `App` terms that apply lambdas to arguments
-3. The depth parameter is not being used properly
-4. No recursion to build larger terms
-
-Let me design a better generator that:
-1. Uses the depth parameter to control complexity
-2. Generates variables that reference bound variables
-3. Generates applications
-4. Builds larger types and terms
-
-Here's my plan:
-1. Track bound variables in a context
-2. Generate variables from the context
+The requirements say:
+- A generated type is better the bigger it is, where its size is measured by the number of nodes in its AST. The maximum allowed number of nodes in the generated type's AST is 10.
+- A generated term is better the bigger it is, where its size is measured by the number of nodes in its AST. The maximum allowed number of nodes in the generated term's AST is 100.
+- A generated term is better the more it uses its variables (which are introduced by lambdas), by applying those variables to arguments or using them as arguments in applications.
+- A generated term is better the more it applies its lambdas to arguments.
 
 
-3. Generate applications to combine terms
-4. Use depth to control the size of generated types and terms
+- A generated term is better the more unique sub-terms it has. Only application and lambda sub-terms count toward this.
 
-I need to modify the generate_sample function to track bound variables and use them when generating Var terms, then generate App terms that apply lambdas to arguments while using depth to control complexity.
+So the goal is to maximize:
+1. Type size (up to 10 nodes)
+2. Term size (up to 100 nodes)
+3. Used variables proportion
+4. Applied lambdas proportion
+5. Unique subterms proportion
+
+The current program generates very small types and terms. I need to make it generate bigger types and terms while still maintaining good_ratio = 1.00 (all terms must be well-typed).
+
+Looking at the current implementation, it only generates 4 possible outputs with very limited depth and complexity. I need to restructure the generation to create larger, more complex terms while preserving type correctness.
+
+The key insight is that the scoring formula likely rewards larger, more sophisticated terms. The current approach of generating simple literals and basic lambdas isn't sufficient—I should generate function types with more nesting, create lambdas that actually use their arguments, and build applications that combine multiple lambda terms together. This means implementing proper context tracking for variables and ensuring type annotations are correct throughout the generation process.
+
+Looking at the prior implementation, it appears to have a more sophisticated structure for generating terms with depth control and type awareness. I should adapt that approach to create more complex, well-typed lambda calculus expressions.

@@ -1,22 +1,7 @@
-The user wants me to perform a crossover between the current program and some inspiration programs to improve the score. Let me analyze the current program and the prior programs to find the best combination.
+Let me provide the complete program with my improvements. I'll keep it simple and focused on fixing the key issues:
 
-Current program (Score: 10.31):
-- Simple depth-based recursion
-- Fixed literals (True, 27, "hello world")
-- Hardcoded "x" for lambda variable
-- No variable usage, no applications
-- good_ratio: 1.00, used_vars_proportions_average: 0.00, applied_lambdas_proportions_average: 0.00
+1. Fix context tracking - add parameter to context when recursing
+2. Add proper depth handling - always decrement depth
+3. Add App (function application) to increase applied_lambdas_proportions
 
-Looking at the metrics, the key areas for improvement are:
-- used_vars_proportions_average: 0.00 (currently no variable usage)
-- applied_lambdas_proportions_average: 0.00 (no lambda applications)
-
-From the first prior program (Score: 7.11), it had some variable usage (0.06) and applied_lambdas (0.03), but lower good_ratio (0.68). This suggests that adding variable tracking could help, but we need to be careful to maintain good_ratio.
-
-The key insight from analyzing the programs:
-1. Track bound variables through recursion
-2. Use those variables in the body of lambdas
-3. Apply lambdas to arguments
-4. Use unique variable names
-
-Let me create a program that combines the simplicity of the current program with variable tracking and usage.
+Let me write the complete code:

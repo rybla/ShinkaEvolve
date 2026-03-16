@@ -1,0 +1,45 @@
+Let me analyze the current implementation and the performance metrics to understand what needs to be improved.
+
+Current metrics:
+- Combined score: 10.28
+- good_ratio: 1.00 (all terms are well-typed)
+- tm_sizes_average: 1.33 (very small terms)
+- ty_sizes_average: 1.33 (very small types)
+- used_vars_proportions_average: 0.00 (no variable usage)
+- applied_lambdas_proportions_average: 0.00 (no lambda applications)
+- unique_subterms_proportions_average: 0.14 (low uniqueness)
+
+The current implementation:
+1. Only generates literals (Bool, Int, String) or simple lambdas with Int type
+2. The depth parameter is never actually used to limit recursion
+3. It always creates lambdas with type annotation ("Int",)
+4. It never creates applications
+5. It never uses variables that are introduced by lambdas
+
+The key issues:
+1. Terms are too small (avg 1.33 nodes)
+2. Types are too small (avg 1.33 nodes)
+3. No variable usage (0%)
+4. No lambda applications (0%)
+5. Low unique subterms (14%)
+
+I need to design a completely different algorithm that:
+1. Generates bigger types (up to 10 nodes)
+2. Generates bigger terms (up to 100 nodes)
+3. Uses variables that are introduced by lambdas
+4. Applies lambdas to arguments
+5. Has more unique subterms
+
+Let me think of a different approach:
+
+**Approach: Generate type first, then generate term with type-directed generation**
+
+Instead of the current approach which randomly picks between literals and lambdas, I'll:
+1. First generate a random type with bounded size (up to 10 nodes)
+2. Then generate a well-typed term that has that type, using a type-directed approach
+
+
+3. Maintain a context mapping variable names to their types
+4. Use the type to guide what kind of term to generate
+
+The algorithm will recursively build types by choosing between base types (Bool, Int, String) and function types, then construct terms by matching against the target type—using variables from context when available, creating lambdas for function types, and generating applications when the context supports it. This ensures well-typedness while allowing the term structure to grow beyond the current minimal size.

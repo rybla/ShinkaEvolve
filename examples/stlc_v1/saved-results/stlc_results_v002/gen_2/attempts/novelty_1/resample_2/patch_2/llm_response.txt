@@ -1,23 +1,23 @@
+The user is asking me to improve the performance of the lambda-calculus generator. Looking at the current code and metrics, I need to make changes to the `generate_sample` function in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END section.
 
-Let me analyze the current program and propose a more comprehensive improvement to the `generate_sample` function.
+Let me analyze what needs to be improved:
+- tm_sizes_average: 1.35 (very small, max is 100)
+- ty_sizes_average: 1.35 (very small, max is 10)
+- used_vars_proportions_average: 0.00 (no variable usage)
+- applied_lambdas_proportions_average: 0.00 (no lambda applications)
+- unique_subterms_proportions_average: 0.15 (few unique subterms)
 
-The current issues:
-1. `tm_sizes_average: 1.38` - terms are very small (max 100)
-2. `ty_sizes_average: 1.38` - types are very small (max 10)
-3. `used_vars_proportions_average: 0.00` - variables are never used
-4. `applied_lambdas_proportions_average: 0.00` - lambdas are never applied
+The current implementation is too simple and doesn't generate:
+1. Complex types (function types with complex arguments)
+2. Variables
+3. Applications
+4. Nested lambdas
 
-The current implementation:
-- Only generates literals or simple lambdas wrapping another term
-- Never uses variables that are introduced by lambdas
-- Never applies lambdas to arguments
-- The depth parameter is not properly utilized
+I need to rewrite the generate_sample function to:
+1. Generate larger types (up to 10 nodes)
+2. Generate larger terms (up to 100 nodes)
+3. Use variables from the context
+4. Apply lambdas to arguments
+5. Have more unique subterms
 
-I need to rewrite `generate_sample` to:
-1. Properly track available variables and their types
-2. Generate larger types (up to 10 nodes)
-3. Generate larger terms (up to 100 nodes)
-4. Use variables in applications
-5. Apply lambdas to arguments
-
-Let me write a better generator that addresses all these issues.
+Let me write a more sophisticated generator.

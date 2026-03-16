@@ -1,0 +1,20 @@
+The user is asking me to rewrite the program to improve its performance. Let me analyze the current state and provide a complete new program.
+
+Looking at the metrics:
+- Current score: 10.31
+- used_vars_proportions_average: 0.00 (never uses variables!)
+- applied_lambdas_proportions_average: 0.00 (never applies lambdas)
+- unique_subterms_proportions_average: 0.16
+
+The key issue is that the current program only generates literals and lambda abstractions, but never:
+1. Uses the bound variable inside the lambda body (Var terms)
+2. Applies one lambda to another (App terms)
+
+I need to implement a more sophisticated approach that:
+1. Tracks bound variables
+2. Can return Var terms that reference bound variables
+3. Can apply functions (App terms)
+4. Uses unique variable names to improve unique_subterms_proportions_average
+5. Maintains type safety
+
+Let me write a new implementation:

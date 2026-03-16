@@ -1,0 +1,30 @@
+Let me analyze the problem and create a new improved program.
+
+Looking at the current program:
+- It has good_ratio = 1.00 (perfect correctness)
+- It uses depth parameter but doesn't decrement it
+- No context tracking, so no variable usage
+- No App constructor
+
+The best prior programs had:
+- good_ratio = 1.00 (most important)
+- Depth-limited generation (4 options when depth > 0, 3 when depth = 0)
+- Type-term coupling
+- Fixed parameter type (Int) for lambdas
+
+To improve, I need to:
+1. Keep correctness at 1.00
+2. Use depth properly for termination
+3. Add context tracking to enable variable usage
+4. Add App constructor for function application
+5. Generate type and term together
+
+Let me write a new program that:
+1. Uses depth properly (decrements it)
+2. Tracks context (variables in scope)
+3. Adds lambda parameter to context when generating body
+4. Has chance to use variables from context
+5. Has chance to apply functions
+6. Maintains type-term coupling
+
+The key is to add the lambda parameter to context when recursing into the lambda body. This will enable variable usage.

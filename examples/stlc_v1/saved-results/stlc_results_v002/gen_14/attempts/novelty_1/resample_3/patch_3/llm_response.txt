@@ -1,0 +1,11 @@
+The user is asking me to provide an edit to improve the performance of the lambda calculus generator. Let me analyze what needs to be done and provide the correct SEARCH/REPLACE format.
+
+Looking at the metrics:
+- used_vars_proportions_average: 0.00 - Variables are not being used
+- applied_lambdas_proportions_average: 0.00 - No lambdas are being applied
+- tm_sizes_average: 1.29 - Terms are small
+- ty_sizes_average: 1.29 - Types are small
+
+The current code creates lambdas but never uses the variables they introduce. I need to implement a context-guided generation approach.
+
+Let me write the correct diff format:

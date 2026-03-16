@@ -1,0 +1,14 @@
+{
+  "generation": 10,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "dynamic_budget_and_lambda_prioritization",
+  "patch_description": "1.  **Dynamic Budget Splitting**: Instead of a fixed 0.7 split, we use a random range to allow for more structural variety while still favoring the function side.\n2.  **Lambda Application Bias**: When generating an `App`, we explicitly favor generating a `Lam` on the left side by ensuring the `arg_ty` is often derived from the context or kept very simple, and the budget is sufficient.\n3.  **Variable Recency Bias**: When selecting a variable from the context, we prioritize the most recently added ones (shadowing/local usage), which helps in building deeper valid terms.\n4.  **Literal Diversity**: Scaled literals based on budget to ensure unique subterms even at the leaves.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:42:59.522741",
+  "llm_cost": 0.0093735,
+  "llm_model": null
+}

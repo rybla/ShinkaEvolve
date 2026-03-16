@@ -1,0 +1,28 @@
+The user says the previous edit wasn't successful, but I didn't actually submit an edit yet. Let me carefully craft my first edit.
+
+Looking at the current code:
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+    
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+The issue I identified: in the else branch, it calls `generate_sample(rng)` without passing a depth argument. So depth stays at 10 (the default) forever. This means:
+- The depth parameter is essentially unused for controlling recursion depth
+- The code always has 4 options (since depth > 0 is always true)
+
+The fix should be to decrement depth in the recursive call: `generate_sample(rng, depth - 1)`
+
+Let me make this change.

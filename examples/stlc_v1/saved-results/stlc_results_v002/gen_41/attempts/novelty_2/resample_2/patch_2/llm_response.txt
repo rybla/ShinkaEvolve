@@ -1,31 +1,41 @@
-Let me look at the current code more carefully and provide a correct diff format.
+Looking at the task, I need to make a targeted improvement to the current program. Let me analyze the metrics again:
 
-The current code is:
+Current: 10.60
+Prior program 3: 10.62
 
+The key difference is:
+- Prior 3 had tm_sizes 1.87 vs current 1.84
+- Prior 3 had unique_subterms 0.25 vs current 0.23
+
+Looking at the code differences between prior program 3 and current:
+
+**Prior program 3** (the one with score 10.62):
 ```python
-def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
-    """
-    Generate a sample type and term using a random seed.
-    """
-
-    i = rng.randrange(0, 4 if depth > 0 else 3)
-
-    if i == 0:
-        return (("Bool",), ("Bool", True))
-    elif i == 1:
-        return (("Int",), ("Int", 27))
-    elif i == 2:
-        return (("String",), ("String", "hello world"))
-    else:
-        ty, tm = generate_sample(rng)
-        return (
-            ("Fun", ("Int",), ty),
-            ("Lam", "x", ("Int",), tm),
-        )
+elif i == 3:
+    # Generate lambda - FIX: add parameter to context
+    ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+    return (("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm))
 ```
 
-I need to make a targeted change. Let me write a diff that replaces the entire function.
+**Current program**:
+```python
+elif i == 3:
+    # Generate lambda - with 30% chance to use a variable from context
+    if context and rng.random() < 0.3:
+        var_name = rng.choice(context)
+        return (("Fun", ("Int",), ("Int",)), ("Lam", "x", ("Int",), ("Var", var_name)))
+    else:
+        ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+        return (("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm))
+```
 
-Wait, the error says "No changes applied" - maybe I need to look more carefully at the format.
+The current program added a 30% chance to use a variable from context, but this actually hurt performance! The prior program 3 (without this feature) had a higher score.
 
-Let me try again with a simpler approach - I'll just provide the search/replace for the function.
+Wait, but I also see that the current program has:
+- used_vars_proportions_average: 0.11
+- applied_lambdas_proportions_average: 0.11
+
+
+- unique_subterms_proportions_average: 0.23
+
+I notice the metrics reveal subtle variations in term generation. The unique subterms decreased from 0.25 to 0.23, suggesting less term diversity. This reduction might explain the performance dip. I'll focus on expanding term complexity to improve the score, targeting more varied lambda constructions and type combinations.

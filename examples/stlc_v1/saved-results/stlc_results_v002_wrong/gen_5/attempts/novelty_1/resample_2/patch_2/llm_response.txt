@@ -1,0 +1,22 @@
+The user is asking me to improve the lambda calculus generator. Let me analyze the current state and create a new implementation.
+
+Looking at the metrics:
+- tm_sizes_average: 1.38 (very small, max is 100)
+- ty_sizes_average: 1.38 (very small, max is 10)
+- used_vars_proportions_average: 0.00 (no variable usage)
+- applied_lambdas_proportions_average: 0.00 (no lambda applications)
+- unique_subterms_proportions_average: 0.15 (low uniqueness)
+
+The current implementation only generates literals and simple lambdas wrapping other samples. It doesn't:
+1. Generate applications
+2. Use variables from enclosing lambdas
+3. Have proper size control
+
+I need to create a new implementation that:
+1. Generates larger types (up to 10 nodes)
+2. Generates larger terms (up to 100 nodes)
+3. Uses variables from scope
+4. Applies lambdas to arguments
+5. Has more unique subterms
+
+Let me write the improved code:

@@ -1,42 +1,42 @@
-Looking at the current program and its performance metrics:
+Let me analyze the current program and the prior programs to understand what's happening and how to improve.
 
-- Combined score: 10.88
-- good_ratio: 0.99
-- tm_sizes_average: 4.34
-- ty_sizes_average: 1.34
-- used_vars_proportions_average: 0.18
-- applied_lambdas_proportions_average: 0.18
-- unique_subterms_proportions_average: 0.39
+## Current Program Analysis
 
-The current program is already quite good. Let me think about what could improve it further.
+The current program:
+- Uses depth parameter but doesn't decrement it (causing infinite recursion potential, but depth > 0 always true)
+- Has 4 options at depth > 0: 3 literals (Bool, Int, String) + 1 Lam
+- Has 3 options at depth = 0: only literals
+- Generates lambdas with hardcoded `("Int",)` type
+- No context tracking, no variable usage, no application
 
-Looking at the analysis from earlier:
-1. Program 1 (score 10.88) - the best one - uses `bound_vars` parameter, probabilistic variable selection, unique variable names, type-safe application
-2. The current program already implements most of these techniques
+Metrics:
+- good_ratio: 1.00 (perfect correctness)
+- tm_sizes_average: 1.32
+- ty_sizes_average: 1.32
+- used_vars_proportions_average: 0.00 (no variables used!)
+- applied_lambdas_proportions_average: 0.00 (no applications!)
+- unique_subterms_proportions_average: 0.13
 
-Potential improvements:
-1. **Type-safe application**: The current program doesn't check if the function type matches before applying. It should verify that `func_type[0] == "Fun"` before creating an App term, and if not, return the argument instead (type-safe fallback).
+## Key Observations from Prior Programs
 
-2. **Increase tm_sizes_average**: Currently at 4.34, could be higher. This would mean generating larger terms.
+Looking at the best performing programs from the analysis at the beginning:
+1. **Program 1** (Score: 10.6365): Uses depth parameter, context tracking, 5 options at depth > 0 (3 literals + Lam + App), 3 options at depth = 0
+2. **Program 2** (Score: 10.6209): Very similar to Program 1
+3. **Program 3** (Score: 10.5986): Uses 30% chance to use variable from context
 
-3. **Increase used_vars_proportions_average**: Currently at 0.18, could be higher to use more variables.
+Key features of successful programs:
+1. **Depth-limited recursion**: 5 options at depth > 0, 3 options at depth = 0
+2. **Context tracking**: Pass context when generating lambda bodies
+3. **App generation**: Generate application nodes
+4. **Type-term coupling**: Generate both together
 
-4. **Increase applied_lambdas_proportions_average**: Currently at 0.18, could be higher.
-
-5. **Increase unique_subterms_proportions_average**: Currently at 0.39, could be higher.
-
-Let me focus on the type-safe application issue. The current program generates applications without checking if the function is actually a function type. This could lead to type errors.
-
-Looking at the best program from the analysis:
-- It uses `func_type[0] == "Fun"` to check if the function is a function type
-- If not, it returns the argument instead (type-safe fallback)
-
-Let me also think about increasing the term sizes. The current program uses:
+The current program is missing:
+1. App generation (applied_lambdas_proportions_average = 0.00)
 
 
-- `depth <= 0 or (not bound_vars and rng.random() < 0.5)` for base case
-- This means it terminates too quickly when bound_vars is empty
+2. Variable usage (used_vars_proportions_average = 0.00)
+3. Proper depth handling (depth not decremented)
 
-I'll adjust the termination probability to create more complex terms. By reducing the random termination chance when no bound variables exist, I can encourage the generation of larger, more intricate lambda calculus expressions. This approach will help increase the average term size and potentially improve the overall complexity of generated terms.
+## Improvement Strategy
 
-The type-safe application requires careful handling of function types. I'll implement a robust mechanism to ensure type consistency during term generation, preventing potential type mismatches in the lambda calculus terms.
+I need to implement depth-limited recursion with proper context tracking, add App nodes to generate applied_lambdas, and incorporate variable usage from context. The key is generating both types and terms together to maintain consistency, while using a 5:3 option ratio to control recursion depth and ensure termination.

@@ -1,0 +1,28 @@
+The user is asking me to improve the program. Let me analyze the current state and propose an improvement.
+
+Looking at the current program and the best prior program (score 10.62), I need to make small improvements to increase the score.
+
+Key observations:
+1. The current program has good_ratio = 1.00 (perfect correctness) - this is the most important
+2. The current score is 10.60, the best was 10.62
+3. The current program has used_vars_proportions_average: 0.11 and applied_lambdas_proportions_average: 0.11
+
+The main difference between the current program and the best prior is:
+- Current: has 30% chance to use a variable from context in Lam case
+- Best prior: no such early return, always recurses
+
+The current approach of using variables early reduces the term size and complexity. Let me try a different approach:
+
+1. Keep the depth-based termination (depth == 0 for literals)
+2. Increase the number of options at depth > 0 to encourage more variety
+3. Try to generate more complex nested structures
+4. Maybe use a different probability for variable usage or remove it entirely
+
+Let me try a different strategy - instead of having the 30% chance to use a variable and return early, I'll:
+1. Always recurse for lambda (to get more complex terms)
+2. Add variable usage inside the recursive call by passing context properly
+3. Maybe add more variety in the types used
+
+Actually, looking more carefully at the best prior program, it doesn't have the 30% variable usage logic - it just always recurses. Let me try that approach but with some modifications to still get variable usage.
+
+The key insight is that the current program's early return when using a variable reduces the term complexity. Let me modify it to always recurse but still track variables in context.

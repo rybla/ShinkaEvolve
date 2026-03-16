@@ -1,0 +1,53 @@
+Let me analyze the current program and the performance metrics to understand what needs to be improved.
+
+Current performance metrics:
+- Combined score: 10.30
+- good_ratio: 1.00 (all generated samples are well-formed and well-typed)
+- tm_sizes_average: 1.38 (term size is very small, max is 100)
+- ty_sizes_average: 1.38 (type size is very small, max is 10)
+- used_vars_proportions_average: 0.00 (no variables are being used!)
+- applied_lambdas_proportions_average: 0.00 (no lambdas are being applied!)
+- unique_subterms_proportions_average: 0.15 (low uniqueness)
+
+The main issues I can see:
+1. The term and type sizes are very small (1.38 on average when max is 100 for terms and 10 for types)
+2. No variables are being used (0.00)
+3. No lambdas are being applied (0.00)
+4. Low unique subterms
+
+Looking at the current implementation:
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+Problems:
+1. The `depth` parameter is never decremented, so it always stays at 10 (or whatever initial value), meaning it always has 4 options (including the Fun/Lam case)
+
+
+2. The lambda always uses the same variable name "x" and the same type ("Int")
+3. There's no application of lambdas - we only create lambdas but never apply them
+4. There's no use of variables - we create lambda-bound variables but never reference them in the body
+5. There's no recursion to build larger terms
+
+To fix this, I need to:
+1. Decrease depth in recursive calls to build larger structures
+2. Use different variable names to avoid shadowing issues
+3. Add application nodes to apply lambdas to arguments
+4. Add variable references to use the bound variables
+5. Build more complex types with proper recursion
+
+The key improvements are tracking the context of available variables, generating variable references that actually use the bound names, creating application nodes that apply functions to arguments, and recursively building both larger types and larger terms while decrementing the depth parameter.

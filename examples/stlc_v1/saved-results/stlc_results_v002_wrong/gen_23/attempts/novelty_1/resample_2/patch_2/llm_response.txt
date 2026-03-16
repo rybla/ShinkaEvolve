@@ -1,0 +1,67 @@
+
+The previous edit wasn't applied. Let me look at the current code more carefully and understand what changes I need to make.
+
+Looking at the current code in the EVOLVE-BLOCK-START section:
+
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)  # Note: depth is not decremented!
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+# EVOLVE-BLOCK-END
+```
+
+I need to modify this to:
+1. Track bound variables (the current code doesn't pass `bound_vars`)
+2. Occasionally use bound variables via `Var`
+3. Occasionally apply lambdas via `App`
+4. Vary the primitive values to improve unique_subterms
+
+Let me think about the implementation:
+
+```python
+def generate_sample(rng: random.Random, depth=10, bound_vars: list = None) -> Tuple[Ty, Tm]:
+    if bound_vars is None:
+        bound_vars = []
+    
+    # At low depth or randomly, generate base cases
+    if depth <= 0 or rng.random() < 0.3:
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", rng.choice([True, False])))
+        elif i == 1:
+            return (("Int",), ("Int", rng.randint(0, 100)))
+        else:
+            return (("String",), ("String", rng.choice(["a", "b", "c"])))
+    
+    # When variables are available, occasionally reference them
+    if bound_vars and rng.random() < 0.2:
+        var_name = rng.choice(bound_vars)
+        return (("Int",), ("Var", var_name))
+    
+    # Choose between creating a lambda or applying one
+    if rng.random() < 0.5:
+        var = rng.choice(["x", "y", "z"])
+        # Create lambda with a new bound variable
+        inner_ty, inner_tm = generate_sample(rng, depth - 1, bound_vars + [var])
+        return (("Fun", ("Int",), inner_ty), ("Lam", var, ("Int",), inner_tm))
+    else:
+        # Apply lambda to argument
+        func_ty, func_tm = generate_sample(rng, depth - 1, bound_vars)
+        arg_ty, arg_tm = generate_sample(rng, depth - 1, bound_vars)
+        return (arg_ty, ("App", func_tm, arg_tm))
+```
+
+This approach introduces variable references and applications while maintaining type correctness by tracking bound variables and ensuring the generated terms remain well-typed.

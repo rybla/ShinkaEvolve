@@ -1,18 +1,30 @@
-The user is saying my previous edit wasn't successful, but I don't see a previous edit in this conversation. Let me try again with a fresh approach.
+The previous edit wasn't applied. Let me look at the current program again and make sure I'm providing the exact text that needs to be replaced.
 
-Looking at the current code in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END markers, I need to make targeted improvements.
+The current program has:
 
-The key issue I identified is in the application branch:
 ```python
-# Generate argument term matching the function's input type
-arg_term = generate_sample(rng, depth - 1, bound_vars)[1]
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+    
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+# EVOLVE-BLOCK-END
 ```
 
-The comment says "matching the function's input type" but the code doesn't actually enforce this! The `arg_type` variable exists but isn't being used to constrain the generated argument term.
+I need to replace this with an improved version that:
+1. Properly decrements depth
+2. Adds App (application) nodes
+3. Adds context tracking for Var usage
 
-I need to:
-1. Add a `target_type` parameter to `generate_sample`
-2. Use this parameter in the base case to bias towards generating terms of the target type
-3. Use this parameter when generating the argument for an application
-
-Let me write the edit properly this time.
+Let me try again with the exact text.

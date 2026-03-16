@@ -1,27 +1,59 @@
-The user is asking me to make an edit to improve the program. Let me look at the current program and think about what changes could improve the performance metrics.
+The user is asking me to improve the current program. Let me analyze the current program and the prior programs to understand what improvements can be made.
 
 Looking at the current program:
-- It has good_ratio: 0.99 (very high)
-- tm_sizes_average: 4.34 
-- used_vars_proportions_average: 0.18
-- applied_lambdas_proportions_average: 0.18
-- unique_subterms_proportions_average: 0.39
+- It generates simple types and terms
+- It has good_ratio = 1.00 (perfect correctness)
+- tm_sizes_average: 1.33, ty_sizes_average: 1.33
+- used_vars_proportions_average: 0.00 (no variables used!)
+- applied_lambdas_proportions_average: 0.00 (no applications!)
+- unique_subterms_proportions_average: 0.14
 
-The analysis mentioned that to push tm_sizes_average higher, we should implement a "warm-up" phase where the probability of choosing Lam or App is higher when depth is high and bound_vars is small.
+The key issues with the current program:
+1. No App (application) is ever generated - applied_lambdas_proportions_average is 0.00
+2. No Var (variable) is ever used - used_vars_proportions_average is 0.00
+3. The depth parameter is not being used properly to control recursion
 
-Currently the code uses:
-- `if bound_vars and rng.random() < 0.35:` for variable selection
-- `i = rng.randrange(0, 2)` for lambda vs application choice (50/50)
+Looking at the best programs from the analysis:
+- They use depth parameter for termination control
+- They have context tracking (context = [] initially, passed as context + ["x"] for lambda)
+- 5 options at depth > 0 (3 literals + Lam + App)
+- 3 options at depth = 0 (only literals)
+- App generates identity function and applies it to arg
 
-The issue is that when bound_vars is empty (at the start), the probability of generating literals is:
-- `if depth <= 0 or (not bound_vars and rng.random() < 0.5):` - 50% chance of literals when bound_vars is empty
+The current program only has 4 options (3 literals + Lam), and doesn't have App at all. I need to add App generation and use context properly to enable Var usage.
 
-This means a lot of terms are just literals, which limits the term size.
+Let me write the improved code:
 
-Let me propose a change that:
-1. Reduces the probability of generating literals when depth is high
-2. Increases the probability of generating lambda/application structures early
+```python
+def generate_sample(rng: random.Random, depth=10, context=None) -> Tuple[Ty, Tm]:
+    if context is None:
+        context = []
+    
+    # 5 options at depth > 0, 3 options at depth = 0
+    num_options = 5 if depth > 0 else 3
+    i = rng.randrange(0, num_options)
+    
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    elif i == 3:
+        # Generate lambda - add parameter to context
+        new_context = context + ["x"]
+        ty, tm = generate_sample(rng, depth - 1, new_context)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+    else:
+        # Generate application - create identity function and apply it to argument
+        arg_ty, arg_tm = generate_sample(rng, depth - 1, context)
+        return (
+            ("Int",),
+            ("App", ("Lam", "x", ("Int",), ("Var", "x")), arg_tm),
+        )
+```
 
-This should increase tm_sizes_average (term size) while maintaining good_ratio.
-
-Let me write the edit:
+This adds the missing application case and properly tracks variable context to enable both lambda abstractions and applications.

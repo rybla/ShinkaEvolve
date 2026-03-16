@@ -1,0 +1,114 @@
+<NAME>
+dynamic_budget_forcing_and_unique_literals
+</NAME>
+
+<DESCRIPTION>
+Optimizes the generator by implementing Dynamic Budget-Based Lambda Forcing. This ensures that the generator aggressively builds a deep, variable-rich environment (expanding the context) when the budget is high, while tapering off to allow more diversity as the budget depletes. Additionally, I've incorporated entropy-based literal generation to ensure `unique_subterms_proportions_average` remains near-perfect even with larger terms, and increased the initial budget to push `tm_sizes_average` closer to the limit of 100.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    def gen_term(target_ty: Ty, ctx: List[Tuple[str, Ty]], budget: int) -> Tm:
+        # 1. Variable Selection (Maximize used_vars_proportions_average)
+        matches = [name for name, ty in ctx if ty == target_ty]
+
+        # Hard Floor Base Case
+        if budget <= 2:
+            if matches and rng.random() < 0.95:
+                # Prefer most recent variable (shadowing)
+                return ("Var", matches[-1])
+            
+            if target_ty[0] == "Bool":
+                return ("Bool", rng.choice([True, False]))
+            if target_ty[0] == "Int":
+                return ("Int", rng.randint(0, 1000))
+            if target_ty[0] == "String":
+                return ("String", rng.choice(["a", "b", "c"]))
+            
+            if target_ty[0] == "Fun":
+                v_name = f"v{len(ctx)}"
+                return ("Lam", v_name, target_ty[1], gen_term(target_ty[2], ctx + [(v_name, target_ty[1])], 1))
+
+        # 2. Context-Length Dependent Lambda Forcing
+        # Aggressively build context early (98%), then stabilize (75%)
+        lambda_prob = 0.98 if len(ctx) < 5 else 0.75
+        if target_ty[0] == "Fun" and rng.random() < lambda_prob:
+=======
+    def gen_term(target_ty: Ty, ctx: list[Tuple[str, Ty]], budget: int) -> Tm:
+        # 1. Variable Selection (Maximize used_vars_proportions_average)
+        matches = [name for name, ty in ctx if ty == target_ty]
+
+        # Hard Floor Base Case
+        if budget <= 3:
+            if matches and rng.random() < 0.98:
+                # Prefer most recent variable (shadowing)
+                return ("Var", matches[-1])
+            
+            if target_ty[0] == "Bool":
+                return ("Bool", rng.random() > 0.5)
+            if target_ty[0] == "Int":
+                return ("Int", rng.randint(0, 10**6) + budget)
+            if target_ty[0] == "String":
+                return ("String", f"s_{len(ctx)}_{budget}_{rng.getrandbits(8)}")
+            
+            if target_ty[0] == "Fun":
+                v_name = f"v{len(ctx)}"
+                return ("Lam", v_name, target_ty[1], gen_term(target_ty[2], ctx + [(v_name, target_ty[1])], 1))
+
+        # 2. Dynamic Budget-Based Lambda Forcing
+        # Scale probability: very high when budget is large to build context.
+        lambda_prob = 0.95 if budget > 100 else (0.85 if budget > 20 else 0.60)
+        if target_ty[0] == "Fun" and rng.random() < lambda_prob:
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+        # 3. Application Strategy (92/8 Asymmetric Spine)
+        # Pick an argument type from the context to increase variable hits
+        if ctx and rng.random() < 0.90:
+            arg_ty = rng.choice(ctx)[1]
+        else:
+            arg_ty = gen_type(1)
+
+        fun_ty = ("Fun", arg_ty, target_ty)
+        
+        # Extremely left-heavy split to maximize tm_sizes_average
+        split_f = int(budget * 0.92)
+        split_x = budget - split_f - 1
+        
+        return ("App", 
+                gen_term(fun_ty, ctx, max(1, split_f)), 
+                gen_term(arg_ty, ctx, max(1, split_x)))
+
+    # Target type size 6-12 for sufficient functional complexity
+    target_type = gen_type(rng.randint(6, 12))
+    
+    # Large starting budget (250) to ensure average size > 60 after recursion pruning
+    term = gen_term(target_type, [], 250)
+
+    return target_type, term
+=======
+        # 3. Application Strategy (Asymmetric Spine)
+        # Prioritize types already in context to maximize Var usage (used_vars_proportions)
+        if ctx and rng.random() < 0.92:
+            arg_ty = rng.choice([t for _, t in ctx])
+        else:
+            arg_ty = gen_type(1)
+
+        fun_ty = ("Fun", arg_ty, target_ty)
+        
+        # 95/5 left-heavy split for massive spines
+        split_f = int(budget * 0.95)
+        split_x = budget - split_f - 1
+        
+        return ("App", 
+                gen_term(fun_ty, ctx, max(1, split_f)), 
+                gen_term(arg_ty, ctx, max(1, split_x)))
+
+    # Target type size 8-10 for sufficient complexity within 10-node limit
+    target_type = gen_type(rng.randint(8, 10))
+    
+    # Large starting budget (450) to push average size towards 100
+    term = gen_term(target_type, [], 450)
+
+    return target_type, term
+>>>>>>> REPLACE
+</DIFF>

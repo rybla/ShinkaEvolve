@@ -1,0 +1,16 @@
+The user is asking me to improve the performance of the lambda calculus generator. Let me analyze the current state and propose a targeted improvement.
+
+Looking at the current code:
+- It only generates very simple terms (base types + simple lambdas)
+- No variables are used
+- No applications are generated
+- Terms are too small
+
+I need to propose a SEARCH/REPLACE block that modifies the generate_sample function to produce bigger, more complex terms while maintaining type correctness.
+
+Let me write a more sophisticated generator that:
+1. Uses depth properly to control complexity
+2. Generates function types with depth > 0
+3. Uses variables from context
+4. Generates applications
+5. Maintains type correctness

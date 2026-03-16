@@ -1,0 +1,161 @@
+--- a/original.py
++++ b/original.py
+@@ -1,84 +1,141 @@
+ from typing import Literal, Tuple
+ import random
+ import tqdm
+ 
+ """
+ `Ty` and `Tm` define the shape of a simply-typed lambda-calculus deeply embedded in Python. 
+ 
+ Each value, be it the encoding of a type or a term, is a tuple where the first component of the tuple is the "constructor" and the rest of the components are the arguments. For example, this value encodes the `Bool` type:
+ 
+     ('Bool',)
+ 
+ As another example, this value encodes the function type from `Bool` to `Bool`, which is often written `Bool -> Bool`:
+ 
+     ('Fun', ('Bool',), ('Bool',))
+ 
+ As another example, this value encodes the function term, which takes a single `String` input and just returns that input (also known as the identity function):
+ 
+     ('Lam', 'x', ('String',), ('Var', 'x'))
+ 
+ Note that ALL lambda terms must have a type annotation as the 1st argument, where in the above example the type annotation was the ('String',).
+ 
+ Closely read the above below type aliases to understand the complete structure of this deep embedding of the lambda calculus in Python.
+ """
+ 
+ type Ty = BoolTy | IntTy | StringTy | FunTy
+ type BoolTy = Tuple[Literal["Bool"]]
+ type IntTy = Tuple[Literal["Int"]]
+ type StringTy = Tuple[Literal["String"]]
+ type FunTy = Tuple[Literal["Fun"], Ty, Ty]
+ 
+ 
+ type Tm = LitTm | VarTm | LamTm | AppTm
+ type LitTm = (
+     Tuple[Literal["Bool"], bool]
+     | Tuple[Literal["Int"], int]
+     | Tuple[Literal["String"], str]
+ )
+ type VarTm = Tuple[Literal["Var"], str]
+ type LamTm = Tuple[Literal["Lam"], str, Ty, Tm]
+ type AppTm = Tuple[Literal["App"], Tm, Tm]
+ 
+ 
+ # EVOLVE-BLOCK-START
+ 
++class STLCGenerator:
++    def __init__(self, rng: random.Random):
++        self.rng = rng
++        self.var_counter = 0
+ 
+-def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+-    """
+-    Generate a sample type and term using a random seed.
+-    """
++    def gen_type(self, max_nodes: int) -> Ty:
++        if max_nodes <= 1 or self.rng.random() > 0.7:
++            return self.rng.choice([("Bool",), ("Int",), ("String",)])
++        
++        # Split budget for function type: 1 (Fun) + left + right = max_nodes
++        left_budget = self.rng.randint(1, max_nodes - 1)
++        right_budget = max_nodes - 1 - left_budget
++        return ("Fun", self.gen_type(left_budget), self.gen_type(right_budget))
+ 
+-    i = rng.randrange(0, 4 if depth > 0 else 3)
++    def get_ty_size(self, ty: Ty) -> int:
++        if ty[0] == "Fun":
++            return 1 + self.get_ty_size(ty[1]) + self.get_ty_size(ty[2])
++        return 1
+ 
+-    if i == 0:
+-        return (("Bool",), ("Bool", True))
+-    elif i == 1:
+-        return (("Int",), ("Int", 27))
+-    elif i == 2:
+-        return (("String",), ("String", "hello world"))
+-    else:
+-        ty, tm = generate_sample(rng)
+-        return (
+-            ("Fun", ("Int",), ty),
+-            ("Lam", "x", ("Int",), tm),
+-        )
++    def gen_term(self, target_ty: Ty, ctx: Dict[str, Ty], budget: int) -> Tm:
++        # ctx maps variable name string to Ty
++        
++        # Try to use a variable from context to maximize used_vars_proportions
++        valid_vars = [name for name, ty in ctx.items() if ty == target_ty]
++        
++        # Terminal conditions
++        if budget <= 1:
++            if valid_vars and self.rng.random() > 0.1:
++                return ("Var", self.rng.choice(valid_vars))
++            return self.gen_literal(target_ty)
+ 
++        # Probabilistic weightings for AST nodes
++        # If target is a Fun type, Lambda is highly preferred
++        if target_ty[0] == "Fun" and self.rng.random() > 0.1:
++            var_name = f"v{self.var_counter}"
++            self.var_counter += 1
++            new_ctx = ctx.copy()
++            new_ctx[var_name] = target_ty[1]
++            body = self.gen_term(target_ty[2], new_ctx, budget - 1)
++            return ("Lam", var_name, target_ty[1], body)
++
++        # Prefer App to increase term size and applied_lambdas_proportions
++        if budget > 3 and self.rng.random() > 0.3:
++            # Generate an argument type
++            arg_ty = self.gen_type(3)
++            fun_ty = ("Fun", arg_ty, target_ty)
++            
++            # Divide budget
++            left_b = budget // 2
++            right_b = budget - left_b - 1
++            
++            # To increase applied_lambdas, we often generate a Lam on the left
++            left_tm = self.gen_term(fun_ty, ctx, left_b)
++            right_tm = self.gen_term(arg_ty, ctx, right_b)
++            return ("App", left_tm, right_tm)
++
++        # Fallback to variable or literal
++        if valid_vars:
++            return ("Var", self.rng.choice(valid_vars))
++        return self.gen_literal(target_ty)
++
++    def gen_literal(self, ty: Ty) -> LitTm:
++        if ty[0] == "Bool":
++            return ("Bool", self.rng.choice([True, False]))
++        elif ty[0] == "Int":
++            return ("Int", self.rng.randint(0, 1000))
++        else:
++            return ("String", self.rng.choice(["lambda", "type", "logic", "stlc"]))
++
++def generate_sample(rng: random.Random) -> Tuple[Ty, Tm]:
++    gen = STLCGenerator(rng)
++    # 1. Generate a type within node limit (Max 10)
++    target_ty = gen.gen_type(10)
++    # 2. Generate a term matching that type (Max 100 nodes target)
++    # We aim for ~80 nodes to stay safe under the 100 limit but keep it high
++    term = gen.gen_term(target_ty, {}, 85)
++    
++    return target_ty, term
+ 
+ # EVOLVE-BLOCK-END
+ 
+ # This part remains fixed (not evolved)
+ 
+ import lc
+ 
+ 
+ def run() -> lc.RunOutput:
+     """Run the analysis"""
+ 
+     size = 1000
+     rng = random.Random()
+ 
+     return lc.run(
+         size=size,
+         rng=rng,
+         generate_sample=generate_sample,
+     )

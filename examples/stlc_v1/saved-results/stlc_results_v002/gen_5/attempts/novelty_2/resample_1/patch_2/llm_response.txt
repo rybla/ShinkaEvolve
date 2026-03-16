@@ -1,124 +1,43 @@
-The user is asking me to improve the `generate_sample` function to generate better lambda calculus terms. Let me analyze the current state and propose improvements.
+The user is asking me to improve the current program. Let me analyze what's happening:
 
-Looking at the current code:
-1. It only generates simple literals (Bool, Int, String)
-2. It only generates simple lambdas with Int as the argument type
-3. It never generates Var (variables) or App (applications)
-4. The depth parameter is not being used effectively
-5. The types and terms are very small
+1. The current program has a bug - it calls `generate_sample(rng)` without passing `depth`
+2. The metrics show very small sizes and no variable usage or lambda applications
+3. I need to fix the code to generate bigger, more complex terms while maintaining good_ratio
 
-I need to create a more sophisticated generator that:
-1. Uses depth to control complexity of types (max 10 nodes)
-2. Uses depth to control complexity of terms (max 100 nodes)
-3. Generates variables that reference bound variables
-4. Generates applications
-5. Always produces well-typed terms
-
-Let me write a better generator:
+Let me look at the current code more carefully:
 
 ```python
 def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
     """
     Generate a sample type and term using a random seed.
     """
-    # Generate a type first
-    ty = generate_type(rng, depth)
-    # Generate a term with that type
-    tm = generate_term(rng, depth, {}, ty)
-    return (ty, tm)
 
-def generate_type(rng: random.Random, depth: int) -> Ty:
-    """Generate a random type with controlled depth."""
-    if depth <= 0:
-        # Base types only
-        i = rng.randrange(0, 3)
-        if i == 0:
-            return ("Bool",)
-        elif i == 1:
-            return ("Int",)
-        else:
-            return ("String",)
-    else:
-        i = rng.randrange(0, 4)
-        if i == 0:
-            return ("Bool",)
-        elif i == 1:
-            return ("Int",)
-        elif i == 2:
-            return ("String",)
-        else:
-            # Function type
-            arg_ty = generate_type(rng, depth - 1)
-            ret_ty = generate_type(rng, depth - 1)
-            return ("Fun", arg_ty, ret_ty)
+    i = rng.randrange(0, 4 if depth > 0 else 3)
 
-def generate_term(rng: random.Random, depth: int, env: dict[str, Ty], target_ty: Ty) -> Tm:
-    """Generate a term with the given target type using the type environment."""
-    # If depth is 0 or we're at a base case, generate a simple term
-    if depth <= 0 or is_base_type(target_ty):
-        return generate_base_term(rng, target_ty)
-    
-    # Randomly choose between different term constructions
-    i = rng.randrange(0, 5)
-    
     if i == 0:
-        # Generate a variable if available in environment
-        if env:
-            var_name = rng.choice(list(env.keys()))
-            return ("Var", var_name)
-        else:
-            return generate_base_term(rng, target_ty)
-    
+        return (("Bool",), ("Bool", True))
     elif i == 1:
-        # Generate a lambda abstraction
-        param_name = f"x{rng.randrange(0, 100)}"
-        param_ty = generate_type(rng, depth - 1)
-        body_ty = target_ty  # The body should have the target type
-        body = generate_term(rng, depth - 1, env, body_ty)
-        return ("Lam", param_name, param_ty, body)
-    
+        return (("Int",), ("Int", 27))
     elif i == 2:
-        # Generate an application
-        func_ty = ("Fun", generate_type(rng, depth - 1), target_ty)
-        func = generate_term(rng, depth - 1, env, func_ty)
-        arg = generate_term(rng, depth - 1, env, func_ty[1])
-        return ("App", func, arg)
-    
-    elif i == 3:
-        # Generate a literal
-        return generate_literal(rng, target_ty)
-    
+        return (("String",), ("String", "hello world"))
     else:
-        # Generate a variable reference
-        if env:
-            var_name = rng.choice(list(env.keys()))
-            return ("Var", var_name)
-        else:
-            return generate_literal(rng, target_ty)
-
-def is_base_type(ty: Ty) -> bool:
-    """Check if a type is a base type."""
-    return ty[0] in ("Bool", "Int", "String")
-
-def generate_literal(rng: random.Random, ty: Ty) -> Tm:
-    """Generate a literal term of the given type."""
-    if ty[0] == "Bool":
-        return ("Bool", rng.choice([True, False]))
-    elif ty[0] == "Int":
-        return ("Int", rng.randint(0, 100))
-    elif ty[0] == "String":
-        return ("String", rng.choice(["hello", "world", "test"]))
-    else:
-        # Default to Bool if type is not recognized
-        return ("Bool", True)
-
-def generate_base_term(rng: random.Random, ty: Ty) -> Tm:
-    """Generate a base term (literal) of the given type."""
-    return generate_literal(rng, ty)
+        ty, tm = generate_sample(rng)  # BUG: missing depth argument!
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
 ```
 
-This approach builds types recursively with depth control, then generates well-typed terms by maintaining a type environment. It creates variables, lambda abstractions, applications, and literals while ensuring type consistency throughout. The depth parameter controls how complex the generated structures can become, preventing runaway recursion while still allowing for interesting lambda calculus expressions. I need to reconsider the approach. The core issue is that I'm not properly handling function types when generating terms—I need to ensure that when a function type is the target, I can generate either a lambda that produces that type, or an application that reduces to it.
+The bug is that `generate_sample(rng)` is called without the `depth` argument. This would cause infinite recursion or use the default depth=10.
 
-Looking at the scoring criteria, I should prioritize generating larger types and terms, using variables more frequently, applying lambdas, and including more unique subterms. The current implementation doesn't adequately support these goals.
+Looking at the metrics:
+- good_ratio: 1.00 (perfect - all well-formed and well-typed)
+- tm_sizes_average: 1.35 (very small - target is up to 100)
+- ty_sizes_average: 1.35 (very small - target is up to 10)
+- used_vars_proportions_average: 0.00 (no variable usage)
+- applied_lambdas_proportions_average: 0.00 (no lambda applications)
 
-Let me restructure the generator to handle function types more carefully, ensuring I can create both lambda abstractions and applications that target the desired type while maintaining proper type consistency throughout the generation process.
+
+- unique_subterms_proportions_average: 0.15 (very few unique subterms)
+
+The current code generates trivial terms - just literals or simple lambdas wrapping more of the same. To improve, I need to fix the depth bug and add support for variables, applications, and more complex type generation while preserving the perfect type correctness.

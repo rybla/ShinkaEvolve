@@ -1,0 +1,29 @@
+Let me analyze the current program and the performance metrics to understand what needs to be improved.
+
+Current performance:
+- Combined score: 10.28
+- good_ratio: 1.00 (perfect - all terms are well-typed)
+- tm_sizes_average: 1.31 (very small, max is 100)
+- ty_sizes_average: 1.31 (very small, max is 10)
+- used_vars_proportions_average: 0.01 (almost no variable usage)
+- applied_lambdas_proportions_average: 0.00 (no lambda applications)
+- unique_subterms_proportions_average: 0.13 (low)
+
+The main issues:
+1. Term and type sizes are very small
+2. No variable usage (0.01)
+3. No lambda applications (0.00)
+4. Low unique subterms
+
+Looking at the current code:
+- It only generates literals (Bool, Int, String) or simple lambdas
+- No AppTm (application) is ever generated
+- When it tries to use variables from context, it's rare and only creates simple identity-like functions
+
+I need to:
+1. Generate much larger terms and types
+2. Actually use AppTm to apply lambdas
+3. Use variables more frequently
+4. Create more complex nested structures
+
+Let me write a completely new algorithm:

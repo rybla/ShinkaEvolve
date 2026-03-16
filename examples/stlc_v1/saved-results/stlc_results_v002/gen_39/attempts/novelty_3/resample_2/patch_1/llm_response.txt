@@ -1,46 +1,41 @@
-Let me analyze the current program and the prior programs to understand what improvements can be made.
+Looking at the current program and its performance metrics:
 
-Current program:
-- Score: 10.31
-- good_ratio: 1.00 (perfect - all generated terms are type-correct)
-- tm_sizes_average: 1.41
-- ty_sizes_average: 1.41
-- used_vars_proportions_average: 0.00 (no variables used!)
-- applied_lambdas_proportions_average: 0.00 (no applications!)
-- unique_subterms_proportions_average: 0.16
+- Combined score: 10.62
+- good_ratio: 1.00 (perfect correctness)
+- tm_sizes_average: 1.87
+- ty_sizes_average: 1.32
+- used_vars_proportions_average: 0.11
+- applied_lambdas_proportions_average: 0.11
+- unique_subterms_proportions_average: 0.25
 
-The key insight from the system prompt analysis is:
-1. The best programs (score ~10.88) used `bound_vars` to track bound variables
-2. They used `rng.random() < 0.35` for probabilistic variable selection
-3. They used unique variable names with `f"x{rng.randint(0, 100)}"`
-4. They had type-safe application: checks `func_type[0] == "Fun"` before applying
-5. They used hybrid termination: `depth <= 0 or (not bound_vars and rng.random() < 0.5)`
+The current program already has:
+1. Perfect correctness (good_ratio = 1.0)
+2. Depth-limited recursion for termination
+3. Context tracking (adds "x" to context when creating lambdas)
+4. Both Lam and App constructors
+5. A balanced approach to generating literals and functions
 
-Looking at the current program:
-- It only generates literals and simple lambdas
-- No variables are used (used_vars_proportions_average: 0.00)
-- No applications (applied_lambdas_proportions_average: 0.00)
-- It generates nested lambdas like `("Lam", "x", ("Int",), tm)` but never uses `Var` terms
+Looking at the prior programs:
+- Program 1 (score 10.28): Used context but had issues with it, no App
+- Program 2 (score 10.31): No context, no App
+- Program 3 (score 10.60): Has App, good context usage, 30% variable usage rate
 
-The problem is clear: the current program creates lambdas but never:
-1. Uses the bound variables (no Var terms)
-2. Applies functions (no App terms)
+Current program (score 10.62): Similar to Program 3 but without the 30% variable usage option in lambda (always recurses with new context)
 
-The current code has:
-- `("Lam", "x", ("Int",), tm)` - creates a lambda but never references the variable
+Key observations:
+1. The current program has no variable usage from context (0.11 vs 0.11 is weird - maybe it's different?)
+2. It always adds "x" to context but never uses it for Var
+3. App is generated but with a simple identity function
 
-To improve, I need to:
-1. Add support for Var terms - when we have bound variables, we should be able to return them
+What could improve the score:
+1. Add back the 30% chance to use a variable from context - this should increase used_vars_proportions_average
+2. Make App more interesting - not just identity functions
+3. Add more variety to the generated terms
+
+Let me think about what would make the biggest impact:
+- The unique_subterms_proportions is already quite good at 0.25
 
 
-2. Add support for App terms - apply functions to arguments
-3. Implement type-safe application with proper type checking
+- The tm_sizes_average is 1.87 which is reasonable
 
-The issue is that the current recursive call doesn't decrement depth properly:
-```python
-ty, tm = generate_sample(rng)  # This should be generate_sample(rng, depth - 1)
-```
-
-Also, the function never passes or uses `bound_vars`. I'll implement a more sophisticated version that tracks bound variables and can generate Var and App terms properly, using type-safe application with fallbacks to handle type mismatches.
-
-The core approach: maintain a `bound_vars` list of (name, type) tuples, and at each recursive step decide whether to return a bound variable, create a lambda (adding to bound_vars), or apply a function. Type checking ensures that App terms only apply when the function type is FunTy, otherwise returning the argument as a fallback.
+I should focus on adding variable usage from context to increase the used_vars_proportions_average, and make the App case generate more interesting functions rather than just identity functions.

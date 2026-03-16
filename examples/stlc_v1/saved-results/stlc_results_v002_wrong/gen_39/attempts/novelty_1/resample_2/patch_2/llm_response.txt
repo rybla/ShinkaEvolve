@@ -1,0 +1,15 @@
+The user is asking me to make an improvement to the current program. Let me analyze what changes need to be made.
+
+Looking at the current program:
+- It has a good_ratio of 1.00 (perfect!)
+- But used_vars_proportions_average: 0.00 (no variables used!)
+- And applied_lambdas_proportions_average: 0.00 (no function applications!)
+
+The key insight from the meta-review and prior programs is that to break through the ~10.30 ceiling, we need to:
+1. Add variable usage tracking (bound_vars)
+2. Add function applications (App terms)
+3. Maintain type safety to keep good_ratio high
+
+Let me create an improved version that adds these features while maintaining the high good_ratio.
+
+The edit should be within the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END markers.

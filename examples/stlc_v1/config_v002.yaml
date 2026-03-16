@@ -81,7 +81,7 @@ evo_config:
     # - "gpt-5-mini"
     # - "gpt-5-nano"
     # - "openrouter/google/gemini-3-flash-preview"
-    - "openrouter/minimax/minimax-m2.5"
+    - "openrouter/@preset/minimax-fast"
   # Shared generation kwargs for main proposal LLM calls.
   llm_kwargs:
     # Candidate temperatures to sample for generation diversity.
@@ -112,7 +112,7 @@ evo_config:
     max_tokens: 16384
 
   # Embedding model used for code similarity filtering.
-  embedding_model: text-embedding-3-small
+  embedding_model: "openrouter/google/gemini-embedding-001"
   # Similarity threshold above which code is treated as near-duplicate.
   code_embed_sim_threshold: 0.99
 

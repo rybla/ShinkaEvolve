@@ -1,1 +1,35 @@
-The user is asking me to provide a complete new program, not a patch. Let me provide the full code directly.
+The user says my previous edit wasn't successful. Let me look at the current program in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END section and propose a proper edit.
+
+Looking at the current program:
+
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+# EVOLVE-BLOCK-END
+```
+
+I need to use the exact SEARCH/REPLACE format. Let me propose a change that:
+1. Adds context tracking
+2. Uses variables from context
+3. Adds App constructor
+4. Maintains correctness
+
+The key issue is that the current program:
+- Never uses the variable "x" in lambda bodies
+- Never creates App (function application)
+- Has no context tracking
+
+Let me write a proper edit with the exact format.

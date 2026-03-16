@@ -1,0 +1,119 @@
+Let me re-read the task carefully. I need to write a generator that produces types and terms of the simply-typed lambda-calculus. The current implementation has:
+
+- good_ratio: 1.00 (perfect type correctness)
+- tm_sizes_average: 1.35 (terms are small)
+- ty_sizes_average: 1.35 (types are small)
+- used_vars_proportions_average: 0.00 (no variable usage)
+- applied_lambdas_proportions_average: 0.00 (no lambda applications)
+- unique_subterms_proportions_average: 0.15 (few unique subterms)
+
+The goal is to improve the combined score. Looking at the scoring formula implied by the metrics, I need to:
+1. Keep good_ratio high (ideally 1.00)
+2. Increase tm_sizes_average (bigger terms)
+3. Increase ty_sizes_average (bigger types)
+4. Increase used_vars_proportions_average (use more variables)
+5. Increase applied_lambdas_proportions_average (apply more lambdas)
+6. Increase unique_subterms_proportions_average (more unique subterms)
+
+The current implementation is very simple - it just generates 4 fixed cases. I need to make it more sophisticated while maintaining type correctness.
+
+Let me design a new approach:
+
+1. Use a context (list of variable names and their types) to track bound variables
+2. Generate larger types by recursively building function types
+3. Generate terms that:
+   - Use lambdas to create larger terms
+   - Apply lambdas to arguments
+   - Use variables from context when appropriate
+   - Create applications
+
+The key is to balance complexity with type correctness.
+
+Let me write a complete new implementation:
+
+```python
+from typing import Literal, Tuple, List
+import random
+
+type Ty = BoolTy | IntTy | StringTy | FunTy
+
+
+```
+
+I'll continue defining the type system, focusing on creating a robust and flexible type representation that supports complex lambda calculus constructions.
+
+The type system includes primitive types like Boolean, Integer, and String, along with function types that allow for higher-order abstractions. I'm establishing a comprehensive type hierarchy that enables sophisticated type checking and term generation.
+
+The term system captures different lambda calculus expressions, from simple literals to complex lambda abstractions and applications. This allows for representing a wide range of computational constructs, including boolean values, numeric values, string literals, variables, and function definitions.
+
+```
+
+python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+    ty = generate_type(rng, depth)
+    tm = generate_term(rng, depth, [], ty)
+    return (ty, tm)
+
+def generate_type(rng: random.Random, depth: int) -> Ty:
+    """Generate a type with controlled depth."""
+    if depth <= 0:
+        return generate_base_type(rng)
+    
+    # Create function types to increase complexity
+    if rng.random() < 0.6:
+        arg_ty = generate_base_type(rng)
+        ret_ty = generate_type(rng, depth - 1)
+        return ("Fun", arg_ty, ret_ty)
+    
+    return generate_base_type(rng)
+
+def generate_base_type(rng: random.Random) -> Ty:
+    """Generate a base type."""
+    i = rng.randrange(0, 3)
+    if i == 0:
+        return ("Bool",)
+    elif i == 1:
+        return ("Int",)
+    else:
+        return ("String",)
+
+I'll generate types with controlled complexity, using a recursive approach that builds function types while managing depth. The method creates base types and can construct more complex function types by combining base types with recursive generation.
+
+The term generation strategy involves carefully selecting generation strategies based on the target type and available context. I'll use a probabilistic approach to create lambda abstractions, applications, or literal values, ensuring type consistency and structural variety.
+
+When generating lambda abstractions, I'll create unique variable names, establish a new context by adding the argument type, and recursively generate the lambda's body while decrementing the depth. This approach allows for constructing increasingly complex lambda terms with type-safe transformations.
+
+For application terms, I'll generate a function type with a random base argument type, then recursively create the function and argument terms while managing depth and context. This enables building more sophisticated term structures through systematic type-driven generation.
+
+The generation process carefully balances depth constraints, type compatibility, and randomness to produce diverse, well-typed lambda calculus terms.
+
+I recognize the critical nuance of depth management: lambda argument type generation must use the original depth, while body generation should decrement depth. This ensures proper scoping and prevents premature depth exhaustion.
+
+The approach systematically explores different term construction strategies - lambda abstraction, application, and literal generation - while maintaining type safety and structural complexity through controlled recursive generation.
+
+By carefully tracking depth across type and term generation, the method creates increasingly sophisticated lambda calculus expressions that respect computational complexity constraints.
+
+The implementation strategically uses probabilistic choices to determine term generation strategies, allowing flexible yet controlled exploration of possible lambda calculus terms.
+
+I'll generate a type with depth constraints, first checking if depth is exhausted. If depth remains, I'll probabilistically create function types by combining base types. Otherwise, I'll default to generating a base type. The approach ensures type complexity grows systematically while maintaining generation diversity.
+
+The type generation method uses a recursive strategy, decrementing depth with each function type construction to manage overall type complexity. By randomly selecting between function and base types, the generation remains flexible and unpredictable.
+
+For lambda term generation, I'll create a new variable name, establish its type from the function's argument type, and recursively generate the lambda's body. This approach allows constructing increasingly sophisticated lambda abstractions while tracking type information.
+
+The application term generation will involve creating a function type, generating the function and argument terms, and combining them through application - maintaining type consistency and structural progression.
+
+The key insight is carefully managing depth across recursive type and term generation. By using the original depth for argument type generation and decrementing depth for body generation, we ensure controlled complexity without prematurely exhausting generation possibilities.
+
+The strategy ensures lambda abstractions can build more complex type structures progressively, with each recursive call potentially reducing available depth but maintaining type safety and structural integrity.
+
+Critically, the approach allows generating increasingly sophisticated type hierarchies while preventing uncontrolled recursive expansion, balancing depth management with type construction flexibility.
+
+I'll track variable context carefully, ensuring lambda abstractions properly extend the scope. When generating lambda terms, I'll increment depth to enable more complex type structures, while maintaining precise type annotations for each parameter.
+
+The key insight involves strategically reducing depth during term generation to control complexity without sacrificing expressiveness. By carefully managing depth transitions, I can create more nuanced type systems that remain computationally tractable.
+
+My approach will systematically explore type generation, lambda term construction, and context management, ensuring each recursive step maintains type safety and structural integrity.

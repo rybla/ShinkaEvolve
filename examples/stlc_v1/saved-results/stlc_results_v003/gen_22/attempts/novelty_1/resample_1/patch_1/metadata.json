@@ -1,0 +1,14 @@
+{
+  "generation": 22,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "heavy_spine_and_type_caching",
+  "patch_description": "To maximize `tm_sizes_average`, we increase the initial budget to 160 and enforce a more aggressive left-heavy split (85/15). To improve `used_vars_proportions_average`, we implement \"Popular Type Selection\" in the `AppTm` generation: instead of picking a random variable's type, we prioritize types that appear multiple times in the context, increasing the likelihood that the argument sub-term can successfully select a variable from the context. We also adjust the `gen_type` logic to produce slightly deeper types for the initial target to increase `ty_sizes_average`.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T12:45:07.941106",
+  "llm_cost": 0.00639475,
+  "llm_model": null
+}

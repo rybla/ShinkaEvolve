@@ -1,0 +1,76 @@
+<NAME>
+dynamic_budget_reallocation_and_context_prioritization
+</NAME>
+
+<DESCRIPTION>
+To improve `tm_sizes_average` and `used_vars_proportions_average`, I am implementing a dynamic budget reallocation strategy. When the context size increases, the generator will favor variable selection more aggressively at lower budgets, effectively "saving" budget from those leaf nodes and allowing the remaining recursive branches to consume more nodes. I also increased the probability of generating a `Lam` when the target is a `Fun` type to ensure deeper structural complexity and better variable binding opportunities.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    def gen_term(target_ty: Ty, ctx: list[Tuple[str, Ty]], budget: int) -> Tm:
+        # Try to use a variable from context if it matches the type
+        valid_vars = [name for name, ty in ctx if ty == target_ty]
+
+        # Base cases or if budget is low
+        if budget <= 2:
+            if valid_vars and (rng.random() < 0.9 or budget <= 1):
+                return ("Var", rng.choice(valid_vars))
+            if target_ty == ("Bool",):
+                return ("Bool", rng.choice([True, False]))
+            if target_ty == ("Int",):
+                return ("Int", rng.randint(0, 100))
+            if target_ty == ("String",):
+                return ("String", rng.choice(["a", "b", "c"]))
+
+        # Recursive cases
+        if target_ty[0] == "Fun" and rng.random() < 0.6:
+            # Generate Lambda
+            arg_ty, ret_ty = target_ty[1], target_ty[2]
+            var_name = f"v{len(ctx)}"
+            new_ctx = ctx + [(var_name, arg_ty)]
+            return ("Lam", var_name, arg_ty, gen_term(ret_ty, new_ctx, budget - 1))
+
+        # Generate Application
+        # Asymmetric split: allocate more budget to the function side to encourage deep application chains
+        arg_ty = gen_type(rng.randint(1, 2))
+        fun_ty = ("Fun", arg_ty, target_ty)
+
+        # Use an asymmetric split to favor deeper trees on the left (function) side
+        # while keeping the argument side relatively small but valid.
+        split_f = int(budget * 0.7)
+        split_x = budget - split_f - 1
+        return ("App", gen_term(fun_ty, ctx, split_f), gen_term(arg_ty, ctx, max(1, split_x)))
+=======
+    def gen_term(target_ty: Ty, ctx: list[Tuple[str, Ty]], budget: int) -> Tm:
+        valid_vars = [name for name, ty in ctx if ty == target_ty]
+
+        # Dynamic Variable Selection: If context is rich, favor variables even at slightly higher budgets
+        # to save budget for other branches.
+        var_prob = 0.95 if len(ctx) > 5 else 0.7
+        if budget <= 3:
+            if valid_vars and (rng.random() < var_prob or budget <= 1):
+                return ("Var", rng.choice(valid_vars))
+            if budget <= 1:
+                if target_ty == ("Bool",): return ("Bool", rng.choice([True, False]))
+                if target_ty == ("Int",): return ("Int", rng.randint(0, 100))
+                return ("String", rng.choice(["a", "b", "c"]))
+
+        # Recursive cases: Prioritize Lambda for Fun types to increase variable depth
+        if target_ty[0] == "Fun" and (rng.random() < 0.8 or budget < 10):
+            arg_ty, ret_ty = target_ty[1], target_ty[2]
+            var_name = f"v{len(ctx)}"
+            return ("Lam", var_name, arg_ty, gen_term(ret_ty, ctx + [(var_name, arg_ty)], budget - 1))
+
+        # Generate Application: Invent a small intermediate type
+        # We use a very small budget for arg_ty to keep the focus on term size
+        arg_ty = gen_type(1)
+        fun_ty = ("Fun", arg_ty, target_ty)
+
+        # Asymmetric split: 80% to function side to maximize depth and applied lambdas
+        split_f = int(budget * 0.8)
+        split_x = budget - split_f - 1
+        return ("App", gen_term(fun_ty, ctx, split_f), gen_term(arg_ty, ctx, max(1, split_x)))
+>>>>>>> REPLACE
+
+</DIFF>

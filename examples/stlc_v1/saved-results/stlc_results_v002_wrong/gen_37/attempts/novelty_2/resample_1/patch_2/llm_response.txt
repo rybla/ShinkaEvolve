@@ -1,0 +1,21 @@
+Let me analyze the current program and think about what changes to make.
+
+Looking at the current program:
+- It generates simple literals (Bool, Int, String) and lambda terms
+- It has a score of 10.29
+- Key metrics: good_ratio=1.00, used_vars_proportions_average=0.00, applied_lambdas_proportions_average=0.00, unique_subterms_proportions_average=0.14
+
+The current program doesn't generate Var terms or App terms. To improve, I need to:
+1. Add variable tracking (bound_vars context)
+2. Add probability to use variables from context
+3. Add application (AppTm) terms
+4. Use unique variable names
+
+Let me create an improved version that incorporates these elements while maintaining a high good_ratio.
+
+I need to make sure:
+- The SEARCH block exactly matches the current code
+- The changes are valid Python
+- The type system is maintained
+
+Let me write the edit:

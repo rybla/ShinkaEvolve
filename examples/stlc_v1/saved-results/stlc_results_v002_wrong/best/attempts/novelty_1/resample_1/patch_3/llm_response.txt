@@ -1,0 +1,20 @@
+The user is asking me to rewrite the program to improve its performance. Let me provide a complete new program code directly.
+
+Looking at the current program:
+- Score: 10.55
+- good_ratio: 0.99
+- tm_sizes_average: 2.12
+- used_vars_proportions_average: 0.17
+- applied_lambdas_proportions_average: 0.06
+- unique_subterms_proportions_average: 0.27
+
+The key issues I identified:
+1. When generating applications, if the function type is not a Fun type, the App term is discarded - this loses applications
+2. The program needs to ensure type-correct applications
+
+Let me write a new version that:
+1. First generates a function type (FunTy)
+2. Then generates the function term and argument term to match that type
+3. This ensures every App term created is type-correct
+
+I'll also increase the probability of using variables and vary the primitive values more to increase unique subterms.

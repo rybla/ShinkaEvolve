@@ -1,0 +1,38 @@
+Let me look at the current code in the EVOLVE-BLOCK-START section more carefully. The user says the previous edit was not successful. Let me re-read the current program and make sure I understand what's there.
+
+The current EVOLVE-BLOCK-START section contains:
+
+```python
+# EVOLVE-BLOCK-START
+
+
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+So the current code is very simple. The issue is:
+1. It ignores depth
+2. The recursive call `generate_sample(rng)` doesn't pass depth - this would cause infinite recursion or an error
+
+I need to replace this with a better implementation. Let me write the SEARCH/REPLACE block correctly.
+
+The SEARCH should be the entire content between # EVOLVE-BLOCK-START and # EVOLVE-BLOCK-END.
+
+Let me try again with the exact text.

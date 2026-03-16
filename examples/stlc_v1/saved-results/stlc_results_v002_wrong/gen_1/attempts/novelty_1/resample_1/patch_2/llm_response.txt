@@ -1,0 +1,24 @@
+
+The user wants me to modify the `generate_sample` function to generate larger types and terms, use variables, apply lambdas, and have more unique subterms.
+
+Let me analyze the current code and the metrics again:
+
+Current issues:
+1. Types are very small (1.38 average, max 10)
+2. Terms are very small (1.38 average, max 100)
+3. No variables are being used (0.00)
+4. No lambdas are being applied (0.00)
+5. Few unique subterms (0.15)
+
+The current function doesn't use the depth parameter properly and doesn't generate:
+- Variables (VarTm)
+- Applications (AppTm)
+
+I need to write a better generator that:
+1. Uses depth to control size
+2. Generates complex types (nested function types)
+3. Generates variables and uses them
+4. Applies lambdas to arguments
+5. Has more unique subterms
+
+Let me write a new version of the generate_sample function.

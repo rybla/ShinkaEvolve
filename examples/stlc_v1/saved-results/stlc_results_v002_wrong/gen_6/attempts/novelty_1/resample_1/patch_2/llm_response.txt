@@ -1,0 +1,18 @@
+The user is asking me to make changes to improve the performance of the lambda calculus generator. Let me analyze the current state and propose improvements.
+
+Looking at the current `generate_sample` function:
+1. It only generates literals or simple lambdas
+2. The depth parameter is not being used effectively
+3. No applications are generated
+4. No variables are used
+5. Terms and types are very small
+
+I need to rewrite the generate_sample function to:
+1. Use depth to control complexity
+2. Generate larger types (up to 10 nodes)
+3. Generate larger terms (up to 100 nodes)
+4. Generate applications
+5. Use variables from lambda bindings
+6. Apply lambdas to arguments
+
+Let me write a proper implementation.

@@ -1,1 +1,31 @@
-The user is indicating there was an error with my previous response. Let me try again with a proper response format. I need to provide the complete new program code within the specified format.
+The user is asking me to rewrite the program to improve its performance. Let me analyze the current program and the metrics:
+
+Current metrics:
+- Combined score: 10.30
+- good_ratio: 1.00 (all samples are well-formed and well-typed)
+- tm_sizes_average: 1.35 (term sizes are very small, max is 100)
+- ty_sizes_average: 1.35 (type sizes are very small, max is 10)
+- used_vars_proportions_average: 0.00 (variables are never used!)
+- applied_lambdas_proportions_average: 0.00 (lambdas are never applied!)
+- unique_subterms_proportions_average: 0.15 (low uniqueness)
+
+The main issues:
+1. Term and type sizes are extremely small (1.35 when max is 100 and 10)
+2. Variables are never used (0.00 proportion)
+3. Lambdas are never applied (0.00 proportion)
+4. Low unique subterms
+
+Looking at the current code:
+- It only generates literals (Bool, Int, String) or simple lambdas with Int as argument type
+- The lambda always takes an Int and returns something, but the variable "x" is never used
+- There's no application of lambdas
+- There's no use of variables in the body
+
+I need to design a better generator that:
+1. Generates larger types (up to 10 nodes)
+2. Generates larger terms (up to 100 nodes)
+3. Actually uses variables (applies them or uses them as arguments)
+4. Applies lambdas to arguments
+5. Has more unique subterms
+
+Let me create a proper implementation.

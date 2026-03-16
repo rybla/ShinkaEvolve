@@ -1,0 +1,23 @@
+The user is asking me to improve the performance of the code. Let me analyze the current state and the prior programs more carefully.
+
+Looking at the metrics:
+- Current program: Combined score 10.30, good_ratio 1.00, tm_sizes_average 1.35
+- Prior programs: Combined score 9.24, good_ratio 0.82, tm_sizes_average 4.89
+
+The current program has a HIGHER combined score (10.30 vs 9.24), even though it generates smaller terms. This suggests that the scoring function heavily rewards good_ratio (which is 1.00 for current vs 0.82 for prior).
+
+Looking at the current code in the EVOLVE-BLOCK-START section, it's a very simple generator that:
+1. Randomly picks between Bool, Int, String, or a Fun type
+2. Returns simple literals or a simple lambda wrapping a recursive call
+
+The problem is that this generator doesn't actually use the depth parameter properly - it ignores it after the first call (notice `generate_sample(rng)` is called without depth).
+
+I need to improve the generator to:
+1. Actually use the depth parameter to control complexity
+2. Generate larger terms (closer to 100 nodes)
+3. Use variables from context
+4. Apply lambdas
+5. Have more unique subterms
+6. Maintain good_ratio of 1.00
+
+Let me write an improved version that builds on the current simple structure but adds proper depth control and complexity.

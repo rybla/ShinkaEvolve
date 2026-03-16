@@ -1,17 +1,52 @@
-Let me analyze the problem and design a new algorithm approach.
+The previous edit was not successful, meaning my proposed changes weren't applied. Let me re-read the current program and the task more carefully.
 
-Looking at the current implementation:
-1. It only generates small types and terms (average size 1.38)
-2. Variables are never used (0.00)
-3. Lambdas are never applied (0.00)
-4. Low unique subterms (0.15)
+Looking at the current program in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END:
 
-The current approach is too simple - it just randomly picks between literals and simple lambdas, without tracking variables or context.
+```python
+# EVOLVE-BLOCK-START
 
-My new approach will be fundamentally different:
-- Use a context-based generation with explicit tracking of bound variables
-- Generate larger types by composing function types
-- Generate applications that actually use bound variables
-- Use a size budget system to grow terms to the target size
 
-Let me implement this:
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+
+
+# EVOLVE-BLOCK-END
+```
+
+The current program generates:
+- Base types (Bool, Int, String) with literals
+- Or wraps in a lambda with Int type
+
+This is very simple and generates small terms. The goal is to increase the term sizes while maintaining good_ratio = 1.00.
+
+Looking at the prior programs' code, they had a more sophisticated generator that used depth control and context tracking. But their good_ratio was 0.82 (not 1.00).
+
+I need to create a generator that:
+1. Generates larger terms (increase tm_sizes_average from 1.35 towards 100)
+2. Maintains good_ratio = 1.00 (all terms must be well-typed)
+3. Increases used_vars_proportions_average
+
+
+4. Increases applied_lambdas_proportions_average
+5. Increases unique_subterms_proportions_average
+
+I'll start by creating a depth parameter to control term complexity. This will help me systematically increase term sizes while maintaining type safety. I'll implement recursive generation strategies that carefully track type contexts and ensure well-typedness at each step.
+
+The key is to balance complexity with type correctness, using the depth parameter to guide term generation while preserving the perfect good_ratio.

@@ -112,7 +112,7 @@ evo_config:
     max_tokens: 16384
 
   # Embedding model used for code similarity filtering.
-  embedding_model: text-embedding-3-small
+  embedding_model: "openrouter/google/gemini-embedding-001"
   # Similarity threshold above which code is treated as near-duplicate.
   code_embed_sim_threshold: 0.99
 

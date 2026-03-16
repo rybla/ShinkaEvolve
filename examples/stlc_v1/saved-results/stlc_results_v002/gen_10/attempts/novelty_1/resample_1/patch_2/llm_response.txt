@@ -1,12 +1,34 @@
-The user is saying my previous edit wasn't applied. Let me think about what changes I need to make and ensure I'm using the correct format.
+Let me analyze the problem more carefully and create a proper crossover program.
 
-Looking at the current program, I need to improve the `generate_sample` function to:
-1. Generate larger types (up to 10 nodes)
-2. Generate larger terms (up to 100 nodes)
-3. Use variables that are introduced by lambdas
-4. Apply lambdas to arguments
-5. Have more unique subterms
+The current program has:
+- good_ratio: 1.00 (perfect!)
+- tm_sizes_average: 1.35 (too small, max is 100)
+- ty_sizes_average: 1.35 (too small, max is 10)
+- used_vars_proportions_average: 0.00 (should be higher)
+- applied_lambdas_proportions_average: 0.00 (should be higher)
+- unique_subterms_proportions_average: 0.15 (should be higher)
 
-The current implementation is too simple - it mostly just returns literals and occasionally a trivial lambda wrapping another literal.
+The inspiration program has:
+- good_ratio: 0.82 (some ill-typed terms)
+- tm_sizes_average: 4.89 (better)
+- ty_sizes_average: 2.90 (better)
+- used_vars_proportions_average: 0.03
+- applied_lambdas_proportions_average: 0.17
+- unique_subterms_proportions_average: 0.49
 
-Let me write an improved version that tracks bound variables and generates more complex terms.
+I need to combine:
+1. The type-safe generation from the current program (always well-typed)
+2. The more complex generation from the inspiration program (bigger terms)
+
+Key insight: The current program is too simple - it doesn't really use depth properly. The inspiration has good ideas but has bugs that cause ill-typed terms.
+
+Let me look at the bugs in the inspiration:
+1. In generate_term, it checks `isinstance(target_ty, tuple) and target_ty[0] == "Fun"` but this should work
+2. In generate_application, it creates `fun_ty = ("Fun", generate_base_type(rng), target_ty)` - this creates a fresh function type but then generates a term with that type. The issue is the generated fun might not actually have that type.
+
+The main issue with the inspiration is that generate_application creates a random function type and tries to generate a term of that type, but this can fail to produce well-typed terms.
+
+
+I'll develop a more robust approach to generating complex, well-typed lambda calculus terms. The strategy involves carefully constructing function types and ensuring type consistency throughout the generation process. I'll focus on creating a method that can reliably produce larger, more complex terms while maintaining type safety.
+
+The key will be implementing a systematic way to generate function types that guarantee well-typedness, potentially by using a recursive approach that builds types incrementally and validates type compatibility at each step.

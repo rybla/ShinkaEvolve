@@ -1,18 +1,47 @@
-The user is asking me to make changes to improve the performance of the lambda calculus generator. Let me analyze the current state and propose improvements.
+The user is asking me to improve the current program. Let me analyze the current state and the prior program to understand what changes need to be made.
 
-Looking at the current `generate_sample` function:
-1. It only generates literals or simple lambdas
-2. The depth parameter is not being used effectively
-3. No applications are generated
-4. No variables are used
-5. Terms and types are very small
+Looking at the current program in the EVOLVE-BLOCK-START section:
 
-I need to rewrite the generate_sample function to:
-1. Use depth to control complexity
-2. Generate larger types (up to 10 nodes)
-3. Generate larger terms (up to 100 nodes)
-4. Generate applications
-5. Use variables from lambda bindings
-6. Apply lambdas to arguments
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
 
-Let me write a proper implementation.
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+This is a very simple generator that:
+1. Only generates 4 cases (3 base types + 1 lambda)
+2. Has no depth control (the depth parameter is ignored!)
+3. Always uses "x" as the variable name (causing collisions)
+4. Doesn't use variables at all
+5. Doesn't create applications
+6. Creates very small terms
+
+The prior program had better metrics in terms of term size, variable usage, etc. but had a lower combined score (9.24 vs 10.30). Wait, that's confusing - the current program has a HIGHER combined score but worse metrics?
+
+Let me re-read the problem. The current program has:
+- Combined score: 10.30
+- good_ratio: 1.00
+
+The prior program had:
+- Combined score: 9.24
+- good_ratio: 0.82
+
+So the current program has a higher combined score because it has a perfect good_ratio (1.00), meaning all generated terms are well-typed. 
+
+The prior program's lower good_ratio (0.82) dragged down its combined score. I need to maintain perfect type correctness while generating larger, more complex terms. The key is building a smarter generator that uses depth tracking to control complexity, maintains a context of available variables, and strategically generates lambdas and applications while ensuring type consistency throughout.

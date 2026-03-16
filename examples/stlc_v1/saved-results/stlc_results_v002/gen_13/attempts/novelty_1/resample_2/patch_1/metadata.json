@@ -5,10 +5,8 @@
   "patch_attempt": 1,
   "success": false,
   "num_applied": 0,
-  "patch_name": "none",
-  "patch_description": "none",
-  "error_msg": "No changes applied",
-  "timestamp": "2026-03-15T06:00:46.859083",
-  "llm_cost": 0.00258503,
-  "llm_model": null
+  "patch_name": null,
+  "patch_description": null,
+  "error_msg": "LLM response content was None.",
+  "timestamp": "2026-03-15T13:55:13.752167"
 }

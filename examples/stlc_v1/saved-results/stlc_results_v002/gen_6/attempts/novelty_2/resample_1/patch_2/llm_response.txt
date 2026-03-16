@@ -1,20 +1,44 @@
-Let me try again with a proper approach. I need to write a complete new program that improves the metrics while maintaining the same inputs and outputs.
+The user is asking me to improve the performance of the lambda-calculus generator. Let me analyze the current state and propose a targeted improvement.
 
-Let me analyze what needs to be improved:
-1. tm_sizes_average: 1.38 -> needs to be much higher (target ~50+)
-2. ty_sizes_average: 1.38 -> needs to be higher (target ~5-10)
-3. used_vars_proportions_average: 0.00 -> needs to be > 0
-4. applied_lambdas_proportions_average: 0.00 -> needs to be > 0
-5. unique_subterms_proportions_average: 0.15 -> needs to be higher
+Looking at the current code in the EVOLVE-BLOCK-START section:
 
-The current implementation only generates literals or simple lambdas. It doesn't:
-- Use variables from the context
-- Apply lambdas to arguments
-- Create complex types
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
 
-I'll design a new approach:
-1. First generate a type with target size (up to 10 nodes)
-2. Then generate a term that has that type, tracking the context
-3. Use the context to generate variables and applications
+    i = rng.randrange(0, 4 if depth > 0 else 3)
 
-Let me write the code:
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+This code has several problems:
+1. The recursive call `generate_sample(rng)` doesn't pass `depth` or any parameters
+2. It always uses `("Int",)` as the argument type for lambdas
+3. It always uses `"x"` as the variable name, causing variable capture issues
+4. It doesn't generate applications
+5. It doesn't use variables from context
+
+The metrics show:
+- good_ratio: 1.00 (all well-typed)
+- tm_sizes_average: 1.35 (very small)
+- used_vars_proportions_average: 0.00 (no variable usage)
+- applied_lambdas_proportions_average: 0.00 (no lambda applications)
+- unique_subterms_proportions_average: 0.15 (few unique subterms)
+
+I need to improve the code to generate larger, more complex terms while maintaining type correctness.
+
+
+I'll craft a more sophisticated generation strategy that carefully manages type complexity and ensures proper term construction. The approach will involve creating helper functions that can generate increasingly complex types and terms while maintaining type safety and avoiding variable capture.

@@ -1,50 +1,45 @@
-Let me analyze the current program and the performance metrics to understand what improvements are needed.
+Let me analyze the current program and the performance metrics to understand what needs to be improved.
 
 Current metrics:
-- Combined score: 10.28
-- good_ratio: 1.00
-- tm_sizes_average: 1.34
-- ty_sizes_average: 1.34
-- used_vars_proportions_average: 0.00
-- applied_lambdas_proportions_average: 0.00
-- unique_subterms_proportions_average: 0.13
+- Combined score: 10.30
+- good_ratio: 1.00 (all samples are well-formed and well-typed)
+- tm_sizes_average: 1.35 (term size is very small, max is 100)
+- ty_sizes_average: 1.35 (type size is very small, max is 10)
+- used_vars_proportions_average: 0.00 (no variable usage)
+- applied_lambdas_proportions_average: 0.00 (no lambda applications)
+- unique_subterms_proportions_average: 0.15 (low uniqueness)
 
-From the prior programs:
-- Best score: 10.30 (with tm_sizes_average: 1.38, ty_sizes_average: 1.38, unique_subterms_proportions_average: 0.15)
+The key issues are:
+1. Term sizes and type sizes are very small (should be closer to max: 100 for terms, 10 for types)
+2. No variable usage (terms don't use variables introduced by lambdas)
+3. No lambda applications
+4. Low unique subterms
 
-Looking at the requirements:
-- Max type size: 10 nodes
-- Max term size: 100 nodes
-- Better if terms use variables more (apply them to arguments)
-- Better if lambdas are applied to arguments
-- Better if there are more unique subterms (application and lambda sub-terms)
-
-The current implementation has some issues:
-1. The `depth` parameter isn't being used properly - it starts at 10 but is never decremented, so it always uses the full range
-2. It doesn't generate variables or applications, only literals and lambdas
-3. It always uses "Int" as the domain type, which limits variety
-4. Variable names are always "x", which limits unique subterms
+Looking at the current implementation:
+- It only generates literals (Bool, Int, String) or simple lambdas with Int -> ty
+- It always creates a lambda with parameter named "x" and type "Int"
+- The recursive call doesn't pass depth, so it always uses depth=10
+- It never creates applications
+- It never uses variables
 
 To improve:
-1. Use depth properly to control the size of generated types/terms
-2. Generate variables (VarTm) to increase used_vars_proportion
-3. Generate applications (AppTm) to increase applied_lambdas_proportion
-4. Vary the base types (Bool, Int, String) and domain types
-5. Use different variable names to improve unique subterms
+1. Need to properly use the depth parameter to control size
+2. Need to generate applications (AppTm)
+3. Need to track variables and use them
+4. Need to generate more complex types with FunTy
 
-Let me create an improved version that:
-1. Uses depth to control generation
-2. Generates more varied types and terms
-3. Includes variables and applications
+Let me design a better generator:
+
+1. Track available variables (from lambda bindings)
+2. Use depth to control when to stop recursing
+3. Randomly choose between:
+   - Generating literals
+   - Generating variables (from available variables)
+   - Generating lambdas (which add new variables)
+   - Generating applications (which use terms as functions and arguments)
+4. For types, similar approach with depth control
+
+Here's my plan:
 
 
-4. Tracks variable names properly and applies lambda terms to arguments
-
-I need to ensure the function maintains its type signature of (Ty, Tm) and uses the same rng parameter while generating more complex and varied lambda calculus structures that leverage the full range of type and term constructs.
-
-The algorithm should recursively build terms by:
-1. Building base types and literals at depth 0
-2. Creating function types and lambda abstractions at higher depths
-3. Applying variables and function applications to increase complexity
-
-This approach ensures well-typed terms while allowing the depth parameter to control the structural complexity of generated lambda calculus expressions.
+I'll maintain a context of available variables and their types, then recursively generate terms and types while decrementing depth. When depth reaches 0, I'll only generate literals. Otherwise, I'll randomly choose between literals, variables from context, lambdas that introduce new variables, and applications that combine terms. For types, I'll similarly use depth to control complexity, generating base types at depth 0 and function types otherwise.

@@ -1,0 +1,37 @@
+Let me analyze the current situation carefully.
+
+Looking at the top-performing programs:
+1. All three programs are nearly identical
+2. They achieve good_ratio=1.0 (perfect type correctness)
+3. But they fail on:
+   - used_vars_proportions_average = 0.00 (never use variables)
+   - applied_lambdas_proportions_average = 0.00 (never apply lambdas)
+   - unique_subterms_proportions_average ≈ 0.15 (repetitive structures)
+
+The meta-review clearly identifies the problems:
+1. Identity-Lambda Wrapping: Programs create lambdas but never use `Var` to reference the bound variable
+2. No `App` constructor: No function application terms are created
+3. Repetitive nested structures
+
+The key insight is that the current programs are "minimally correct" - they produce valid type-term pairs but don't explore the full expressiveness of the lambda calculus.
+
+What I need to do is craft a prompt that:
+1. Explicitly guides generators to use `Var` terms to reference bound variables
+2. Explicitly guides generators to create `App` terms for function application
+3. Explicitly guides generators to create more diverse subterms
+4. Maintains the depth-controlled approach to ensure good_ratio stays high
+
+The challenge is that adding complexity (Var, App) might break type correctness if not done carefully. The prompt needs to provide concrete algorithmic guidance on how to implement these while maintaining validity.
+
+Key algorithmic patterns to recommend:
+1. Keep depth-controlled base case bias (for good_ratio)
+2. When creating a Lambda, sometimes use Var to reference the bound variable
+3. When creating App, ensure the function type matches the argument type
+4. Track available variables or use a simple approach like always using "x" for single-variable lambdas
+
+Let me write a new prompt that addresses these issues.
+
+# Potential Recommendations
+The following are potential recommendations for the next program generation:
+
+**Apply Weighted Constructor Selection**: Replace the uniform `randrange` with a weighted selection (e.g., `rng.choices`) that favors `Lam` and `App` when `depth` is high and shifts weight toward `LitTm` and `VarTm` as `depth` approaches zero. This strategy maximizes `tm_sizes_average` while maintaining the 1.00 `good_ratio` by ensuring the generator "tapers off" into valid base cases.

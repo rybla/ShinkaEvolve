@@ -1,0 +1,43 @@
+Let me analyze the current program and the performance metrics to understand what needs to be improved.
+
+Current performance metrics:
+- Combined score: 10.28
+- good_ratio: 1.00 (perfect - all terms are well-typed)
+- tm_sizes_average: 1.34 (term size is small)
+- ty_sizes_average: 1.34 (type size is small)
+- used_vars_proportions_average: 0.00 (no variables are being used!)
+- applied_lambdas_proportions_average: 0.00 (no lambdas are being applied!)
+- unique_subterms_proportions_average: 0.14 (some unique subterms)
+
+The key issues I see:
+1. `used_vars_proportions_average: 0.00` - The generator never uses variables that are introduced by lambdas
+2. `applied_lambdas_proportions_average: 0.00` - The generator never applies lambdas to arguments
+3. Small term and type sizes (1.34)
+
+Looking at the current implementation:
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+The current implementation:
+1. Only creates literals (Bool, Int, String) or nested lambdas with Int type
+
+
+2. Never applies lambdas to arguments
+3. Never references variables from the context
+
+I need to modify the generator to track bound variables in a context and introduce application operations that use those variables. This will increase the term sizes, variable usage, and lambda application metrics while maintaining well-typed terms.

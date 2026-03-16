@@ -1,0 +1,36 @@
+Let me analyze the current program and the performance metrics to understand what needs to be improved.
+
+Current metrics:
+- good_ratio: 1.00 (excellent - all terms are well-typed)
+- tm_sizes_average: 1.38
+- ty_sizes_average: 1.38
+- used_vars_proportions_average: 0.00 (needs improvement - variables are never used)
+- applied_lambdas_proportions_average: 0.00 (needs improvement - lambdas are never applied to arguments)
+- unique_subterms_proportions_average: 0.15 (needs improvement - repetitive structures)
+
+The key issues are:
+1. `used_vars_proportions_average` is 0.00 - the program never uses `Var` to reference bound variables
+2. `applied_lambdas_proportions_average` is 0.00 - the program never creates `App` terms
+3. `unique_subterms_proportions_average` is low (0.15) - repetitive structures
+
+Looking at the current algorithm:
+- When `depth > 0`, it randomly chooses between 4 options: Bool literal, Int literal, String literal, or a Fun type with a lambda
+- When `depth <= 0`, it only chooses from 3 options (no Fun type)
+- The lambda case always creates `("Lam", "x", ("Int",), tm)` where `tm` is from a recursive call
+- It never decrements `depth`!
+
+Problems with current approach:
+1. It never creates `Var` terms - it always returns literals or lambdas wrapping more literals
+2. It never creates `App` terms to apply lambdas to arguments
+3. It creates repetitive nested structures (always "x" as the variable name)
+
+To improve:
+1. **Use variables**: When creating a lambda, sometimes use `Var` to reference the bound variable in the body
+
+
+2. **Apply lambdas**: Create `App` terms to apply functions to arguments
+3. **Unique subterms**: Generate different branches rather than always nesting the same structure
+
+I need to implement type-first generation to ensure type correctness. When generating a function type like `('Fun', src, tgt)`, I should first generate a random source and target type, then recursively generate a function term of that type and an argument term matching the source type, finally combining them with an `App` term. The core challenge is that to create `App f arg`, I need both `f : A -> B` and `arg : A`, so I must generate the function and argument types together to maintain well-formedness.
+
+I'll start by generating a type `t` using a type-generation function, then based on what type I get, I'll generate an appropriate term - for base types I'll return literals, for function types I'll either return a lambda or apply an existing function to an argument.

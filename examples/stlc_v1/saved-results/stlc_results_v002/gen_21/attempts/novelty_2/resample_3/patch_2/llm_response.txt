@@ -1,0 +1,11 @@
+The user is telling me that my previous edit was not successful and there was an error extracting code from a patch string. Let me provide a clean response with the proper format.
+
+Let me analyze what I need to do:
+1. Keep the good_ratio at 1.00 (most important)
+2. Try to improve used_vars_proportions_average (currently 0.00)
+3. Try to improve applied_lambdas_proportions_average (currently 0.00)
+4. Try to improve unique_subterms_proportions_average (currently 0.15)
+
+I'll rewrite the generate_sample function to add variable tracking and usage while maintaining correctness.
+
+Let me provide the complete new program:
