@@ -1,0 +1,44 @@
+The user is asking me to improve the current program. Let me analyze the current metrics and think about what changes could improve the score.
+
+Current metrics:
+- Combined score: 10.65
+- good_ratio: 1.00 (perfect - can't improve this)
+- tm_sizes_average: 1.92
+- ty_sizes_average: 1.32
+- used_vars_proportions_average: 0.12
+- applied_lambdas_proportions_average: 0.12
+- unique_subterms_proportions_average: 0.26
+
+Looking at the system message about top-performing programs:
+- They all have good_ratio = 1.0
+- They use a depth-limited approach
+- They use type-term coupling (generate both together)
+- They use a fixed parameter type (Int) for lambdas
+- They have a 3:2 literal-to-function ratio
+- They have ~12% used_vars_proportions and applied_lambdas_proportions
+
+The current program actually follows most of these patterns. But let me look at what could improve the unique_subterms_proportions_average - currently at 0.26.
+
+The key issue might be that all literals are hardcoded:
+- Bool always returns True
+- Int always returns 27  
+- String always returns "hello world"
+
+To improve unique_subterms, I should randomize these literal values.
+
+Let me also think about the structure more carefully:
+- At depth 0: 3 literal options
+- At depth > 0: 5 options (3 literals + 1 Lam + 1 App)
+
+This is already a 3:2 ratio which matches the top programs.
+
+Let me try a different approach - I'll randomize the literal values while keeping the structure the same. This should improve unique_subterms while maintaining good_ratio.
+
+I need to:
+1. Randomize Bool values (True/False)
+2. Randomize Int values (range of integers)
+
+
+3. Randomize String values (different strings)
+
+Let me write the new code:

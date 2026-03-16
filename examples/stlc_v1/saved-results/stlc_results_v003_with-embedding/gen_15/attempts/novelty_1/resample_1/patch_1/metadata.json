@@ -1,0 +1,14 @@
+{
+  "generation": 15,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 2,
+  "patch_name": "variable_hungry_base_case",
+  "patch_description": "To improve the `used_vars_proportions_average` metric, I am modifying the `budget <= 1` base case to prioritize selecting a variable from the context whenever a type-compatible one is available. By increasing the probability of variable selection to 90% at the leaves, we ensure that the variables introduced by the redex-injection and lambda-abstraction strategies are actually consumed in the final term. I am also refining the `app` case to use a more aggressive budget split and increasing the redex injection probability to further boost the `applied_lambdas_proportions_average`.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T20:19:21.276040",
+  "llm_cost": 0.0096595,
+  "llm_model": null
+}

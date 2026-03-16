@@ -1,0 +1,44 @@
+Let me analyze the current program and the prior programs to understand what's happening and how to improve.
+
+## Current Program Analysis
+
+The current program has:
+- good_ratio: 1.00 (perfect)
+- tm_sizes_average: 1.31
+- ty_sizes_average: 1.31
+- used_vars_proportions_average: 0.00 (zero!)
+- applied_lambdas_proportions_average: 0.00 (zero!)
+- unique_subterms_proportions_average: 0.13
+
+The key issue is that:
+1. used_vars_proportions_average = 0.00 - no variables are being used
+2. applied_lambdas_proportions_average = 0.00 - no applications are being generated
+
+Looking at the code:
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+    if i == 0:
+        return (("Bool",), ("Bool", rng.choice([True, False])))
+    elif i == 1:
+        return (("Int",), ("Int", rng.randint(0, 100)))
+    elif i == 2:
+        return (("String",), ("String", rng.choice(["hello", "world", "test", "foo", "bar"])))
+    else:
+        ty, tm = generate_sample(rng)  # Note: depth is not passed!
+        arg_name = f"x{rng.randint(0, 100)}"
+        arg_ty = rng.choice([("Int",), ("Bool",), ("String",)])
+        return (
+            ("Fun", arg_ty, ty),
+            ("Lam", arg_name, arg_ty, tm),
+        )
+
+
+```
+
+The core problem is that when depth reaches 0, only literals are available—no lambdas or applications can be generated. Additionally, the depth parameter gets discarded in recursive calls, creating infinite recursion. Looking at the prior programs that achieved higher scores, particularly the top performers with scores around 10.64, I can see they had used_vars_proportions_average around 0.11 and applied_lambdas_proportions_average around 0.11. This suggests I need to properly handle depth reduction and enable variable usage within lambda bodies.
+
+The approach involves using a depth parameter to control when to stop generating lambdas and applications—allowing 5 options (3 literals + Lam + App) when depth remains, but only 3 literal options at depth 0. I also need to track variable context so lambdas can reference bound variables, and generate type-term pairs consistently to maintain correctness. Additionally, I should construct actual application terms rather than just wrapping lambdas in other lambdas.
+
+```
+The core strategy is implementing depth-limited generation with recursive type-aware term construction, ensuring proper variable scoping while avoiding infinite recursion by terminating at depth 0. The depth=10 parameter should be passed through to recursive calls to control complexity.

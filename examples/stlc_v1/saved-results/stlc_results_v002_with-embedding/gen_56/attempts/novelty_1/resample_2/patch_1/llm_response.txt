@@ -1,0 +1,109 @@
+Looking at the current program and its metrics, I need to understand what's happening and how to improve it.
+
+Current metrics:
+- Combined score: 10.65
+- good_ratio: 1.00 (perfect correctness - this is key!)
+- tm_sizes_average: 1.92
+- ty_sizes_average: 1.32
+- used_vars_proportions_average: 0.12
+- applied_lambdas_proportions_average: 0.12
+- unique_subterms_proportions_average: 0.26
+
+The key insight from the analysis is that good_ratio = 1.00 is perfect - the program generates only well-typed terms. This is the primary driver of the score.
+
+Looking at the current code:
+1. At depth 0: generates literals only (Bool, Int, String)
+2. At depth > 0: 5 options - 3 literals + 1 Lam + 1 App
+3. For Lam: always uses ("Int",) as the type annotation, adds "x" to context
+4. For App: creates a lambda that returns its argument, then applies it
+
+The issue is that the current code:
+1. Always uses "x" as the variable name in lambdas
+2. In App, always creates `("Var", "x")` - which is the bound variable of the lambda
+3. Doesn't actually use variables from the context in a meaningful way
+
+Looking at the metrics:
+- used_vars_proportions_average: 0.12 - this comes from the App case always creating ("Var", "x")
+- applied_lambdas_proportions_average: 0.12 - this is the App case
+
+The analysis suggests: "Implement Dynamic Variable Selection from Context"
+
+Let me think about what would improve the score:
+
+1. **Increase unique_subterms_proportions_average**: This measures how unique the subterms are. Currently at 0.26. We could improve this by:
+   - Using different literal values (not always True, 27, "hello world")
+   - Using different variable names
+   - Having more diverse term structures
+
+2. **Increase used_vars_proportions_average**: Currently at 0.12. We could:
+   - Actually use variables from context (not just the bound variable "x")
+   - Add a Var case that picks from context
+
+3. **Increase tm_sizes_average**: Currently at 1.92 (quite small). We could:
+   - Increase the probability of generating Lam and App (non-literal terms)
+   - Use deeper recursion
+
+The main improvement would be to add a Var case that actually uses variables from the context. Currently, the only Var that gets generated is ("Var", "x") in the App case, which is the bound variable of the lambda. We should add a case that picks from the context to create more diverse and interesting terms.
+
+Let me design the improvement:
+
+1. Add a Var case that picks from context when available
+2. Use different literal values to increase unique_subterms
+3. Adjust the probabilities to favor more complex terms
+
+Here's my proposed change:
+
+```python
+def generate_sample(rng: random.Random, depth=10, context=None) -> Tuple[Ty, Tm]:
+    if context is None:
+        context = []
+    
+    # At depth 0, only generate literals
+    if depth == 0:
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", True))
+        elif i == 1:
+            return (("Int",), ("Int", 27))
+        else:
+            return (("String",), ("String", "hello world"))
+    
+    # At depth > 0, choose from literals, Var, Lam, and App
+    i = rng.randrange(0, 6)  # 6 options
+    
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    elif i == 3:
+        # Generate variable from context
+        if context:
+            var_name = rng.choice(context)
+            return (("Int",), ("Var", var_name))
+        else:
+            # Fallback to literal if no context
+            return (("Int",), ("Int", 27))
+    elif i == 4:
+        # Generate lambda - always recurse to build more complex terms
+        ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+        return (("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm))
+    else:
+        # Generate application - apply a lambda to an argument
+        arg_ty, arg_tm = generate_sample(rng, depth - 1, context)
+        func_ty = ("Fun", arg_ty, arg_ty)
+        func_tm = ("Lam", "x", arg_ty, ("Var", "x"))
+        return (arg_ty, ("App", func_tm, arg_tm))
+```
+
+The key changes:
+1. Added a Var case (i == 3) that picks from context when available
+2. Increased the number of options from 5 to 6 to accommodate the new case
+3. Maintained the existing structure for Lam and App cases
+4. Ensured type safety by returning appropriate types for each case
+
+This approach should improve the metrics by:
+- Increasing used_vars_proportions_average (more Var usage)
+- Potentially increasing unique_subterms_proportions_average (more diverse terms)
+- Maintaining good_ratio at 1.00 (still generating well-typed terms)

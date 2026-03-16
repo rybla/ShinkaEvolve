@@ -1,0 +1,14 @@
+{
+  "generation": 10,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "context_aware_app_types_and_recency_bias",
+  "patch_description": "This update introduces \"Context-Aware\" argument type selection for `App` nodes. Instead of always generating a random `arg_ty`, it now attempts to pick a type from the existing context with a 50% probability. This significantly increases the likelihood that variables defined in `Lam` nodes can actually be used as arguments in `App` nodes, improving the `used_vars_proportions` metric. Additionally, I've refined the recency bias to use a weighted distribution over the entire context, favoring newer variables while still allowing older ones to be picked, and increased the base weights for `App` and `Lam` to push term sizes closer to the limit of 100.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T20:08:43.348690",
+  "llm_cost": 0.0097955,
+  "llm_model": null
+}

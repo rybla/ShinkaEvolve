@@ -1,0 +1,40 @@
+Let me analyze the current program and the prior programs more carefully to understand what improvement to make.
+
+Current program:
+- Score: 10.28
+- good_ratio: 1.00 (perfect correctness)
+- tm_sizes_average: 1.33 (very small)
+- used_vars_proportions_average: 0.00 (no variables)
+- applied_lambdas_proportions_average: 0.00 (no applications)
+- unique_subterms_proportions_average: 0.14
+
+The current program generates:
+1. Bool literals
+2. Int literals
+3. String literals
+4. Lambda terms (but depth is not passed to recursive call)
+
+The key issue is that the program:
+1. Doesn't pass depth to recursive calls (so it generates infinite lambdas)
+2. Doesn't generate applications
+3. Doesn't use variables
+
+Looking at the best prior programs, they achieved scores around 10.6 by:
+1. Properly using depth for termination
+2. Generating applications
+3. Using variables from context
+
+Let me propose a targeted improvement that adds application generation while maintaining correctness.
+
+The key insight is that we need to:
+1. Keep good_ratio at 1.00 (correctness is most important)
+2. Increase tm_sizes_average by generating more complex terms
+3. Add applied_lambdas_proportions by generating App terms
+4. Potentially add used_vars_proportions by tracking context
+
+Let me create a more sophisticated generator that:
+1. Passes depth to recursive calls for termination
+2. Generates applications in addition to lambdas
+3. Tracks context for potential variable usage
+
+I'll modify the generate_sample function to be more sophisticated.

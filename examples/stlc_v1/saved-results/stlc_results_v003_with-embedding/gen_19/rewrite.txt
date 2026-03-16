@@ -1,0 +1,116 @@
+from typing import Literal, Tuple, List
+import random
+
+type Ty = BoolTy | IntTy | StringTy | FunTy
+type BoolTy = Tuple[Literal["Bool"]]
+type IntTy = Tuple[Literal["Int"]]
+type StringTy = Tuple[Literal["String"]]
+type FunTy = Tuple[Literal["Fun"], Ty, Ty]
+
+type Tm = LitTm | VarTm | LamTm | AppTm
+type LitTm = (
+    Tuple[Literal["Bool"], bool]
+    | Tuple[Literal["Int"], int]
+    | Tuple[Literal["String"], str]
+)
+type VarTm = Tuple[Literal["Var"], str]
+type LamTm = Tuple[Literal["Lam"], str, Ty, Tm]
+type AppTm = Tuple[Literal["App"], Tm, Tm]
+
+# EVOLVE-BLOCK-START
+
+def generate_sample(rng: random.Random) -> Tuple[Ty, Tm]:
+    """
+    Generates STLC samples with high redex density and variable reuse 
+    using asymmetric budget splitting and power-law variable selection.
+    """
+    var_counter = 0
+
+    def get_unique_name(prefix: str) -> str:
+        nonlocal var_counter
+        var_counter += 1
+        return f"{prefix}_{var_counter}_{rng.randint(0, 100)}"
+
+    def gen_type(size_limit: int) -> Ty:
+        if size_limit <= 1 or rng.random() < 0.15:
+            return rng.choice([("Bool",), ("Int",), ("String",)])
+        split = rng.randint(1, max(1, size_limit - 1))
+        return ("Fun", gen_type(split), gen_type(size_limit - split - 1))
+
+    def gen_term(target_ty: Ty, ctx: List[Tuple[str, Ty]], budget: int) -> Tm:
+        valid_vars = [name for name, t in ctx if t == target_ty]
+
+        # Base Case: Force variable usage or literals
+        if budget <= 1:
+            if valid_vars and rng.random() < 0.85:
+                # Power-law selection: favor the most recently bound variables
+                weights = [(i + 1)**2 for i in range(len(valid_vars))]
+                return ("Var", rng.choices(valid_vars, weights=weights, k=1)[0])
+            
+            if target_ty == ("Bool",): return ("Bool", rng.choice([True, False]))
+            if target_ty == ("Int",): return ("Int", rng.randint(-100, 100))
+            if target_ty == ("String",): return ("String", rng.choice(["x", "y", "z"]))
+            
+            if target_ty[0] == "Fun":
+                v = get_unique_name("v")
+                return ("Lam", v, target_ty[1], gen_term(target_ty[2], ctx + [(v, target_ty[1])], 0))
+            return ("Int", 0)
+
+        # Weighted Constructor Selection
+        choices, weights = [], []
+        if target_ty[0] == "Fun":
+            choices.append("lam"); weights.append(30)
+        if valid_vars:
+            choices.append("var"); weights.append(40)
+        if budget > 2:
+            choices.append("app"); weights.append(60)
+        if target_ty[0] != "Fun" or not choices:
+            choices.append("lit"); weights.append(5)
+
+        mode = rng.choices(choices, weights=weights)[0]
+
+        if mode == "lam":
+            v_name = get_unique_name("x")
+            return ("Lam", v_name, target_ty[1], gen_term(target_ty[2], ctx + [(v_name, target_ty[1])], budget - 1))
+
+        elif mode == "var":
+            weights = [(i + 1)**2 for i in range(len(valid_vars))]
+            return ("Var", rng.choices(valid_vars, weights=weights, k=1)[0])
+
+        elif mode == "app":
+            # Context-Aware Type Selection (75% bias)
+            if ctx and rng.random() < 0.75:
+                arg_ty = rng.choice(ctx)[1]
+            else:
+                arg_ty = gen_type(rng.randint(1, 2))
+
+            # Asymmetric Budget Allocation: 70% to the function side
+            # This encourages deeper trees and more complex higher-order logic
+            split = int(budget * 0.7)
+            split = max(1, min(budget - 1, split))
+
+            # Scaled Redex Injection
+            redex_prob = 0.4 + (budget / 180.0)
+            if rng.random() < redex_prob and budget > 4:
+                v_name = get_unique_name("r")
+                # Force an applied lambda
+                f_tm = ("Lam", v_name, arg_ty, gen_term(target_ty, ctx + [(v_name, arg_ty)], split))
+                a_tm = gen_term(arg_ty, ctx, budget - split - 1)
+                return ("App", f_tm, a_tm)
+            else:
+                return ("App", 
+                        gen_term(("Fun", arg_ty, target_ty), ctx, split), 
+                        gen_term(arg_ty, ctx, budget - split - 1))
+
+        else: # lit
+            if target_ty == ("Bool",): return ("Bool", rng.choice([True, False]))
+            if target_ty == ("Int",): return ("Int", rng.randint(-1000, 1000))
+            return ("String", f"s_{rng.randint(0, 999)}")
+
+    # Maximize complexity within constraints
+    final_ty = gen_type(10)
+    final_tm = gen_term(final_ty, [], 100)
+
+    return final_ty, final_tm
+
+# EVOLVE-BLOCK-END

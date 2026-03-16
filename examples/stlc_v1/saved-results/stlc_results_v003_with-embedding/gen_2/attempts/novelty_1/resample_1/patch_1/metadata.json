@@ -1,0 +1,14 @@
+{
+  "generation": 2,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "structured_well_typed_generator",
+  "patch_description": "The previous generator was extremely limited, producing mostly constants and simple identity-like functions with zero variable usage or applications. \n\nThis update introduces a robust, goal-oriented generator that:\n1. Generates complex types (up to 10 nodes) using a budget-based approach.\n2. Generates well-typed terms of a target type within a specific context (variable environment).\n3. Prefers `App` and `Lam` nodes to increase term size and complexity.\n4. Intelligently selects variables from the context to maximize variable usage.\n5. Implements a size-tracking mechanism to stay within the 100-node limit while pushing for larger terms.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T20:07:46.667055",
+  "llm_cost": 0.005286,
+  "llm_model": null
+}

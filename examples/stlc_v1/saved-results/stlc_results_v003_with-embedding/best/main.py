@@ -1,0 +1,171 @@
+from typing import Literal, Tuple
+import random
+import tqdm
+
+"""
+`Ty` and `Tm` define the shape of a simply-typed lambda-calculus deeply embedded in Python.
+
+Each value, be it the encoding of a type or a term, is a tuple where the first component of the tuple is the "constructor" and the rest of the components are the arguments. For example, this value encodes the `Bool` type:
+
+    ('Bool',)
+
+As another example, this value encodes the function type from `Bool` to `Bool`, which is often written `Bool -> Bool`:
+
+    ('Fun', ('Bool',), ('Bool',))
+
+As another example, this value encodes the function term, which takes a single `String` input and just returns that input (also known as the identity function):
+
+    ('Lam', 'x', ('String',), ('Var', 'x'))
+
+Note that ALL lambda terms must have a type annotation as the 1st argument, where in the above example the type annotation was the ('String',).
+
+Closely read the above below type aliases to understand the complete structure of this deep embedding of the lambda calculus in Python.
+"""
+
+type Ty = BoolTy | IntTy | StringTy | FunTy
+type BoolTy = Tuple[Literal["Bool"]]
+type IntTy = Tuple[Literal["Int"]]
+type StringTy = Tuple[Literal["String"]]
+type FunTy = Tuple[Literal["Fun"], Ty, Ty]
+
+
+type Tm = LitTm | VarTm | LamTm | AppTm
+type LitTm = (
+    Tuple[Literal["Bool"], bool]
+    | Tuple[Literal["Int"], int]
+    | Tuple[Literal["String"], str]
+)
+type VarTm = Tuple[Literal["Var"], str]
+type LamTm = Tuple[Literal["Lam"], str, Ty, Tm]
+type AppTm = Tuple[Literal["App"], Tm, Tm]
+
+
+# EVOLVE-BLOCK-START
+
+def generate_sample(rng: random.Random) -> Tuple[Ty, Tm]:
+    """
+    Generates complex, well-typed STLC terms by maximizing local variable 
+    re-use and injecting redexes at high frequency.
+    """
+    var_counter = 0
+
+    def get_unique_name(prefix: str, depth: int) -> str:
+        nonlocal var_counter
+        var_counter += 1
+        return f"{prefix}_{depth}_{var_counter}_{rng.randint(0, 5000)}"
+
+    def gen_type(nodes: int) -> Ty:
+        # Bias towards functions to enable more Lam/App nodes
+        if nodes <= 1 or rng.random() < 0.1:
+            return rng.choice([("Bool",), ("Int",), ("String",)])
+        split = rng.randint(1, nodes - 1)
+        return ("Fun", gen_type(split), gen_type(nodes - split))
+
+    def gen_term(ty: Ty, ctx: List[Tuple[str, Ty]], budget: int) -> Tm:
+        valid_vars = [name for name, t in ctx if t == ty]
+
+        # Terminal case logic
+        if budget <= 1:
+            if valid_vars:
+                # 4th-Power Recency Bias: Hard focus on the most local context
+                weights = [(i + 1)**4 for i in range(len(valid_vars))]
+                return ("Var", rng.choices(valid_vars, weights=weights, k=1)[0])
+
+            if ty[0] == "Fun":
+                v = get_unique_name("f", len(ctx))
+                return ("Lam", v, ty[1], gen_term(ty[2], ctx + [(v, ty[1])], 0))
+
+            if ty == ("Bool",): return ("Bool", rng.choice([True, False]))
+            if ty == ("Int",): return ("Int", rng.randint(-50, 50))
+            return ("String", "val")
+
+        # Selective weighting to drive metrics
+        choices, weights = [], []
+        if ty[0] == "Fun":
+            # Higher weight for Lambda to increase nesting
+            choices.append("lam"); weights.append(35)
+        if valid_vars:
+            # Frequent variable usage
+            choices.append("var"); weights.append(45)
+        if budget > 2:
+            # Apps are the primary driver of complexity and redexes
+            choices.append("app"); weights.append(75)
+        
+        if not choices or (ty[0] != "Fun" and rng.random() < 0.05):
+            choices.append("lit"); weights.append(5)
+
+        mode = rng.choices(choices, weights=weights)[0]
+
+        if mode == "lam":
+            v_name = get_unique_name("x", len(ctx))
+            return ("Lam", v_name, ty[1], gen_term(ty[2], ctx + [(v_name, ty[1])], budget - 1))
+
+        elif mode == "var":
+            v_weights = [(i + 1)**4 for i in range(len(valid_vars))]
+            return ("Var", rng.choices(valid_vars, weights=v_weights, k=1)[0])
+
+        elif mode == "app":
+            # CATS: 90% chance to reuse a type from context to guarantee variable access
+            if ctx and rng.random() < 0.90:
+                arg_ty = rng.choice(ctx)[1]
+            else:
+                arg_ty = gen_type(rng.randint(2, 4))
+
+            # Scaled Redex Injection
+            redex_prob = 0.60 + (budget / 120.0)
+            split = int(budget * 0.75)
+
+            if rng.random() < redex_prob and budget > 4:
+                v_name = get_unique_name("r", len(ctx))
+                # Explicit redex (applied lambda)
+                f_tm = ("Lam", v_name, arg_ty, gen_term(ty, ctx + [(v_name, arg_ty)], split))
+                
+                # Forced argument variable usage (95%)
+                arg_vars = [n for n, t in ctx if t == arg_ty]
+                if arg_vars and rng.random() < 0.95:
+                    a_weights = [(i + 1)**4 for i in range(len(arg_vars))]
+                    a_tm = ("Var", rng.choices(arg_vars, weights=a_weights, k=1)[0])
+                else:
+                    a_tm = gen_term(arg_ty, ctx, budget - split - 1)
+                return ("App", f_tm, a_tm)
+            else:
+                # Standard App
+                f_tm = gen_term(("Fun", arg_ty, ty), ctx, split)
+                
+                # Even in standard app, prefer passing a variable as an argument
+                arg_vars = [n for n, t in ctx if t == arg_ty]
+                if arg_vars and rng.random() < 0.85:
+                    a_weights = [(i + 1)**4 for i in range(len(arg_vars))]
+                    a_tm = ("Var", rng.choices(arg_vars, weights=a_weights, k=1)[0])
+                else:
+                    a_tm = gen_term(arg_ty, ctx, budget - split - 1)
+                return ("App", f_tm, a_tm)
+
+        else: # lit
+            if ty == ("Bool",): return ("Bool", rng.choice([True, False]))
+            if ty == ("Int",): return ("Int", rng.randint(-999, 999))
+            return ("String", f"str_{rng.randint(0, 999)}")
+
+    # Objective: Type size ~10, Term size ~100
+    target_ty = gen_type(10)
+    target_tm = gen_term(target_ty, [], 100)
+    return target_ty, target_tm
+
+# EVOLVE-BLOCK-END
+
+# This part remains fixed (not evolved)
+
+import lc
+
+
+def run() -> lc.RunOutput:
+    """Run the analysis"""
+
+    size = 1000
+    rng = random.Random()
+
+    return lc.run(
+        size=size,
+        rng=rng,
+        generate_sample=generate_sample,
+    )

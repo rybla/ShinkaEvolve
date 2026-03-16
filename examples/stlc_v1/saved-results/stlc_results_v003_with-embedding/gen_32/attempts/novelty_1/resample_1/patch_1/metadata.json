@@ -1,0 +1,14 @@
+{
+  "generation": 32,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "cats_cubic_budget_scaled_generator",
+  "patch_description": "This generator combines Context-Aware Type Selection (CATS) with a Budget-Scaled Redex Probability and Cubic Recency Bias for variable selection. \n\nKey improvements:\n1. **CATS**: 85% probability to select argument types from the existing context, ensuring that `App` nodes can more frequently resolve to `Var` or `Redex` nodes.\n2. **Cubic Recency Bias**: Upgraded from quadratic to cubic bias `(index + 1)**3` to more aggressively favor local variables, which is crucial for maintaining high `used_vars` metrics in deep ASTs.\n3. **Asymmetric 70/30 Budget**: Consistently applies the 70% budget rule to the function/body branch of applications and redexes, driving term depth.\n4. **Dynamic Redex Injection**: The probability of injecting a redex scales with the remaining budget (`0.55 + budget/150`), ensuring complex structures early on.\n5. **Forced Variable Arguments**: When a redex is created, there's a 90% probability to use a variable for the argument if a type-match exists in the context, directly boosting variable usage metrics.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T20:22:10.521664",
+  "llm_cost": 0.013919,
+  "llm_model": null
+}

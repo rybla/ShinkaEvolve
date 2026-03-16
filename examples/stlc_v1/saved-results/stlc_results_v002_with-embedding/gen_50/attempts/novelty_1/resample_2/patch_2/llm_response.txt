@@ -1,0 +1,47 @@
+The user mentioned that the previous edit was not successful. Let me look at the current program more carefully and propose a targeted improvement.
+
+Looking at the current program:
+- It generates simple terms with good_ratio=1.00 (correct types)
+- But terms are very small (tm_sizes_average: 1.31)
+- No variables are used (used_vars_proportions_average: 0.00)
+- No applications (applied_lambdas_proportions_average: 0.00)
+
+From the analysis provided at the start, the best programs had:
+- good_ratio = 1.0 (must be perfect)
+- used_vars_proportions_average around 0.11
+- applied_lambdas_proportions_average around 0.11
+
+The key to getting higher scores is to generate more complex terms with:
+1. Variables being used (from context)
+2. Lambda applications
+
+The current program only generates literals and simple lambdas. It doesn't generate App nodes or use variables.
+
+Let me propose a change that adds:
+1. Proper depth-limited recursion (to control term size)
+2. Context tracking to use variables
+3. Application (App) generation
+
+I need to be careful to maintain good_ratio = 1.0, which means type consistency must be maintained.
+
+Looking at the current code:
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+    if i == 0:
+        return (("Bool",), ("Bool", rng.choice([True, False])))
+    elif i == 1:
+        return (("Int",), ("Int", rng.randint(0, 100)))
+    elif i == 2:
+        return (("String",), ("String", rng.choice(["hello", "world", "test", "foo", "bar"])))
+    else:
+        ty, tm = generate_sample(rng)  # BUG: depth not passed!
+        arg_name = f"x{rng.randint(0, 100)}"
+        arg_ty = rng.choice([("Int",), ("Bool",), ("String",)])
+        return (
+            ("Fun", arg_ty, ty),
+            ("Lam", arg_name, arg_ty, tm),
+        )
+```
+
+The main problem is that `generate_sample(rng)` doesn't pass depth, so recursion never terminates properly. Additionally, there's no mechanism to use variables from context or generate applications. I need to add depth parameter passing and introduce App generation to create more complex, well-typed terms.

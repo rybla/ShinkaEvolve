@@ -1,0 +1,85 @@
+<NAME>
+cubic_recency_and_deep_redex_bias
+</NAME>
+
+<DESCRIPTION>
+Optimizing for `used_vars_proportions` and `applied_lambdas_proportions` by increasing the recency bias exponent from 2 to 3 (cubic bias) and raising the context-aware type selection (CATS) probability to 85%. Additionally, I am increasing the redex injection probability from a static 65% to a dynamic probability based on the remaining budget, while forcing variable arguments more aggressively (90% chance) in redex nodes to maximize both metrics simultaneously.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+        # If budget is exhausted, must return var or lit
+        if budget <= 1:
+            if valid_vars and rng.random() < 0.95:
+                v_weights = [(i + 1)**2 for i in range(len(valid_vars))]
+                return ("Var", rng.choices(valid_vars, weights=v_weights, k=1)[0])
+            if ty[0] == "Fun":
+=======
+        # If budget is exhausted, must return var or lit
+        if budget <= 1:
+            if valid_vars and rng.random() < 0.95:
+                # Cubic Recency Bias: Favor the most recently bound variables much more strongly
+                v_weights = [(i + 1)**3 for i in range(len(valid_vars))]
+                return ("Var", rng.choices(valid_vars, weights=v_weights, k=1)[0])
+            if ty[0] == "Fun":
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+        if mode == "var":
+            v_weights = [(i + 1)**2 for i in range(len(valid_vars))]
+            return ("Var", rng.choices(valid_vars, weights=v_weights, k=1)[0])
+
+        if mode == "app":
+            if ctx and rng.random() < 0.75:
+                arg_ty = rng.choice(ctx)[1]
+            else:
+                arg_ty = gen_type(rng.randint(1, 2))
+
+            # Asymmetric Budget Split (The 0.7 Rule)
+            split = int(budget * 0.7)
+
+            # Explicit Redex Injection (65% base chance)
+            if rng.random() < 0.65 and budget > 4:
+                var_counter += 1
+                v_name = f"r_{var_counter}_{rng.randint(0,1000)}"
+                f_tm = ("Lam", v_name, arg_ty, gen_term(ty, ctx + [(v_name, arg_ty)], split))
+
+                # Boost used_vars: try to use an existing var for the argument
+                arg_vars = [n for n, t in ctx if t == arg_ty]
+                if arg_vars and rng.random() < 0.85:
+                    a_weights = [(i + 1)**2 for i in range(len(arg_vars))]
+                    a_tm = ("Var", rng.choices(arg_vars, weights=a_weights, k=1)[0])
+                else:
+                    a_tm = gen_term(arg_ty, ctx, budget - split - 1)
+=======
+        if mode == "var":
+            v_weights = [(i + 1)**3 for i in range(len(valid_vars))]
+            return ("Var", rng.choices(valid_vars, weights=v_weights, k=1)[0])
+
+        if mode == "app":
+            # Higher CATS probability (85%) to ensure argument types exist in context
+            if ctx and rng.random() < 0.85:
+                arg_ty = rng.choice(ctx)[1]
+            else:
+                arg_ty = gen_type(rng.randint(1, 2))
+
+            # Asymmetric Budget Split (The 0.7 Rule)
+            split = int(budget * 0.7)
+
+            # Budget-Scaled Redex Injection: High chance of redex when budget is high
+            redex_prob = 0.55 + (budget / 150.0)
+            if rng.random() < redex_prob and budget > 4:
+                var_counter += 1
+                v_name = f"r_{var_counter}_{rng.randint(0,1000)}"
+                f_tm = ("Lam", v_name, arg_ty, gen_term(ty, ctx + [(v_name, arg_ty)], split))
+
+                # Boost used_vars: try to use an existing var for the argument
+                arg_vars = [n for n, t in ctx if t == arg_ty]
+                if arg_vars and rng.random() < 0.90:
+                    a_weights = [(i + 1)**3 for i in range(len(arg_vars))]
+                    a_tm = ("Var", rng.choices(arg_vars, weights=a_weights, k=1)[0])
+                else:
+                    a_tm = gen_term(arg_ty, ctx, budget - split - 1)
+>>>>>>> REPLACE
+
+</DIFF>

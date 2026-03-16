@@ -1,0 +1,14 @@
+{
+  "generation": 3,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "optimize_term_generation_for_size_and_usage",
+  "patch_description": "To improve the combined score, we need to significantly increase the term size (currently only ~9, while 100 is allowed) and variable usage. \n\nImprovements:\n1.  **Iterative Deepening/Budget Management**: Change `gen_term` to more effectively use the budget. The previous `budget // 2` was too aggressive and led to small terms.\n2.  **Variable Usage**: When generating terms, prioritize using recently bound variables to increase `used_vars_proportions_average`.\n3.  **Application Pressure**: To increase `applied_lambdas_proportions_average`, we specifically generate applications where the left side is a forced lambda (a \"beta-redex\") when the budget allows.\n4.  **Unique Subterms**: Increase variety in literals and variable names.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T20:07:58.651253",
+  "llm_cost": 0.0064055,
+  "llm_model": null
+}

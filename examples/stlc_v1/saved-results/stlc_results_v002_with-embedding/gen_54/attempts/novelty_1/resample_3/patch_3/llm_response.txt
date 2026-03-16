@@ -1,0 +1,31 @@
+The user is saying my previous edit was not successful. Let me look at what happened. I provided analysis but didn't actually provide a valid SEARCH/REPLACE block. Let me actually provide the edit now.
+
+Looking at the current program, I want to make a targeted improvement. Let me think about what could help:
+
+1. The current program has good_ratio = 1.00 (perfect)
+2. used_vars_proportions_average = 0.12
+3. applied_lambdas_proportions_average = 0.12
+4. unique_subterms_proportions_average = 0.26
+
+One improvement I can make is to add type diversity. Currently all lambdas use ("Int",) as the parameter type. I could vary this.
+
+Another improvement is to add a chance to use variables from context in lambda bodies, which could increase used_vars_proportions_average.
+
+Let me try adding type diversity and also adding a chance to use variables from context in the lambda case.
+
+Actually, let me look at the current code more carefully:
+
+```python
+elif i == 3:
+    # Generate lambda - always recurse to build more complex terms
+    ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+    return (("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm))
+```
+
+This always uses ("Int",) as the parameter type. Let me change this to randomly choose from different base types.
+
+I'll modify the lambda case to:
+1. Randomly choose a base type (Bool, Int, String) for the parameter
+2. Add a small chance to use a variable from context instead of recursing
+
+Let me write the edit now.

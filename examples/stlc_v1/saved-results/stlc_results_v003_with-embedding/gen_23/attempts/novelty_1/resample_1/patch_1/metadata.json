@@ -1,0 +1,14 @@
+{
+  "generation": 23,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "nested_redex_poly_bias_generator",
+  "patch_description": "This approach implements a \"Double-Redex Injection\" strategy mixed with \"Contextual Type-Sink\" logic. \n1. **Double-Redex Injection**: Instead of just standard redexes, the generator occasionally injects nested redexes `(App (Lam x (App (Lam y body) arg2)) arg1)`. This drastically increases the `applied_lambdas_proportions` and provides more variables to the context simultaneously.\n2. **Contextual Type-Sink**: When generating types for `App` arguments, it strongly favors types already present in the context, but specifically targets the *most frequent* types in the context to ensure the highest probability that a `Var` can satisfy the requirement.\n3. **Polynomial Choice Bias**: It uses a cubic bias `(index + 1)**3` for variable selection to push `used_vars_proportions` even higher by favoring the most local (and thus most likely unique) variables.\n4. **Budget-Scaled Complexity**: The type size limit and term budget are pushed to their maximum allowed values (10 and 100) with a recursive depth-aware fallback to ensure validity.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T20:20:50.775933",
+  "llm_cost": 0.012783,
+  "llm_model": null
+}

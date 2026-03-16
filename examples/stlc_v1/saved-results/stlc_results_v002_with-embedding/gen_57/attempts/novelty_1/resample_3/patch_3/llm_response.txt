@@ -1,0 +1,42 @@
+I need to provide a valid SEARCH/REPLACE diff. Let me think about what change I want to make.
+
+Looking at the current code in the App case:
+```python
+else:
+    # Generate application - apply a lambda to an argument
+    arg_ty, arg_tm = generate_sample(rng, depth - 1, context)
+    func_ty = ("Fun", arg_ty, arg_ty)
+    func_tm = ("Lam", "x", arg_ty, ("Var", "x"))
+    return (arg_ty, ("App", func_tm, arg_tm))
+```
+
+The analysis suggests generating more complex applications where the function is not just an identity function. The idea is to:
+1. Generate a proper function term (not just identity)
+2. Generate a matching argument
+
+However, there's a challenge: we need to ensure type correctness. If we generate a function that takes type A and returns type B, we need to generate an argument of type A.
+
+Let me think about a simple approach:
+- At depth > 0, we can have two cases in App:
+  1. Current identity approach (wrap argument in identity function)
+  2. Generate a function recursively and its argument
+
+For option 2:
+- Generate the argument type and term first
+- Then generate the function body (which can use the argument via a variable)
+- But we need to add the argument to context so the function can reference it
+
+Actually, looking at this more carefully, the issue is that we want to generate:
+- A function term that is NOT just `("Lam", "x", arg_ty, ("Var", "x"))`
+- An argument term
+
+One approach: Generate both the function and argument from scratch, but ensure they form a valid application. This is tricky because the function's input type must match the argument's type.
+
+Alternative approach: Generate a function that returns a literal or a more complex term, and generate an argument of the appropriate type.
+
+
+I'll implement a probabilistic approach to create more diverse function applications. By introducing a random chance, I can generate more complex function-argument pairs. This method allows for creative type combinations while maintaining type safety. The key is to generate functions that return interesting values and match them with appropriate arguments.
+
+The implementation uses a random selection mechanism to decide whether to create a complex function application or use an identity function. This approach provides flexibility in generating more nuanced lambda calculus expressions while preserving type correctness.
+
+The strategy involves recursively generating argument types and terms, then constructing function types with carefully matched argument and return types. By exploring different generation strategies, we can create more sophisticated and varied function applications.

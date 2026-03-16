@@ -1,0 +1,14 @@
+{
+  "generation": 34,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "TypeFreq_Balanced_Redex_Synthesizer",
+  "patch_description": "This approach shifts from a simple recursive budget to a more systematic **Type-Frequency-Aware Selection**. \n\n1.  **Global Type Bias**: It specifically targets larger type ASTs (average 5+) by increasing the recursion depth in `gen_type` and biasing towards nested functions.\n2.  **Explicit Redex Over-Injection**: Standard `App` nodes are almost entirely replaced with Redexes or 'Variable Applications' to push `applied_lambdas` to the 0.70+ range.\n3.  **Variable Shadowing Prevention**: Using more descriptive scoping in unique names to ensure high `unique_subterms`.\n4.  **Recency Weighting**: Shifts to a base-4 exponential weighting (`4**index`) for variable selection, which virtually guarantees that the generator picks the most localized variable possible, allowing for valid construction even at high edge counts.\n5.  **Function-Type Application Bias**: As suggested in the recommendations, if an `App` is being generated and the result `ty` is a `FunTy`, the budget split is significantly skewed (80/20) to the function branch to produce deeper nested Lambdas (Currying).",
+  "error_msg": null,
+  "timestamp": "2026-03-15T20:22:24.374701",
+  "llm_cost": 0.0130845,
+  "llm_model": null
+}

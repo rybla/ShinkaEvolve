@@ -1,0 +1,14 @@
+{
+  "generation": 16,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 4,
+  "patch_name": "dynamic_depth_weighting_and_type_expansion",
+  "patch_description": "This edit introduces dynamic weighting based on the remaining budget to push the `tm_sizes_average` higher. By increasing the probability of `App` and `Lam` when the budget is high and tapering off to `Var` and `Lit` as the budget depletes, we can generate deeper, more complex trees. Additionally, the `gen_type` function is adjusted to more consistently produce types closer to the size limit of 10, which improves `ty_sizes_average`.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T20:19:32.416557",
+  "llm_cost": 0.009885,
+  "llm_model": null
+}

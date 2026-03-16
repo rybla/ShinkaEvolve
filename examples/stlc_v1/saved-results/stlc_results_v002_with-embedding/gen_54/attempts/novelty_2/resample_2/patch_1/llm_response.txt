@@ -1,0 +1,35 @@
+Looking at the performance metrics, I can see that the current program has:
+- good_ratio: 1.00 (perfect correctness)
+- tm_sizes_average: 1.92
+- ty_sizes_average: 1.35
+- used_vars_proportions_average: 0.11
+- applied_lambdas_proportions_average: 0.11
+- unique_subterms_proportions_average: 0.26
+- Combined score: 10.64
+
+Looking at the prior programs, I can see the progression:
+1. First programs had no App, no depth control → score ~10.28-10.31
+2. Adding depth control and App → score ~10.60
+3. Adding context tracking for variables → score ~10.62
+4. Current program with proper depth control and App → score ~10.64-10.65
+
+The current program is already quite good with:
+- Depth-limited recursion (5 options at depth > 0, 3 at depth = 0)
+- App generation (applied_lambdas_proportions = 0.11)
+- Context tracking for variables (used_vars_proportions = 0.11)
+
+Looking at what could improve the score:
+1. The unique_subterms_proportions_average is 0.26 - this measures diversity of subterms
+2. The tm_sizes_average is 1.92 - terms are relatively small
+
+Ideas for improvement:
+1. **Increase diversity of types**: Currently only using Int for lambda parameters. Could use Bool, String too.
+2. **More complex lambda bodies**: Currently lambda always uses ("Int",) as parameter type. Could vary this.
+3. **Nested applications**: Currently App applies identity function. Could create more complex function terms.
+4. **Better variable usage**: Currently 30% chance to use variable wasn't working well. Could increase this or make it smarter.
+5. **Type diversity in return types**: Currently all functions return Int. Could return Bool or String.
+
+
+6. **Increase term complexity**: The tm_sizes_average of 1.92 suggests terms could grow larger with deeper nesting and more sophisticated constructions.
+
+The key insight is that the current approach is too constrained - it needs more type variety and more complex term structures to push the metrics higher. I should focus on generating richer, more diverse lambda calculus expressions that maintain correctness while increasing structural complexity.

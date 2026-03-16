@@ -1,0 +1,44 @@
+The user is asking me to rewrite a program that generates samples from a simply-typed lambda calculus. Let me analyze the current program and the metrics to understand what improvements can be made.
+
+Current program analysis:
+- Uses depth-limited generation (depth 0: 3 literal options, depth > 0: 5 options)
+- At depth 0: Bool, Int, String literals
+- At depth > 0: Same 3 literals + Lam + App
+- For Lam: adds "x" to context but doesn't really use it
+- For App: creates a synthetic identity function and applies it
+
+Performance metrics:
+- Combined score: 10.65
+- good_ratio: 1.00 (perfect correctness - this is key!)
+- tm_sizes_average: 1.92
+- ty_sizes_average: 1.32
+- used_vars_proportions_average: 0.12
+- applied_lambdas_proportions_average: 0.12
+- unique_subterms_proportions_average: 0.26
+
+The key insight is that good_ratio = 1.00 is the primary driver of the score. Any changes must maintain perfect correctness.
+
+Looking at the code more carefully:
+- In the App case, they always create a `("Var", "x")` - so that's where the variable usage comes from
+- The lambda always returns its parameter "x" as a variable
+
+To improve while maintaining correctness:
+1. Keep the type-term coupling approach (generate both together)
+2. Maintain depth-limited generation
+3. Try to increase variety in the generated terms while maintaining correctness
+4. Actually use variables from context
+
+Let me design a novel approach:
+1. Use a different probability distribution - more lambdas and applications
+2. Actually use variables from context when available
+3. Use different type annotations for lambdas
+
+Here's my novel approach:
+- At depth > 0: 40% literals, 30% lambda, 30% application
+
+
+- At depth = 0: 100% literals (maintain correctness)
+- For lambda: use different parameter types and actually use context variables
+- For application: create more varied function terms
+
+I'll focus on expanding the generation strategy by introducing more nuanced type handling and context utilization. The goal is to increase term complexity while preserving the perfect correctness metric. By dynamically selecting variable types and leveraging context more effectively, I can create a more sophisticated generation approach that maintains the core principles of the original implementation.

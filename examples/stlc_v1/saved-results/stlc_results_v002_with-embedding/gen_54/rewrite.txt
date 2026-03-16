@@ -1,0 +1,34 @@
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    return generate_term(rng, depth, [])
+
+def generate_term(rng: random.Random, depth: int, context: List[str]) -> Tuple[Ty, Tm]:
+    # Base case: if depth is 0, only generate literals
+    if depth == 0:
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", True))
+        elif i == 1:
+            return (("Int",), ("Int", 27))
+        else:
+            return (("String",), ("String", "hello world"))
+    
+    # Recursive case: 5 options (3 literals + Lam + App)
+    i = rng.randrange(0, 5)
+    
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    elif i == 3:
+        # Generate lambda - extend context with new variable
+        var_name = "x"
+        arg_ty = ("Int",)
+        body_ty, body_tm = generate_term(rng, depth - 1, context + [var_name])
+        return (("Fun", arg_ty, body_ty), ("Lam", var_name, arg_ty, body_tm))
+    else:
+        # Generate application
+        func_ty, func_tm = generate_term(rng, depth - 1, context)
+        arg_ty, arg_tm = generate_term(rng, depth - 1, context)
+        return (("App", func_tm, arg_tm), func_ty)

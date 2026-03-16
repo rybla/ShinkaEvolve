@@ -1,0 +1,14 @@
+{
+  "generation": 53,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "cubic_redex_synergy_generator",
+  "patch_description": "This generator optimizes STLC term generation by combining a Cubic Recency Bias for variable selection with a high-frequency Redex Injection strategy. \n\nKey improvements:\n1.  **Cubic Recency Bias**: Uses `(index + 1)**3` weighting for variable selection, which significantly improves `used_vars` by favoring local scope.\n2.  **Synergistic Redexes**: Implements a budget-scaled redex probability (`0.55 + budget/150`) and forces variable arguments (90% probability) within applications to couple `applied_lambdas` and `used_vars` metrics.\n3.  **Context-Aware Type Selection (CATS)**: Application nodes select argument types from the existing context with 85% probability, ensuring that \"Forced Variable Arguments\" are statistically likely to succeed.\n4.  **Asymmetric Budgeting**: Uses a 70/30 split for application nodes to favor deep functional nesting over balanced trees, driving up term complexity and unique subterm counts.\n5.  **Type Bias**: The `gen_type` function is biased (85%) towards `FunTy` to provide the necessary surface area for lambda abstractions and applications.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T20:51:33.779762",
+  "llm_cost": 0.014905999999999999,
+  "llm_model": null
+}

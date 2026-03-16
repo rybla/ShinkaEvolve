@@ -1,0 +1,64 @@
+<NAME>
+dynamic_budget_redex_injection
+</NAME>
+
+<DESCRIPTION>
+This edit implements the "Scale Redex Injection with Budget" recommendation.
+1. It replaces the fixed 40% redex injection chance with a dynamic probability `0.2 + (budget / 200)`, ensuring larger terms are more likely to contain applied lambdas.
+2. It improves variable selection logic to specifically target `valid_vars` when a `Var` is chosen, but still favors the most recently introduced ones to boost `used_vars_proportions_average`.
+3. It ensures `gen_type` is more likely to hit the size limit (10) by biasing the termination condition.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    def gen_type(size_limit: int) -> Ty:
+        if size_limit <= 1 or rng.random() < 0.3:
+            return rng.choice([("Bool",), ("Int",), ("String",)])
+        left_size = rng.randint(1, size_limit - 1)
+        return ("Fun", gen_type(left_size), gen_type(size_limit - left_size - 1))
+=======
+    def gen_type(size_limit: int) -> Ty:
+        if size_limit <= 1 or (size_limit < 5 and rng.random() < 0.2):
+            return rng.choice([("Bool",), ("Int",), ("String",)])
+        left_size = rng.randint(1, size_limit - 1)
+        return ("Fun", gen_type(left_size), gen_type(size_limit - left_size - 1))
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+        if mode == "var":
+            # Bias towards recently bound variables to increase usage score
+            return ("Var", ctx[rng.randint(max(0, len(ctx)-3), len(ctx)-1)][0] if rng.random() > 0.3 else rng.choice(valid_vars))
+
+        if mode == "app":
+            # Force applications to use higher budget portions
+            split = rng.randint(1, budget - 1)
+            arg_ty = gen_type(3)
+            # 40% chance to create a redex (Lam applied to Arg) to boost applied_lambdas score
+            if rng.random() < 0.4 and budget > 5:
+                v_name = f"v{rng.randint(0,1000)}"
+                f_tm = ("Lam", v_name, arg_ty, gen_term(ty, ctx + [(v_name, arg_ty)], split))
+            else:
+                f_tm = gen_term(("Fun", arg_ty, ty), ctx, split)
+            a_tm = gen_term(arg_ty, ctx, budget - split - 1)
+            return ("App", f_tm, a_tm)
+=======
+        if mode == "var":
+            # Bias towards recently bound variables that MATCH the type to increase usage score
+            recent_valid = [n for n, t in ctx[-5:] if t == ty]
+            return ("Var", rng.choice(recent_valid if recent_valid else valid_vars))
+
+        if mode == "app":
+            # Force applications to use higher budget portions
+            split = rng.randint(1, budget - 1)
+            arg_ty = gen_type(rng.randint(1, 4))
+            # Probability of creating a redex scales with budget to maximize applied lambda count
+            redex_prob = 0.2 + (budget / 200.0)
+            if rng.random() < redex_prob and budget > 5:
+                v_name = f"v{len(ctx)}_{rng.randint(0,1000)}"
+                f_tm = ("Lam", v_name, arg_ty, gen_term(ty, ctx + [(v_name, arg_ty)], split))
+            else:
+                f_tm = gen_term(("Fun", arg_ty, ty), ctx, split)
+            a_tm = gen_term(arg_ty, ctx, budget - split - 1)
+            return ("App", f_tm, a_tm)
+>>>>>>> REPLACE
+
+</DIFF>

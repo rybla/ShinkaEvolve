@@ -1,0 +1,52 @@
+Looking at the performance metrics, I can see that the current program has:
+- Combined score: 10.65
+- good_ratio: 1.00 (perfect correctness)
+- tm_sizes_average: 1.92
+- ty_sizes_average: 1.32
+- used_vars_proportions_average: 0.12
+- applied_lambdas_proportions_average: 0.12
+- unique_subterms_proportions_average: 0.26
+
+Looking at the prior programs, I can see a trend:
+1. First programs had no App, no depth control -> low scores
+2. Programs with App and depth control -> higher scores
+3. Programs with proper context tracking and App -> even higher scores
+
+The current program has:
+- Depth-limited recursion (depth 0 -> only literals, depth > 0 -> 5 options)
+- App generation (creates identity function and applies it)
+- Context tracking (context + ["x"] passed when generating lambda body)
+
+Looking at the metrics, the score is 10.65 which is quite good. The key metrics that could be improved:
+- used_vars_proportions_average: 0.12 (could be higher - more variable usage)
+- applied_lambdas_proportions_average: 0.12 (could be higher - more applications)
+- unique_subterms_proportions_average: 0.26 (could be higher - more diversity)
+
+One thing I notice is that the current program doesn't actually use the context to generate Var terms. It passes context + ["x"] when generating lambda bodies, but it never actually uses those variables in the generated term. The lambda always returns the recursively generated term, not a variable from context.
+
+Looking at one of the prior programs that had a 30% chance to use a variable from context:
+```python
+if context and rng.random() < 0.3:
+    var_name = rng.choice(context)
+    return (("Fun", ("Int",), ("Int",)), ("Lam", "x", ("Int",), ("Var", var_name)))
+
+
+```
+
+But that program had lower scores. The issue is that simply adding a 30% chance to use a variable might not be optimal - it could lead to type errors or less interesting terms.
+
+Let me think about what could improve the score:
+
+1. **Increase the probability of using variables from context** - Currently the program never uses variables from context. Adding a small probability (like 10-20%) could increase used_vars_proportions_average.
+
+2. **Improve App generation** - Currently App creates an identity function. Maybe we could create more interesting functions.
+
+3. **Add more type diversity** - Currently we always use ("Int",) as the parameter type. We could randomize the base types.
+
+4. **Increase term complexity** - We could allow deeper recursion or more complex terms.
+
+Looking at the scores more carefully, the current program at 10.65 is already quite good. The main improvement opportunities are in used_vars_proportions_average (0.12) and applied_lambdas_proportions_average (0.12). I should try adding a mechanism to actually use variables from context with a small probability, and also improve the App generation to create more interesting functions rather than just identity functions.
+
+```
+The core issue is that we're accumulating variables in context but never actually referencing them. We need to add a chance to use variables from context when generating lambda bodies, while being careful about type consistency. The App case could also be improved - instead of always creating an identity function, we could generate more varied functions.
+```

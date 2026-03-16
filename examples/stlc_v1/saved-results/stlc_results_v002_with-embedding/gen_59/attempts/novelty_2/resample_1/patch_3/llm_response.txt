@@ -1,0 +1,27 @@
+The user is asking me to provide a complete new program. Let me analyze the current program and provide an improved version.
+
+Looking at the metrics:
+- good_ratio: 1.00 (perfect - this is the most important)
+- tm_sizes_average: 1.92
+- ty_sizes_average: 1.32
+- used_vars_proportions_average: 0.12
+- applied_lambdas_proportions_average: 0.12
+- unique_subterms_proportions_average: 0.26
+
+The current program has:
+- At depth 0: 3 literal options
+- At depth > 0: 5 options (3 literals + 1 Lam + 1 App)
+
+This is a 3:2 ratio which is good.
+
+The key issue is that unique_subterms_proportions_average is only 0.26. To improve this, I need more variety in the literals. Currently:
+- Bool always returns True
+- Int always returns 27
+- String always returns "hello world"
+
+I should randomize these values while maintaining type correctness.
+
+Let me write a new version that:
+1. Randomizes literal values to improve unique_subterms
+2. Maintains the same structure that gives good_ratio = 1.00
+3. Keeps the 3:2 literal-to-function ratio

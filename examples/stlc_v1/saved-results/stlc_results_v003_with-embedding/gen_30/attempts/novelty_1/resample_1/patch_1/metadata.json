@@ -1,0 +1,14 @@
+{
+  "generation": 30,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "recursive_redex_booster",
+  "patch_description": "The algorithm shifts from a simple probabilistic redex injection to a \"forced-structure\" approach. It uses a Budget-Scaled Probability for redexes that increases as the term grows, ensuring that large terms are heavily saturated with applied lambdas. To maximize variable usage, it implements a \"Context-Aware Type Selection\" (CATS) with an 85% bias toward types already in the environment and a \"Forced Variable Argument\" rule (90% chance) when constructing applications. It also employs a Cubic Recency Bias for variable selection to ensure local variables (especially those from redexes) are prioritized, and an Asymmetric 70/30 Budget Split to create deeper, more complex AST branches.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T20:21:41.357167",
+  "llm_cost": 0.012707,
+  "llm_model": null
+}

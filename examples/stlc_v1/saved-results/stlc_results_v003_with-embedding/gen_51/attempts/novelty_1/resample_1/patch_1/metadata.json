@@ -1,0 +1,14 @@
+{
+  "generation": 51,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "redex_driven_variable_synergy",
+  "patch_description": "Optimizes STLC term generation by intensifying redex frequency and variable reuse. \n1.  **Cubic Recency Bias**: Implements a stricter weighted selection for variables `(index + 1)**3` to favor local scopes.\n2.  **Strategic Redex Probability**: Links redex creation directly to the remaining budget to maximize `applied_lambdas`.\n3.  **Forced Argument Re-use**: Ensures that 90% of redex applications and 80% of standard applications attempt to use an existing variable from the context, driving `used_vars` significantly higher.\n4.  **Asymmetric Budgeting**: Uses a 70/30 split in applications to encourage deep functional nesting.\n5.  **Unique Naming**: Implements a more robust 4-part identifier for binders to ensure `unique_subterms` remains near 1.0.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T20:49:04.592315",
+  "llm_cost": 0.013989999999999999,
+  "llm_model": null
+}

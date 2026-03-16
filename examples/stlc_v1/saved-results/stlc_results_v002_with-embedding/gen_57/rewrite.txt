@@ -1,0 +1,60 @@
+from typing import Literal, Tuple
+import random
+import tqdm
+
+type Ty = BoolTy | IntTy | StringTy | FunTy
+type BoolTy = Tuple[Literal["Bool"]]
+type IntTy = Tuple[Literal["Int"]]
+type StringTy = Tuple[Literal["String"]]
+type FunTy = Tuple[Literal["Fun"], Ty, Ty]
+
+
+type Tm = LitTm | VarTm | LamTm | AppTm
+type LitTm = (
+    Tuple[Literal["Bool"], bool]
+    | Tuple[Literal["Int"], int]
+    | Tuple[Literal["String"], str]
+)
+type VarTm = Tuple[Literal["Var"], str]
+type LamTm = Tuple[Literal["Lam"], str, Ty, Tm]
+type AppTm = Tuple[Literal["App"], Tm, Tm]
+
+
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10, context=None) -> Tuple[Ty, Tm]:
+    if context is None:
+        context = []
+    
+    # At depth 0, only generate literals
+    if depth == 0:
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", True))
+        elif i == 1:
+            return (("Int",), ("Int", 27))
+        else:
+            return (("String",), ("String", "hello world"))
+    
+    # At depth > 0, choose from literals, variables from context, lambda, and application
+    i = rng.randrange(0, 6)
+    
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    elif i == 3 and context:
+        # Use a variable from context
+        var_name = rng.choice(context)
+        return (("Int",), ("Var", var_name))
+    elif i == 4:
+        # Generate lambda
+        param_type = ("Int",)
+        _, body = generate_sample(rng, depth - 1, context + ["x"])
+        return (("Fun", param_type, ("Int",)), ("Lam", "x", param_type, body))
+    else:
+        # Generate application
+        func_type = ("Fun", ("Int",), ("Int",))
+        arg = rng.randint(0, 100)
+        return (("Int",), ("App", ("Lam", "x", ("Int",), ("Var", "x")), ("Int", arg)))

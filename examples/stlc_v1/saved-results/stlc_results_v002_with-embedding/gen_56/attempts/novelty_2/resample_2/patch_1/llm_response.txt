@@ -1,0 +1,53 @@
+Let me analyze the current program and the metrics to understand what improvements can be made.
+
+Current metrics:
+- Combined score: 10.65
+- good_ratio: 1.00 (perfect correctness)
+- tm_sizes_average: 1.92 (term sizes)
+- ty_sizes_average: 1.32 (type sizes)
+- used_vars_proportions_average: 0.12 (variable usage)
+- applied_lambdas_proportions_average: 0.12 (lambda application)
+- unique_subterms_proportions_average: 0.26 (unique subterms)
+
+Looking at the current implementation:
+1. It uses depth-limited generation (depth=10)
+2. At depth 0: only literals (3 options)
+3. At depth > 0: 5 options (3 literals + Lam + App)
+4. Lambda always uses "x" as the variable name
+5. App always creates an identity function and applies it
+
+The key observations from the best programs in the history:
+- Good ratio = 1.0 is the most important metric
+- Depth limiting ensures termination
+- Type-term coupling ensures consistency
+- Context tracking enables variable usage
+
+Current issues:
+1. `used_vars_proportions_average: 0.12` - Variables from context are rarely used (only in identity functions in App)
+2. `applied_lambdas_proportions_average: 0.12` - Applications are relatively low
+3. `unique_subterms_proportions_average: 0.26` - Could be improved
+
+The current approach creates a lot of similar terms because:
+- Lambda always uses the same variable "x"
+- App always creates the same identity function pattern
+- There's no mechanism to actually USE variables from the context
+
+Let me think about a fundamentally different approach:
+
+**Approach: Weighted Probabilistic Generation with Richer Context**
+
+Instead of just depth-based choices, I'll use:
+1. More sophisticated type-aware generation
+
+
+2. Actually use variables from context when generating Var terms
+3. More diverse lambda bodies
+4. Different probability distributions based on context
+
+The key insight is that the current implementation doesn't actually leverage the context it tracks - it just passes it around but never uses it. I should implement a system where:
+- When generating a Var, randomly select from context if available
+- When generating a Lam, sometimes use a variable from context in the body
+- Vary the types more to increase unique subterms
+- Increase application rate
+
+This approach would fundamentally differ by making the context actually meaningful rather than just being passed through without utilization.

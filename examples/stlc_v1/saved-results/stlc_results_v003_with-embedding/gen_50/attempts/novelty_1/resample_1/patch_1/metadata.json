@@ -1,0 +1,14 @@
+{
+  "generation": 50,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 2,
+  "patch_name": "cubic_recency_and_deep_redex_bias",
+  "patch_description": "Optimizing for `used_vars_proportions` and `applied_lambdas_proportions` by increasing the recency bias exponent from 2 to 3 (cubic bias) and raising the context-aware type selection (CATS) probability to 85%. Additionally, I am increasing the redex injection probability from a static 65% to a dynamic probability based on the remaining budget, while forcing variable arguments more aggressively (90% chance) in redex nodes to maximize both metrics simultaneously.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T20:47:51.215594",
+  "llm_cost": 0.011249499999999999,
+  "llm_model": null
+}

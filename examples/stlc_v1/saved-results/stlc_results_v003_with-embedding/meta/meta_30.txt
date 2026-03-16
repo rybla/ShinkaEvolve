@@ -1,0 +1,228 @@
+# INDIVIDUAL PROGRAM SUMMARIES
+
+The following are summaries of individual programs evaluated since the last meta update:
+
+**Program Name: Recursive Random Generator for Simply-Typed Lambda Calculus**
+- **Implementation**: The generator uses a recursive approach with a depth limit to produce types and terms, favoring base literal types (Bool, Int, String) and wrapping them in identity-like lambda abstractions.
+- **Performance**: Achieved a combined score of 10.29 with a 1.00 good_ratio, but very low term/type complexity (1.34 average size) and zero variable usage.
+- **Feedback**: While the program is perfectly correct and passes validation, the generation logic is highly biased toward shallow structures and fails to utilize bound variables or function applications.
+**Program Identifier:** Generation 0 - Patch Name initial_program - Correct Program: True
+
+**Program Name: Weighted Recursive Term Generator for Simply-Typed Lambda Calculus**
+- **Implementation**: The generator uses a recursive descent approach with weighted random selection to prioritize variable usage and lambda abstractions while maintaining type consistency through a context list. It handles function application by generating a random intermediate argument type and splitting the remaining budget between the function and its argument.
+- **Performance**: Achieved a combined score of 11.62 with a 1.00 good_ratio and an average term size of 9.40.
+- **Feedback**: The weighting strategy successfully ensures 100% valid terms, though the relatively low variable usage proportion (0.14) suggests that the budget-splitting logic for applications may be limiting the depth of nested contexts.
+**Program Identifier:** Generation 1 - Patch Name stlc_random_generator - Correct Program: True
+
+**Program Name: Recursive Budget-Based Generator for Simply-Typed Lambda Calculus**
+- **Implementation**: The generator uses a recursive budget system to produce types and terms, employing weighted probabilistic choices for constructors like `Lam`, `App`, and `Var` while maintaining a variable context for type-safe lookups.
+- **Performance**: Combined score: 1.58; very low `good_ratio` (0.01) and small average sizes (Tm: 5.00, Ty: 2.43).
+- **Feedback**: The implementation fails validation due to a mismatch between the intended complexity (budget of 80) and the actual output size, likely caused by aggressive base-case triggers and a flawed fallback mechanism in `gen_lam`.
+**Program Identifier:** Generation 2 - Patch Name structured_well_typed_generator - Correct Program: False
+
+**Program Name: Weighted Recursive Term Generator with Redex Bias**
+- **Implementation**: The generator uses a budget-based recursive approach with weighted selection for lambdas, applications, and variables, specifically biasing towards recently bound variables and explicitly injecting redexes (lambda applications).
+- **Performance**: Achieved a combined score of 11.80 with a 99% validity rate and a high applied lambda proportion of 0.37.
+- **Feedback**: The strategy of forcing redex creation and biasing variable selection successfully improved complexity metrics, though the average term size (15.48) remained relatively low compared to the budget.
+**Program Identifier:** Generation 3 - Patch Name optimize_term_generation_for_size_and_usage - Correct Program: True
+
+**Program Name: Weighted Recursive Term Generator for Simply-Typed Lambda Calculus**
+- **Implementation**: The generator uses a recursive descent approach with weighted random choices to balance lambda abstractions, variable lookups, and applications while maintaining type consistency through a context list. It employs a budget-based system to control recursion depth and splits this budget between function and argument branches in application nodes.
+- **Performance**: Achieved a combined score of 11.76 with a 100% validity ratio and a high unique subterm proportion (0.89).
+- **Feedback**: The implementation successfully generates valid, complex terms with a strong emphasis on function applications (0.35), though the variable usage proportion (0.10) suggests that generated variables are frequently shadowed or ignored in favor of literals and nested applications.
+**Program Identifier:** Generation 4 - Patch Name improve_term_generation_and_variable_usage - Correct Program: True
+
+**Program Name: Weighted Recursive Term Generator for Simply-Typed Lambda Calculus**
+- **Implementation**: The generator uses a recursive approach with weighted probabilities to select between lambda abstractions, variable lookups, applications, and literals based on a provided type and budget. It tracks a context of variables and types to ensure generated terms are well-typed according to the target `Ty`.
+- **Performance**: Combined score of 1.24; characterized by a very low `good_ratio` (0.05) and small average term/type sizes (2.92 and 1.84 respectively).
+- **Feedback**: The program is considered incorrect because it fails to generate a sufficient variety of valid, complex terms, likely due to the aggressive budget constraints and a literal fallback that produces invalid terms for function types. The low `used_vars_proportions` suggests the variable selection logic and context management are not effectively promoting deep term structures.
+**Program Identifier:** Generation 5 - Patch Name increase_term_complexity_and_variable_usage - Correct Program: False
+
+**Program Name: Context-Aware Structural Synthesis with Forced Redex Generation**
+- **Implementation**: The generator uses a recursive depth-tracked algorithm that maintains a typing context and biases towards function types and "forced redexes" (immediate application of new lambdas) to increase term complexity. It employs a weighted selection system to balance between lambda abstraction, application, and variable usage based on the target type.
+- **Performance**: Achieved a combined score of 11.98 with a 100% validity ratio and a high applied lambda proportion of 0.41.
+- **Feedback**: The strategy of explicitly generating applied lambdas effectively boosted the structural complexity, though the average term size (13.42) suggests the budget-halving logic in applications may be slightly too aggressive.
+**Program Identifier:** Generation 6 - Patch Name context_aware_structural_synthesis - Correct Program: True
+
+**Program Name: Weighted Recursive Term Generator with Redex Bias**
+- **Implementation**: The generator uses a weighted random choice system to balance term constructors, specifically biasing towards "App" nodes and recently bound variables to increase complexity. It includes a "redex probability" mechanism that explicitly generates lambda abstractions as the left side of applications to maximize applied lambdas.
+- **Performance**: Achieved a combined score of 12.21 with a 100% validity ratio and a high applied lambda proportion of 0.39.
+- **Feedback**: The strategy of biasing variable selection toward the most recent context entries effectively improved variable usage, while the budget-based redex generation successfully boosted the structural complexity of the terms.
+**Program Identifier:** Generation 7 - Patch Name dynamic_budget_redex_injection - Correct Program: True
+
+**Program Name: Biased Recursive Term Generator with Redex Injection**
+- **Implementation**: The generator uses a weighted recursive approach with recency bias for variable selection and a specific "Redex Injection" strategy that forces the creation of applied lambdas. It manages a budget-based recursion to control term depth while ensuring type consistency through a context-tracking mechanism.
+- **Performance**: Achieved a combined score of 11.91 with a 1.00 validity ratio and a high applied lambda proportion of 0.41.
+- **Feedback**: The strategy of explicitly injecting `(App (Lam ...) Arg)` structures significantly boosted the applied lambda metric, while recency bias in variable selection helped maintain structural variety and uniqueness.
+**Program Identifier:** Generation 8 - Patch Name optimize_variable_usage_and_redex_injection - Correct Program: True
+
+**Program Name: Context-Aware Recursive Synthesis with Explicit Redex Injection**
+- **Implementation**: The generator uses a budget-based recursive strategy with recency bias for variable selection and a 40% chance to explicitly inject "redexes" (immediate applications of lambdas) to ensure high term complexity. It also employs context-aware argument selection, picking argument types from existing variables to increase the likelihood of variable usage in applications.
+- **Performance**: Achieved a combined score of 12.00 with a 1.00 good_ratio, 12.83 average term size, and a high 0.44 applied lambda proportion.
+- **Feedback**: The strategy of biasing type generation toward functions and explicitly constructing lambda-application pairs successfully maximized the `applied_lambdas_proportions` metric while maintaining structural validity. The use of recency bias in variable selection helped maintain a healthy proportion of used variables within the generated terms.
+**Program Identifier:** Generation 9 - Patch Name context_aware_redex_synthesis - Correct Program: True
+
+**Program Name: Context-Aware Weighted Random Lambda Calculus Generator**
+- **Implementation**: The generator uses a recursive budget-based approach with weighted selection for terms, featuring a recency-biased variable selection and a redex-generation strategy that injects lambdas into application heads.
+- **Performance**: Achieved a combined score of 12.37 with a 100% validity rate and high applied lambda proportions (0.49).
+- **Feedback**: The use of power-law weights for variable selection effectively boosted variable usage, while the dynamic redex probability successfully maximized the proportion of applied lambdas.
+**Program Identifier:** Generation 10 - Patch Name context_aware_app_types_and_recency_bias - Correct Program: True
+
+**Program Name: Context-Aware STLC Generator with Explicit Redex Injection**
+- **Implementation**: The generator uses a recursive strategy with a global variable counter and a recency-biased context lookup to maximize variable usage. It explicitly injects redexes by wrapping terms in `App` and `Lam` pairs and uses weighted selection to favor function types and applications.
+- **Performance**: Achieved a 1.00 good ratio with a high applied lambda proportion (0.47) and excellent subterm uniqueness (0.90), though variable usage (0.21) remains moderate.
+- **Feedback**: The strategy of picking argument types from the existing context effectively increases the likelihood of valid variable selection, while the explicit redex injection successfully drives up the applied lambda metric.
+**Program Identifier:** Generation 11 - Patch Name context_aware_redex_weaver - Correct Program: True
+
+**Program Name: Context-Aware Type-Safe Lambda Generator with Explicit Redex Injection**
+- **Implementation**: The generator uses a weighted recursive strategy with a global variable counter, recency-biased variable selection, and a 50% chance to explicitly inject beta-redexes (applied lambdas) during application generation. It maintains a typing context to ensure 100% type safety while biasing budget distribution toward function terms to increase structural depth.
+- **Performance**: Achieved a perfect 1.00 validity ratio and a high 0.50 redex density, with an average term size of 12.06 and 91% sub-term uniqueness.
+- **Feedback**: The strategy of picking argument types from the existing context significantly improved the likelihood of successful variable usage and meaningful applications. The explicit redex injection was highly effective at maximizing the `applied_lambdas_proportions` metric without sacrificing term uniqueness.
+**Program Identifier:** Generation 12 - Patch Name context_aware_redex_synthesizer - Correct Program: True
+
+**Program Name: Context-Aware STLC Generator with Redex Injection and Power-Law Variable Selection**
+- **Implementation**: The generator uses a recursive budget-based approach with weighted mode selection, featuring "Redex Injection" to force function applications and a power-law bias to favor recently bound variables. It intelligently selects argument types for applications by sampling from the existing context to increase the likelihood of successful term construction.
+- **Performance**: Achieved a combined score of 12.04 with a 1.00 validity ratio, 12.30 average term size, and a high 0.49 applied lambda proportion.
+- **Feedback**: The strategy of explicitly injecting `(App (Lam ...) Arg)` structures significantly boosted the applied lambda metric, while the power-law variable selection ensured a healthy variety of used variables without sacrificing term validity.
+**Program Identifier:** Generation 13 - Patch Name variable_hungry_synthesis - Correct Program: True
+
+**Program Name: Context-Aware Recursive Synthesis with Explicit Redex Injection**
+- **Implementation**: The generator uses a budget-based recursive approach with recency-biased variable selection and a 55% chance to explicitly inject beta-redexes (lambda applications) to ensure high term complexity. It prioritizes function types and uses a context-aware strategy to select argument types that match existing variables, increasing the likelihood of variable usage.
+- **Performance**: Achieved a combined score of 12.05 with a 1.00 good_ratio, 0.48 applied_lambdas_proportion, and 0.89 unique_subterms_proportion.
+- **Feedback**: The strategy of explicitly constructing `App(Lam(...), ...)` structures significantly boosted the redex proportion, while the recency bias in variable selection successfully improved the utilization of local binders.
+**Program Identifier:** Generation 15 - Patch Name variable_hungry_base_case - Correct Program: True
+
+**Program Name: Context-Aware Weighted STLC Generator with Redex Injection**
+- **Implementation**: The generator uses a budget-based recursive approach with weighted constructor selection, favoring variable reuse through quadratic weighting and forcing redex creation by explicitly nesting lambda abstractions within application heads. It utilizes a context-aware strategy to select argument types that already exist in the environment, increasing the likelihood of variable-based leaves.
+- **Performance**: Achieved a combined score of 12.29 with a 1.00 good ratio, 0.52 applied lambda proportion, and 0.93 unique subterm density.
+- **Feedback**: The strategy of scaling redex probability with the remaining budget effectively maximizes application density, while the preference for recently added variables successfully balances term complexity with variable utilization.
+**Program Identifier:** Generation 14 - Patch Name variable_hungry_redex_injector - Correct Program: True
+
+**Program Name: Context-Aware Type-Safe Lambda Generator with Redex Injection**
+- **Implementation**: The generator uses a recursive budget-based approach with dynamic weighting, a recency bias for variable selection, and explicit redex injection to ensure high application density. It tracks a typing context to guarantee that generated terms are well-typed and utilizes a unique variable naming scheme to maintain sub-term uniqueness.
+- **Performance**: Achieved a combined score of 12.37 with a 1.00 good ratio, 14.76 average term size, and a high 0.52 applied lambda proportion.
+- **Feedback**: The strategy of biasing argument types toward existing context variables effectively increased variable usage, while the explicit "App(Lam, ...)" construction significantly boosted the redex density metric.
+**Program Identifier:** Generation 16 - Patch Name dynamic_depth_weighting_and_type_expansion - Correct Program: True
+
+**Program Name: Redex-Injected Context-Aware STLC Term Generator**
+- **Implementation**: The generator uses a weighted recursive strategy that prioritizes redex injection (65% probability) and context-aware type selection to maximize variable usage. It employs quadratic weighting for recent variables and asymmetric budget splitting to create deep, complex term trees.
+- **Performance**: Achieved a combined score of 12.53 with a 1.00 validity ratio, 18.32 average term size, and a high 0.59 applied lambda proportion.
+- **Feedback**: The strategy of explicitly constructing `(Lam ...)` terms within `App` nodes significantly boosted the redex density, while the context-aware type selection ensured high variable utilization (0.38).
+**Program Identifier:** Generation 17 - Patch Name RecursiveRedexAndPowerLawSelection - Correct Program: True
+
+**Program Name: Context-Aware Redex Injector for Simply-Typed Lambda Calculus**
+- **Implementation**: The generator uses a recursive synthesis approach with a quadratic recency bias for variable selection and a "Redex Injection" strategy that explicitly constructs applied lambdas. It employs an asymmetric budget split and context-aware type selection to ensure deep, valid term trees.
+- **Performance**: Achieved a combined score of 12.29 with a 1.00 good_ratio and a high applied_lambdas_proportions_average of 0.53.
+- **Feedback**: The strategy of forcing explicit lambda abstractions within application nodes significantly boosted redex density, while the recency-weighted variable selection maintained high variable usage across deep nesting levels.
+**Program Identifier:** Generation 18 - Patch Name TypeDirected_Recursive_Redex_Synthesizer - Correct Program: True
+
+**Program Name: Context-Aware Redex Injector with Quadratic Recency Bias**
+- **Implementation**: The generator uses a weighted constructor selection with a quadratic recency bias to favor recently bound variables and a "Scaled Redex Injection" strategy that forces lambda abstractions into the function position of applications. It also employs context-aware argument selection to ensure that generated application arguments can be satisfied by existing variables in the context.
+- **Performance**: Achieved a combined score of 12.52 with a 1.00 validity ratio, 0.57 applied lambda proportion, and 0.38 variable usage.
+- **Feedback**: The use of asymmetric budget splitting and recency weighting effectively maximized structural complexity and variable utilization, while the high redex probability significantly boosted the applied lambdas metric.
+**Program Identifier:** Generation 20 - Patch Name power_biased_redex_generator - Correct Program: True
+
+**Program Name: Asymmetric Budget STLC Generator with Power-Law Variable Selection**
+- **Implementation**: The generator uses a weighted constructor selection with asymmetric budget splitting (70% to function bodies) and a power-law distribution to favor recently bound variables. It explicitly injects redexes by forcing applied lambda terms based on a budget-scaled probability.
+- **Performance**: Achieved a combined score of 12.45 with a 1.00 good ratio and a high applied lambda proportion of 0.55.
+- **Feedback**: The strategy of forcing redexes and biasing variable selection toward recent bindings successfully maximized term complexity and variable reuse while maintaining a high unique subterm ratio.
+**Program Identifier:** Generation 19 - Patch Name asymmetric_redex_booster - Correct Program: True
+
+**Program Name: Context-Aware Redex Injector for Simply-Typed Lambda Calculus**
+- **Implementation**: The generator uses a weighted constructor selection with a power-law recency bias for variable selection and an asymmetric budget split to favor deep function structures. It explicitly injects redexes by wrapping terms in applied lambdas and uses context-aware type selection to ensure argument branches are frequently populated by existing variables.
+- **Performance**: Achieved a combined score of 12.50 with a 1.00 good_ratio, 0.52 applied lambda proportion, and 0.36 variable usage.
+- **Feedback**: The strategy of scaling redex probability with the remaining budget successfully maximized applied lambdas, while the recency bias for variables ensured high local scope utilization without sacrificing term uniqueness.
+**Program Identifier:** Generation 21 - Patch Name asymmetric_budget_redex_generator - Correct Program: True
+
+**Program Name: Context-Aware Redex Injector with Quadratic Variable Weighting**
+- **Implementation**: The generator uses a weighted recursive strategy that prioritizes "App" nodes and injects redexes by explicitly wrapping terms in lambda abstractions. It employs quadratic weighting to favor recently bound variables and selects argument types based on their frequency in the current context.
+- **Performance**: Achieved a combined score of 12.64, with a high applied lambda proportion (0.63) and perfect validity (1.00).
+- **Feedback**: The strategy of forcing redexes via "Redex Injection" significantly boosted the applied lambda metric, while the quadratic variable bias effectively increased variable utilization without sacrificing term uniqueness.
+**Program Identifier:** Generation 22 - Patch Name context_driven_redex_optimization - Correct Program: True
+
+**Program Name: Double-Redex Injection with Cubic Recency Bias**
+- **Implementation**: The generator utilizes a recursive strategy that prioritizes "Redex Injection" (explicitly wrapping terms in applied lambdas) and applies a cubic weighting to local variables to maximize variable usage. It specifically implements a "Double-Redex" pattern to deeply nest applications and ensure high lambda application density.
+- **Performance**: Achieved a combined score of 12.58, with a high applied lambda proportion (0.59) and near-perfect validity (0.99 good_ratio).
+- **Feedback**: The cubic bias effectively drives variable reuse, while the redex injection logic successfully balances term complexity with structural validity, though average term sizes remained lower than the target budget.
+**Program Identifier:** Generation 23 - Patch Name nested_redex_poly_bias_generator - Correct Program: True
+
+**Program Name: Context-Aware Redex Injector with Recency-Biased Variable Selection**
+- **Implementation**: The generator uses a weighted constructor selection with a 70% budget split for applications and a power-law recency bias to favor local variable usage. It specifically prioritizes "Explicit Redex" generation by wrapping terms in lambda abstractions and immediately applying them to context-matched variables.
+- **Performance**: Achieved a combined score of 12.66, with a high applied lambda proportion (0.64) and perfect validity (1.00).
+- **Feedback**: The strategy of forcing redexes via `(Lam v. body) arg` structures significantly boosted the applied lambda metric, while the quadratic weighting of variables ensured high utilization of the local context.
+**Program Identifier:** Generation 24 - Patch Name forced_variable_argument_and_quadratic_weight_refinement - Correct Program: True
+
+**Program Name: Context-Aware STLC Generator with Redex Injection and Recency Bias**
+- **Implementation**: The generator uses asymmetric budget splitting and quadratic recency bias for variable selection, alongside explicit redex injection to force lambda applications. It employs a context-aware type selection strategy to ensure generated applications are frequently valid and meaningful.
+- **Performance**: Achieved a combined score of 12.61 with a 1.00 good_ratio and high application density (0.61 applied_lambdas).
+- **Feedback**: The strategy of forcing redexes significantly boosted the application proportion, while quadratic weighting for variables effectively balanced context usage with term diversity.
+**Program Identifier:** Generation 25 - Patch Name asymmetric_redex_generator - Correct Program: True
+
+**Program Name: Context-Aware Redex Injection for Simply-Typed Lambda Calculus**
+- **Implementation**: The generator uses a recursive synthesis approach with quadratic recency bias for variable selection and a high-probability "redex injection" mechanism that forces the creation of applied lambdas. It employs an asymmetric budget split (70/30) and context-aware type selection to ensure generated terms are both deep and type-valid.
+- **Performance**: Achieved a combined score of 12.59, with a perfect 1.00 validity ratio and a high applied lambda proportion of 0.65.
+- **Feedback**: The strategy of favoring recent variables and explicitly constructing `(Lam x. body) arg` structures effectively maximized structural complexity and variable usage while maintaining strict type safety.
+**Program Identifier:** Generation 26 - Patch Name depth_dependent_weighting_and_asymmetric_budget - Correct Program: True
+
+**Program Name: Context-Aware Redex Injection with Recency-Biased Variable Selection**
+- **Implementation**: The generator uses a high-budget recursive strategy that prioritizes "redex injection" (explicitly applied lambdas) and selects variables from the context using a squared recency bias to ensure type-correctness. It dynamically matches application argument types to existing context types to maximize variable utilization.
+- **Performance**: Achieved a combined score of 12.26, with a high applied lambda proportion (0.62) and excellent term uniqueness (0.96).
+- **Feedback**: The strategy of biasing argument types toward existing context variables successfully boosted the `used_vars` metric, while the asymmetric budget split effectively produced deep, complex term structures.
+**Program Identifier:** Generation 27 - Patch Name TypeFrequencyMatchSTLCGenerator - Correct Program: True
+
+**Program Name: Context-Aware Redex Injector for STLC Generation**
+- **Implementation**: The generator uses a weighted constructor selection with a "Redex Injection Strategy" that explicitly constructs lambda-application pairs and employs quadratic biasing to favor recently bound variables. It utilizes context-aware type selection to ensure function arguments match types already present in the environment.
+- **Performance**: Achieved a combined score of 12.63, with a 1.00 validity ratio and a high applied lambda proportion of 0.62.
+- **Feedback**: The strategy of forcing redexes via asymmetric budget splitting (0.7 rule) and targeted variable usage successfully maximized term complexity and variable utilization while maintaining type safety.
+**Program Identifier:** Generation 28 - Patch Name type_frequency_and_forced_var_redex_injection - Correct Program: True
+
+**Program Name: Redex-Dense STLC Generator with Asymmetric Budgeting and Recency Bias**
+- **Implementation**: The generator uses a weighted constructor selection with asymmetric budget splitting (70% to function bodies) and a quadratic recency bias to favor recently bound variables. It explicitly injects redexes by wrapping terms in lambda abstractions and forcing variable arguments to maximize application density.
+- **Performance**: Achieved a combined score of 12.58 with a 1.00 good ratio and a high applied lambda proportion of 0.62.
+- **Feedback**: The strategy of context-aware type selection and explicit redex injection successfully maximized term complexity and variable reuse while maintaining a high unique subterm proportion (0.94). The budget-scaled redex probability ensures that larger terms are significantly more likely to contain nested applications.
+**Program Identifier:** Generation 29 - Patch Name optimized_redex_and_variable_usage - Correct Program: True
+
+# GLOBAL INSIGHTS SCRATCHPAD
+
+The following are global insights about optimization approaches and their effectiveness:
+
+Based on the evaluation of the provided programs and the performance of the current best program (**Generation 24**, score **12.66**), the following optimization insights have been extracted:
+
+### Successful Algorithmic Patterns
+
+*   **Forced Variable Arguments in Redexes**: The most significant jump in variable utilization (from 0.38 to **0.46**) was achieved by **Generation 24** through a "Forced Variable Argument" rule. When injecting a redex `(App (Lam v body) arg)`, the generator checks the context for an existing variable matching the required type and selects it with a **90% probability**. This ensures that redexes serve as a primary driver for both `applied_lambdas` and `used_vars` metrics.
+*   **Budget-Scaled Redex Probability**: Top-performing programs (**Generations 24, 28, and 29**) moved away from static probabilities to a dynamic formula: `redex_prob = 0.55 + (budget / 150.0)`. This ensures that at the start of generation (budget 100), the probability of creating a complex redex structure is nearly 100%, leading to a peak `applied_lambdas_proportions_average` of **0.64**.
+*   **Quadratic Recency Bias with Context-Aware Type Selection**: Using `(i + 1)**2` to weight variable selection (seen in **Generations 24, 25, and 28**) has proven superior to linear or cubic biases. When combined with an **85% chance** to pick an `arg_ty` from the current context (as seen in **Generation 27**'s `TypeFrequencyMatch`), it ensures that the generated terms remain type-valid (1.00 `good_ratio`) while maximizing the reuse of locally bound variables.
+*   **Asymmetric 70/30 Budget Splitting**: Every program scoring above 12.50 (**Generations 24-29**) utilized an asymmetric split (`split = int(budget * 0.7)`) for applications. By directing 70% of the budget to the function/body side, these programs achieved an average term size of **19.70**, significantly higher than those using uniform distribution.
+
+### Ineffective Approaches
+
+*   **Cubic Bias Over-Saturation**: While **Generation 23** attempted to increase variable reuse using a cubic bias `(i + 1)**3`, it resulted in a lower `good_ratio` (0.99). The evaluation suggests that extreme bias towards the most recent variables can lead to "leaf exhaustion," where the generator fails to find a valid termination path within the remaining budget for specific types.
+*   **Fixed/Low Redex Probability**: Programs like **Generation 19** that used a fixed 55% redex chance consistently underperformed in structural complexity. Their `applied_lambdas` scores hovered around 0.55, compared to the 0.64 achieved by the budget-scaled approach in **Generation 24**.
+*   **Random Type Generation for Arguments**: Programs that did not implement context-aware type selection (sampling `arg_ty` from the environment) struggled to maintain variable usage. Without this, the probability of a random type matching a variable in the context is low, keeping `used_vars` metrics below 0.30.
+
+### Implementation Insights
+
+*   **Synergistic Metric Optimization**: The current best program (**Generation 24**) succeeds by treating redex injection as a delivery mechanism for variables. By forcing the argument of an injected redex to be a context variable, it simultaneously boosts `applied_lambdas` and `used_vars`, creating a compounding effect on the total score.
+*   **Global Uniqueness via Multi-Part Naming**: To maintain a high `unique_subterms` score (0.96), successful programs (**Generations 25, 28, and 29**) use a naming convention involving depth, a global counter, and a random integer: `f"{prefix}_{depth}_{var_counter}_{rng.randint(0, 100)}"`. This prevents structural collisions even when the same logic is generated in different branches.
+*   **Weighted Constructor Selection**: **Generation 28** and **29** demonstrated that weighting `App` nodes (weight 60) higher than `Lam` (weight 25) or `Lit` (weight 10) is essential for driving term size and complexity without exceeding the 1.00 validity threshold.
+
+### Performance Analysis
+
+*   **The 12.6+ Performance Ceiling**: **Generation 24** (12.66) and **Generation 28** (12.63) represent the current peak. The common denominator is the combination of **Quadratic Recency Bias**, **Forced Variable Redexes**, and **Asymmetric Budgeting**.
+*   **Stability of the 1.00 Validity Ratio**: Despite increasing `tm_sizes_average` to nearly 20.0, the `good_ratio` has remained at a perfect 1.00 across all top iterations. This indicates that the context-aware selection strategies are robust enough to handle significantly increased structural complexity.
+*   **Correlation between Redexes and Variable Reuse**: Data from **Generation 24** shows a direct correlation between `applied_lambdas` (0.64) and `used_vars` (0.46). This confirms that the "Redex-First" strategy is the most effective way to increase variable utilization, as every injected redex provides a guaranteed opportunity to use a variable in the argument position.
+
+# META RECOMMENDATIONS
+
+The following are actionable recommendations for the next program generations:
+
+1. **Implement "Double-Redex" Injection**: To push the `applied_lambdas_proportions_average` beyond 0.64, modify the redex logic to occasionally (e.g., 20% of the time) inject a nested redex structure like `(App (Lam x (App (Lam y body) arg2)) arg1)`. This increases the density of immediate applications and provides two new variables to the context simultaneously, which synergizes with the quadratic recency bias to further boost variable usage.
+
+2. **Introduce Depth-Dependent Constructor Weighting**: Shift the `weights` for constructor selection dynamically based on the current recursion depth or remaining budget. By increasing the weight of `App` and `Lam` at shallow depths (e.g., `app: 80` when `budget > 50`) and aggressively pivoting to `Var` at deeper levels, you can create "top-heavy" trees that maximize structural complexity and term size without hitting the recursion limit or failing the `good_ratio`.
+
+3. **Context-Driven "Type-Matching" for Redexes**: Instead of generating a random `arg_ty` for redex injection, prioritize selecting a type that already exists multiple times in the current `ctx`. This ensures that the `a_tm` (the argument being passed to the injected lambda) has a much higher probability of being a `Var` rather than a `Lit`, directly targeting an increase in the `used_vars_proportions_average` which currently sits at 0.46.
+
+4. **Asymmetric Budgeting for Function-Type Applications**: When generating a standard `App` (non-redex) where the result type `ty` is a `FunTy`, apply the `0.7` asymmetric budget split to the function side (`f_tm`). This encourages the creation of complex higher-order functions and deeper lambda chains, which provides more opportunities for the successful "must-generate" lambda fallback to trigger, increasing both `tm_sizes_average` and `applied_lambdas_proportions_average`.
+
+5. **Refine Variable Selection with "Shadowing-Aware" Weights**: While the current quadratic bias `(i + 1)**2` is successful, it can be improved by adding a small bonus to variables that match the target type but are *not* the most recently added (e.g., `(i + 1)**2 + (10 if name.startswith("r") else 0)`). This encourages the generator to use variables created by redex injections (`r_` prefix) even if they are slightly further up the stack, maximizing the utility of the specific structural injections that define the current best-performing generation.

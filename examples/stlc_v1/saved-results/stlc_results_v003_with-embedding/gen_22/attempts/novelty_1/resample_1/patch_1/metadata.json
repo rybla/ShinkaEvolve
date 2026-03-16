@@ -1,0 +1,14 @@
+{
+  "generation": 22,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 2,
+  "patch_name": "context_driven_redex_optimization",
+  "patch_description": "To further improve `used_vars_proportions_average` and `applied_lambdas_proportions_average`, I am refining the `App` node generation. \n\n1.  **Context-Driven Type Selection**: Instead of picking a random variable's type from the context, I now prioritize types that appear *multiple* times in the context. This increases the likelihood that the argument branch (`a_tm`) can be satisfied by a `Var` rather than a `Lit`.\n2.  **Dynamic Redex Probability**: I've adjusted the redex injection probability to scale more aggressively with the remaining budget, ensuring that larger terms are packed with more applied lambdas.\n3.  **Forced Variable Usage in Redexes**: When a redex is injected, the argument `a_tm` is now explicitly biased to select a variable from the context if one of the matching type exists, rather than letting the general `gen_term` logic decide.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T20:20:41.869238",
+  "llm_cost": 0.00989,
+  "llm_model": null
+}

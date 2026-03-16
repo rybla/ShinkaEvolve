@@ -1,0 +1,54 @@
+Let me analyze the programs to understand what makes them successful and how I can improve them through crossover.
+
+Looking at the current program (score 10.65):
+- good_ratio: 1.00 (perfect correctness)
+- tm_sizes_average: 1.92
+- ty_sizes_average: 1.32
+- used_vars_proportions_average: 0.12
+- applied_lambdas_proportions_average: 0.12
+- unique_subterms_proportions_average: 0.26
+
+The crossover inspiration program (score 10.62):
+- good_ratio: 1.00
+- tm_sizes_average: 1.87
+- ty_sizes_average: 1.32
+- used_vars_proportions_average: 0.11
+- applied_lambdas_proportions_average: 0.11
+- unique_subterms_proportions_average: 0.25
+
+The current program is actually slightly better. Let me look at what differences there are:
+
+Current program:
+```python
+elif i == 3:
+    # Generate lambda - always recurse to build more complex terms
+    ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+    return (("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm))
+else:
+    # Generate application - apply a lambda to an argument
+    arg_ty, arg_tm = generate_sample(rng, depth - 1, context)
+    func_ty = ("Fun", arg_ty, arg_ty)
+    func_tm = ("Lam", "x", arg_ty, ("Var", "x"))
+    return (arg_ty, ("App", func_tm, arg_tm))
+```
+
+Crossover inspiration:
+```python
+elif i == 3:
+    # Generate lambda - FIX: add parameter to context
+    ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+    return (("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm))
+else:
+    # Generate application - need to be careful about types
+    # For simplicity, apply a lambda to a literal
+    arg_ty, arg_tm = generate_sample(rng, depth - 1, context)
+    func_ty = ("Fun", arg_ty, arg_ty)
+    func_tm = ("Lam", "x", arg_ty, ("Var", "x"))
+    return (arg_ty, ("App", func_tm, arg_tm))
+```
+
+Both programs are nearly identical with only minor comment differences. Looking at the prior programs, I can see the best one achieved score 10.64 with a lambda that sometimes references variables from context. The key insight is that I should add a mechanism to occasionally use variables from the context when generating lambdas, rather than always recursing with a new parameter. This would increase the used_vars_proportions_average and potentially improve the score.
+
+I need to combine the depth-limited approach from the current program with the context variable usage from the best prior program. The strategy is to maintain perfect correctness while introducing controlled variable references—using a 30% chance to select from context when generating lambdas, otherwise recursing with the new parameter added to context. This should boost the used_vars_proportions_average metric while keeping the good_ratio at 1.00.
+
+Looking at the current implementation, it already has the right structure with depth limiting and context tracking, but I should verify the variable selection logic is working correctly. The key is ensuring that when variables are chosen from context, they're valid for the current type context, and otherwise the recursion properly extends the context with new parameters.

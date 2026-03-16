@@ -1,0 +1,70 @@
+Let me analyze the current program and understand what changes need to be made. The previous attempts didn't work, so I need to be more careful about the exact format.
+
+Looking at the current program in the EVOLVE-BLOCK-START section:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)  # Note: depth is not passed!
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+The issue is:
+1. depth is not passed to recursive calls
+2. No application terms are generated
+3. No variables are used
+
+I need to make targeted improvements. Let me think about what specific change would help:
+
+1. The current score is 10.28 with good_ratio 1.00
+2. The tm_sizes_average is 1.33 which is very small
+3. applied_lambdas_proportions_average is 0.00
+
+The key insight from the analysis is that adding applications would increase tm_sizes_average and applied_lambdas_proportions_average.
+
+Let me make a simple change: add application generation while maintaining correctness.
+
+I'll modify the generate_sample function to:
+1. Pass depth to recursive calls (for termination)
+2. Add an application option
+
+Actually, looking more carefully at the code, I need to make sure I understand the exact format. Let me look at the current code block again:
+
+```python
+# EVOLVE-BLOCK-START
+
+
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)  # Note: depth is not passed!
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+I see the recursive call is missing the depth parameter. This could lead to infinite recursion or unexpected behavior. I'll modify the recursive call to pass the depth, ensuring proper termination and more controlled term generation.
+
+The key modifications will involve:
+1. Passing depth-1 to the recursive call
+2. Maintaining the existing type generation logic
+3. Ensuring type consistency in lambda abstractions
+
+I'll carefully adjust the recursive generation to prevent potential infinite loops while preserving the core generation strategy.

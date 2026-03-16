@@ -1,0 +1,42 @@
+Let me analyze what's happening. I need to provide a proper SEARCH/REPLACE block that modifies the current program. Let me look at the exact code in the current program and propose a specific change.
+
+The current EVOLVE-BLOCK-START section is:
+
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+    if i == 0:
+        return (("Bool",), ("Bool", rng.choice([True, False])))
+    elif i == 1:
+        return (("Int",), ("Int", rng.randint(0, 100)))
+    elif i == 2:
+        return (("String",), ("String", rng.choice(["hello", "world", "test", "foo", "bar"])))
+    else:
+        ty, tm = generate_sample(rng)
+        arg_name = f"x{rng.randint(0, 100)}"
+        arg_ty = rng.choice([("Int",), ("Bool",), ("String",)])
+        return (
+            ("Fun", arg_ty, ty),
+            ("Lam", arg_name, arg_ty, tm),
+        )
+# EVOLVE-BLOCK-END
+```
+
+I need to make a targeted change. The main issues are:
+1. `generate_sample(rng)` doesn't pass depth - this causes infinite recursion
+2. No variables are generated
+3. No App nodes are generated
+
+Let me fix the depth passing issue first, as that's the most critical. I'll also need to add helper functions.
+
+Actually, looking at this more carefully, I think the issue is that I need to provide a complete SEARCH/REPLACE block that exactly matches the current code.
+
+Let me write a modified version that:
+1. Passes depth properly to control recursion
+2. Adds helper functions for generating types and terms with context
+
+
+3. Adds application (App) generation to increase term complexity
+
+I should search for the entire EVOLVE-BLOCK section and replace it with an improved version.

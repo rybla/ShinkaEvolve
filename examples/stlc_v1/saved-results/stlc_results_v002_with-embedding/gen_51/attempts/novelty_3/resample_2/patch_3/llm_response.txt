@@ -1,0 +1,30 @@
+The previous edit wasn't successful. Let me look at the exact format needed and make sure my SEARCH block matches exactly what's in the file.
+
+Looking at the current program in the EVOLVE-BLOCK:
+
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+# EVOLVE-BLOCK-END
+```
+
+I need to match this EXACTLY including indentation. Let me try again with the correct format.
+
+The issue might be that the file needs the complete EVOLVE-BLOCK content including the imports at the top that are already in the file. Let me check what the full file looks like after the initial imports...
+
+Actually, looking at the system prompt more carefully, I see the type definitions are already at the top of the file. So I just need to replace the generate_sample function in the EVOLVE-BLOCK.
+
+Let me try providing just the SEARCH/REPLACE block for the function content.

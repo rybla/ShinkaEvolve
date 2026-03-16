@@ -1,0 +1,39 @@
+Looking at the current program and the analysis provided, I need to understand what's happening and how to improve it.
+
+Current state:
+- Score: 10.65
+- good_ratio: 1.00 (perfect correctness)
+- tm_sizes_average: 1.92
+- ty_sizes_average: 1.32
+- used_vars_proportions_average: 0.12
+- applied_lambdas_proportions_average: 0.12
+- unique_subterms_proportions_average: 0.26
+
+The key insight from the analysis is that the current App generation always creates an identity function:
+```python
+func_tm = ("Lam", "x", arg_ty, ("Var", "x"))
+```
+
+This means every application is essentially `(\x. x) arg` which is just `arg`. This is a "safe" approach but limits the complexity of generated terms.
+
+The recommendation suggests:
+> **Expand Application Logic Beyond Identity Functions**: The current "bottom-up" application strategy always wraps an argument in a newly created identity function. To improve `applied_lambdas_proportions_average` and term size, implement a branch that attempts to generate a "true" function (via a recursive call to `generate_sample` specifically for a `FunTy`) and then generates a matching argument.
+
+So the idea is to modify the App case to generate more complex, non-identity lambda functions and then apply them to appropriate arguments. This should:
+1. Increase `tm_sizes_average` (more complex terms)
+2. Increase `applied_lambdas_proportions_average` (more meaningful applications)
+3. Potentially increase `unique_subterms_proportions_average` (more variety)
+
+Let me think about how to implement this:
+
+Instead of always creating an identity function `(\x. x)`, we should:
+1. First generate a function type `("Fun", arg_ty, res_ty)` 
+
+
+2. Generate a body for that function (which can use the bound variable "x")
+3. Then generate an argument of type `arg_ty`
+4. Apply the function to the argument
+
+This would create more complex terms like `(\x: Int. x + 1) 5` instead of just `(\x. x) 5`.
+
+The implementation would generate a function type with potentially different input and output types, create a lambda body that can reference the bound variable, produce a matching argument, and then apply them together. This approach generates more sophisticated terms that go beyond simple identity functions.

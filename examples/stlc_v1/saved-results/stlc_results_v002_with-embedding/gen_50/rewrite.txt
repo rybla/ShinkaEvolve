@@ -1,0 +1,16 @@
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+    if i == 0:
+        return (("Bool",), ("Bool", rng.choice([True, False])))
+    elif i == 1:
+        return (("Int",), ("Int", rng.randint(0, 100)))
+    elif i == 2:
+        return (("String",), ("String", rng.choice(["hello", "world", "test", "foo", "bar"])))
+    else:
+        ty, tm = generate_sample(rng)  # Note: depth is not passed!
+        arg_name = f"x{rng.randint(0, 100)}"
+        arg_ty = rng.choice([("Int",), ("Bool",), ("String",)])
+        return (
+            ("Fun", arg_ty, ty),
+            ("Lam", arg_name, arg_ty, tm),
+        )

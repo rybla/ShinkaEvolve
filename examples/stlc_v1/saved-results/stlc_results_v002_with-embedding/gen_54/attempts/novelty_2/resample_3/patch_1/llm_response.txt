@@ -1,0 +1,69 @@
+Let me analyze the current program and the prior programs to understand what needs to be improved.
+
+Looking at the metrics:
+- good_ratio: 1.00 (already perfect)
+- tm_sizes_average: 1.35
+- ty_sizes_average: 1.35  
+- used_vars_proportions_average: 0.00 (needs improvement!)
+- applied_lambdas_proportions_average: 0.00 (needs improvement!)
+- unique_subterms_proportions_average: 0.15
+
+The key issues are:
+1. used_vars_proportions_average is 0.00 - the program never generates variables from context
+2. applied_lambdas_proportions_average is 0.00 - the program never generates App terms
+
+The current program only generates literals and lambda abstractions. It doesn't:
+1. Use variables from the context (used_vars)
+2. Apply lambda terms to arguments (applied_lambdas)
+
+Looking at the best-performing programs from the analysis:
+- Program 1 (Score: 10.6365): Had depth parameter, context tracking, 5 options at depth > 0 (3 literals + Lam + App), App generates identity function
+
+The solution should:
+1. Track context when generating lambda bodies (add variable names to context)
+2. Include App as an option to generate applied lambdas
+3. Use a depth parameter to control termination
+4. Generate both type and term together to ensure consistency
+
+Let me write a new program that addresses these issues:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    return generate_term(rng, depth, [])
+
+def generate_term(rng: random.Random, depth: int, context: List[str]) -> Tuple[Ty, Tm]:
+    # Base case: if depth is 0, only generate literals
+    if depth == 0:
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", True))
+        elif i == 1:
+            return (("Int",), ("Int", 27))
+        else:
+            return (("String",), ("String", "hello world"))
+    
+    # Recursive case: 5 options (3 literals + Lam + App)
+    i = rng.randrange(0, 5)
+    
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    elif i == 3:
+        # Generate lambda - extend context with new variable
+        var_name = "x"
+        arg_ty = ("Int",)
+        body_ty, body_tm = generate_term(rng, depth - 1, context + [var_name])
+        return (("Fun", arg_ty, body_ty), ("Lam", var_name, arg_ty, body_tm))
+    else:
+        # Generate application
+        func_ty, func_tm = generate_term(rng, depth - 1, context)
+        arg_ty, arg_tm = generate_term(rng, depth - 1, context)
+        return (("App", func_tm, arg_tm), func_ty)
+```
+
+This version adds context tracking to lambda bodies and includes application as a generation option, which should increase both the variable usage and lambda application metrics. The issue is that when generating a lambda, we create an identity function that just returns the bound variable, then immediately apply it to an argument. This creates an applied lambda but loses the context tracking—we need to properly build up the context as we traverse into the lambda body.
+
+A better approach: generate a lambda with a fresh variable name, extend the context with that variable, then generate the body with the extended context. When applying lambdas, construct a proper function application that uses the context correctly.

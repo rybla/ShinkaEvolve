@@ -1,0 +1,32 @@
+Let me analyze the programs more carefully to understand what might improve the score.
+
+Looking at the metrics:
+- good_ratio: 1.00 for all (perfect correctness)
+- The key differences are in:
+  - tm_sizes_average: higher seems better (1.92 for best vs 1.87 for current)
+  - unique_subterms_proportions_average: higher seems better (0.26 for best vs 0.25 for current)
+
+The current program has depth=10, but maybe the distribution of what gets generated leads to smaller terms on average.
+
+Looking at the best performing programs (score 10.64-10.65), they:
+1. Use depth-limited recursion with 5 options at depth > 0
+2. Always recurse in lambda (no 30% variable shortcut)
+3. Generate App by creating identity function and applying it
+
+The current program does all this, but has a slightly lower score. Let me think about what could be different...
+
+Actually, looking more closely at the current program vs the best ones, they're essentially identical. The difference might be in subtle implementation details.
+
+One thing I could try is:
+1. Increase initial depth to allow for larger terms
+2. Use a different probability distribution for constructor selection
+3. Add more variety in the types used (not just Int)
+
+Let me try a different approach - instead of just using Int for all function types, I'll add variety. This could increase unique_subterms_proportions_average.
+
+Also, I could try increasing the depth parameter to allow for larger, more complex terms to be generated.
+
+Let me implement a version that:
+1. Uses depth=15 instead of 10 to allow for larger terms
+2. Adds variety in the base types used in function annotations
+3. Maintains the depth-limited approach that works well

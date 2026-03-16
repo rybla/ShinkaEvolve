@@ -1,0 +1,147 @@
+<NAME>
+context_aware_redex_synthesis
+</NAME>
+
+<DESCRIPTION>
+The core innovation in this implementation is "Context-Aware Argument Selection" for applications. Previous versions generated random `arg_ty` for `App` nodes, often resulting in terms where variables in the context (lambdas) were never used because their types didn't match the functions being generated. This version observes the types of variables already available in the context (`ctx`) and, with a 50% probability, selects one of those types as the argument type for an application. This significantly boosts the `used_vars_proportions` metric. 
+
+Additionally, I've implemented:
+1.  **Tailored Redex Logic**: Explicitly constructing `App(Lam(...), ...)` structures with a dynamic probability that scales with the budget, ensuring the `applied_lambdas` metric remains high while maintaining term diversity.
+2.  **Weighted Variable Selection**: A recency bias that favors the most recently bound variables, simulating real-world code where local scopes are active.
+3.  **Recursive Budget Splitting**: Using a randomized split (instead of a static 50/50) to create deeper and more interesting AST structures.
+</DESCRIPTION>
+
+<CODE>
+```python
+from typing import Literal, Tuple, List
+import random
+
+"""
+`Ty` and `Tm` define the shape of a simply-typed lambda-calculus deeply embedded in Python.
+"""
+
+type Ty = BoolTy | IntTy | StringTy | FunTy
+type BoolTy = Tuple[Literal["Bool"]]
+type IntTy = Tuple[Literal["Int"]]
+type StringTy = Tuple[Literal["String"]]
+type FunTy = Tuple[Literal["Fun"], Ty, Ty]
+
+
+type Tm = LitTm | VarTm | LamTm | AppTm
+type LitTm = (
+    Tuple[Literal["Bool"], bool]
+    | Tuple[Literal["Int"], int]
+    | Tuple[Literal["String"], str]
+)
+type VarTm = Tuple[Literal["Var"], str]
+type LamTm = Tuple[Literal["Lam"], str, Ty, Tm]
+type AppTm = Tuple[Literal["App"], Tm, Tm]
+
+
+# EVOLVE-BLOCK-START
+
+def generate_sample(rng: random.Random) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    Synthesizes terms to maximize complexity, variable usage, and redexes.
+    """
+
+    def gen_type(size_limit: int) -> Ty:
+        if size_limit <= 1 or rng.random() < 0.25:
+            return rng.choice([("Bool",), ("Int",), ("String",)])
+        # Bias towards functions to allow for higher recursion and applications
+        split = rng.randint(1, max(1, size_limit - 1))
+        return ("Fun", gen_type(split), gen_type(size_limit - split - 1))
+
+    def gen_term(ty: Ty, ctx: List[Tuple[str, Ty]], budget: int) -> Tm:
+        # Filter context for type-safe variables
+        valid_vars = [name for name, t in ctx if t == ty]
+
+        # Terminal cases: Budget exhausted or small
+        if budget <= 1:
+            if valid_vars:
+                # Use recency bias: prefer variables defined later in the context
+                # This increases used_vars_proportions by focusing on "local" variables
+                idx = int(len(valid_vars) * (rng.random() ** 0.5))
+                return ("Var", valid_vars[::-1][idx])
+            
+            if ty == ("Bool",): return ("Bool", rng.choice([True, False]))
+            if ty == ("Int",): return ("Int", rng.randint(-100, 100))
+            if ty == ("String",): return ("String", rng.choice(["id", "val", "msg"]))
+            
+            if ty[0] == "Fun":
+                v = f"tmp_{len(ctx)}"
+                return ("Lam", v, ty[1], gen_term(ty[2], ctx + [(v, ty[1])], 0))
+            return ("Int", 42)
+
+        # Logical weights for term generation
+        choices = []
+        weights = []
+
+        if ty[0] == "Fun":
+            choices.append("lam")
+            weights.append(35)
+        
+        if valid_vars:
+            choices.append("var")
+            weights.append(30)
+            
+        if budget > 3:
+            choices.append("app")
+            weights.append(45)
+            
+        if ty[0] != "Fun" or not choices:
+            choices.append("lit")
+            weights.append(10)
+
+        mode = rng.choices(choices, weights=weights)[0]
+
+        if mode == "lam":
+            v_name = f"x_{len(ctx)}_{rng.randint(0, 999)}"
+            # Recursive call to build the body
+            return ("Lam", v_name, ty[1], gen_term(ty[2], ctx + [(v_name, ty[1])], budget - 1))
+
+        elif mode == "var":
+            # Recency bias selection
+            idx = int(len(valid_vars) * (rng.random() ** 0.4))
+            return ("Var", valid_vars[::-1][idx])
+
+        elif mode == "app":
+            # Context-Aware Argument Selection: 
+            # Pick an arg_ty from something we already have in ctx 50% of the time.
+            # This ensures that generated arguments have a higher chance of being variables.
+            available_tys = [t for _, t in ctx]
+            if available_tys and rng.random() < 0.5:
+                arg_ty = rng.choice(available_tys)
+            else:
+                arg_ty = gen_type(rng.randint(1, 3))
+
+            # Split budget unevenly to create interesting tree depths
+            split = rng.randint(1, budget - 1)
+            
+            # Explicit Redex Injection (40% chance if budget allows)
+            if rng.random() < 0.4 and budget > 10:
+                v_name = f"redex_{len(ctx)}"
+                # Construct (Lam x. body) arg
+                f_tm = ("Lam", v_name, arg_ty, gen_term(ty, ctx + [(v_name, arg_ty)], split))
+                a_tm = gen_term(arg_ty, ctx, budget - split - 1)
+                return ("App", f_tm, a_tm)
+            else:
+                # Normal Application
+                return ("App", 
+                        gen_term(("Fun", arg_ty, ty), ctx, split), 
+                        gen_term(arg_ty, ctx, budget - split - 1))
+
+        else: # lit
+            if ty == ("Bool",): return ("Bool", rng.choice([True, False]))
+            if ty == ("Int",): return ("Int", rng.randint(-1000, 1000))
+            return ("String", f"s_{rng.randint(0, 100)}")
+
+    # Entry point: Maximize target type complexity and term budget
+    target_ty = gen_type(10)
+    target_tm = gen_term(target_ty, [], 100)
+
+    return target_ty, target_tm
+
+# EVOLVE-BLOCK-END
+```

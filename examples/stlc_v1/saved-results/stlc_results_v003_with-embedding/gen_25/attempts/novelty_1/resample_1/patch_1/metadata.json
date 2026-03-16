@@ -1,0 +1,14 @@
+{
+  "generation": 25,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "asymmetric_redex_generator",
+  "patch_description": "This generator optimizes STLC term generation by combining asymmetric budget allocation (the 0.7 rule) with explicit redex injection and context-aware type selection. \n\nKey improvements:\n1. **Quadratic Recency Bias**: When selecting variables from the context, weights are assigned as `(index + 1)**2`, strongly favoring local variables to boost the `used_vars` metric.\n2. **Context-Primary Strategy**: 75% of `App` nodes use an `arg_ty` already present in the context, ensuring the argument branch can be satisfied by a `Var` node.\n3. **Forced Redex Injection**: A 65% probability is applied to turn `App` nodes into explicit `(Lam x. body) arg` structures, maximizing `applied_lambdas`.\n4. **Asymmetric Budgeting**: Recursive calls for function bodies receive 70-75% of the remaining budget, creating deeper, more complex ASTs.\n5. **Unique Naming**: Variable names incorporate a global counter and random salt to ensure sub-term uniqueness.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T20:21:04.477791",
+  "llm_cost": 0.014042,
+  "llm_model": null
+}

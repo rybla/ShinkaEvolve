@@ -1,0 +1,97 @@
+<NAME>
+dynamic_depth_weighting_and_type_expansion
+</NAME>
+
+<DESCRIPTION>
+This edit introduces dynamic weighting based on the remaining budget to push the `tm_sizes_average` higher. By increasing the probability of `App` and `Lam` when the budget is high and tapering off to `Var` and `Lit` as the budget depletes, we can generate deeper, more complex trees. Additionally, the `gen_type` function is adjusted to more consistently produce types closer to the size limit of 10, which improves `ty_sizes_average`.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    def gen_type(size_limit: int) -> Ty:
+        if size_limit <= 1 or rng.random() < 0.25:
+            return rng.choice([("Bool",), ("Int",), ("String",)])
+        # Bias towards functions to allow for higher recursion and applications
+        split = rng.randint(1, max(1, size_limit - 1))
+        return ("Fun", gen_type(split), gen_type(size_limit - split - 1))
+=======
+    def gen_type(size_limit: int) -> Ty:
+        # Encourage larger types by reducing early exit probability
+        if size_limit <= 1 or (size_limit < 5 and rng.random() < 0.15):
+            return rng.choice([("Bool",), ("Int",), ("String",)])
+        # Bias towards functions to allow for higher recursion and applications
+        split = rng.randint(1, max(1, size_limit - 2))
+        return ("Fun", gen_type(split), gen_type(size_limit - split - 1))
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+        choices = []
+        weights = []
+
+        if ty[0] == "Fun":
+            choices.append("lam")
+            weights.append(40)
+
+        if valid_vars:
+            choices.append("var")
+            weights.append(35)
+
+        if budget > 3:
+            choices.append("app")
+            weights.append(55)
+
+        if ty[0] != "Fun" or not choices:
+            choices.append("lit")
+            weights.append(10)
+
+        mode = rng.choices(choices, weights=weights)[0]
+=======
+        choices = []
+        weights = []
+
+        # Dynamic weighting: High budget favors structural complexity (App/Lam)
+        # Low budget favors termination (Var/Lit)
+        if ty[0] == "Fun":
+            choices.append("lam")
+            weights.append(20 + (budget / 2))
+
+        if valid_vars:
+            choices.append("var")
+            weights.append(30 + (100 / max(1, budget)))
+
+        if budget > 3:
+            choices.append("app")
+            weights.append(40 + (budget / 1.5))
+
+        if ty[0] != "Fun" or not choices:
+            choices.append("lit")
+            weights.append(10)
+
+        mode = rng.choices(choices, weights=weights)[0]
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+            # Split budget: give more to the function part to encourage redexes
+            split = rng.randint(max(1, budget // 3), max(2, (2 * budget) // 3))
+
+            # Explicit Redex Injection (50% chance)
+            if rng.random() < 0.5 and budget > 5:
+=======
+            # Split budget: give more to the function part to encourage redexes
+            split = rng.randint(max(1, budget // 3), max(2, (3 * budget) // 4))
+
+            # Explicit Redex Injection (60% chance)
+            if rng.random() < 0.6 and budget > 5:
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+    # Entry point: Maximize target type complexity and term budget
+    target_ty = gen_type(10)
+    target_tm = gen_term(target_ty, [], 100)
+=======
+    # Entry point: Maximize target type complexity and term budget
+    # Use a slightly higher size_limit for gen_type to hit the 10 node cap more often
+    target_ty = gen_type(12)
+    target_tm = gen_term(target_ty, [], 100)
+>>>>>>> REPLACE
+</DIFF>

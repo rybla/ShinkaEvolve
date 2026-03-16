@@ -1,0 +1,14 @@
+{
+  "generation": 27,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "TypeFrequencyMatchSTLCGenerator",
+  "patch_description": "This generator maximizes performance metrics by prioritizing variable reuse and redex injection through frequency-based context analysis. \n\nKey improvements:\n1. **Context-Driven Type Matching**: During `App` construction, instead of a random type, it analyzes the current context to select an `arg_ty` that appears most frequently. This significantly boosts `used_vars_proportions` by ensuring the argument side of an application can almost always be satisfied by a `Var`.\n2. **Probability-Scaled Redex Injection**: Uses a dynamic redex injection probability calibrated to the remaining budget ($P = 0.6 + budget / 200$), ensuring a high density of applied lambdas in large terms.\n3. **Quadratic Recency Bias**: Implements a power-law weighting $(index + 1)^2$ when selecting variables, favoring local scope and mimicking realistic code patterns.\n4. **Enhanced Type Complexity**: Type generation is biased toward `FunTy` (85%) to ensure the term generation has enough structure to perform applications and abstractions.\n5. **Strict Budget Management**: Uses an asymmetric budget split (75/25) to ensure deep, complex functional branches while maintaining valid, simple leaves.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T20:21:28.454975",
+  "llm_cost": 0.0129505,
+  "llm_model": null
+}

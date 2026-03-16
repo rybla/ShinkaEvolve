@@ -1,0 +1,45 @@
+Let me analyze the current program and the performance metrics to understand what needs to be improved.
+
+Current program:
+- Uses depth-limited generation (depth 0: 3 literal options, depth > 0: 5 options)
+- At depth 0: Bool, Int, String literals
+- At depth > 0: Same 3 literals + Lam + App
+- For Lam: adds "x" to context but doesn't really use it
+- For App: creates a synthetic identity function and applies it
+
+Performance metrics:
+- Combined score: 10.65
+- good_ratio: 1.00 (perfect correctness - this is key!)
+- tm_sizes_average: 1.92
+- ty_sizes_average: 1.32
+- used_vars_proportions_average: 0.12
+- applied_lambdas_proportions_average: 0.12
+- unique_subterms_proportions_average: 0.26
+
+Looking at the code:
+1. The program achieves 100% correctness (good_ratio = 1.0)
+2. The current approach generates a lot of literals (60% chance at depth > 0)
+3. Variables are only generated in the App case (as the bound variable "x" in the lambda)
+4. There's no actual use of variables from context
+
+Key insight from the analysis: The perfect good_ratio is the primary driver. The score of 10.65 comes from having perfect correctness.
+
+To improve while maintaining correctness:
+1. Keep the type-term coupling approach (generate both together)
+2. Maintain depth-limited generation
+3. Try to increase variety in the generated terms while maintaining correctness
+
+Let me think about what novel approach I can take:
+
+1. **Dynamic variable selection**: Actually use variables from the context instead of always creating synthetic ones
+2. **More balanced construction**: Instead of 60% literals, use more lambdas and applications
+3. **Type variation**: Use different result types for lambdas instead of always ("Int",)
+
+
+4. **Random choice weighting**: Modify the probability distribution to generate more complex terms rather than defaulting to simple literals
+
+I could introduce a heuristic that balances between exploration and exploitation - generate literals with lower probability while increasing chances for lambda and application constructs. This would help break out of the literal-heavy pattern while still preserving type safety and syntactic correctness.
+
+The key is to maintain the depth-first generation strategy but adjust how choices are weighted at each recursive step, ensuring we don't sacrifice the good_ratio while expanding term diversity.
+
+I'll implement this by tracking context, allowing variable references, and dynamically adjusting type annotations to capture more nuanced term structures.

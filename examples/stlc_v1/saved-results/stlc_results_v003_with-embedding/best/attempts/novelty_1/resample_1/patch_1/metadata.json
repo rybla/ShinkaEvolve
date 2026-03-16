@@ -1,0 +1,14 @@
+{
+  "generation": 49,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "TypeDirectedSubtermOptimizer",
+  "patch_description": "This implementation optimizes STLC generation by focusing on several key heuristics:\n1. **Enhanced Redex Density**: Uses a higher base probability for 'Explicit Redex Injection' and ensures that even in standard applications, the function branch is heavily biased towards becoming a Lambda if the budget allows.\n2. **Exponential Recency Bias**: Upgraded from cubic to a 4th-power bias for variable selection, forcing the generator to prioritize the most local variables, which significantly improves the `used_vars_proportions` metric.\n3. **Context-Aware Type Selection (CATS)**: When generating applications, the `arg_ty` is picked from the context with 90% probability. This creates a \"local-first\" dependency chain where functions almost always operate on available data.\n4. **Structural Uniqueness**: Incorporates both recursion depth and a high-resolution global counter to ensure every sub-term has a unique identifier, maintaining a high `unique_subterms_proportions`.\n5. **Budget Management**: Uses a 75/25 split for applications to create deeper, more \"nested\" terms rather than flat, wide trees, increasing the average term size and complexity.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T20:46:40.534238",
+  "llm_cost": 0.0135645,
+  "llm_model": null
+}

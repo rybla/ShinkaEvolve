@@ -1,0 +1,32 @@
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    return generate_term(rng, depth, [])
+
+def generate_term(rng: random.Random, depth: int, context: List[str]) -> Tuple[Ty, Tm]:
+    if depth <= 0:
+        # At depth 0, only generate literals
+        return generate_literal(rng)
+    
+    # At depth > 0, we have 5 options: 3 literals + Lam + App
+    options = 5
+    i = rng.randrange(0, options)
+    
+    if i == 0:
+        return generate_literal(rng)
+    elif i == 1:
+        return generate_literal(rng)
+    elif i == 2:
+        return generate_literal(rng)
+    elif i == 3:
+        # Generate lambda
+        arg_ty = generate_type(rng, depth - 1)
+        body_ty, body = generate_term(rng, depth - 1, context + ["x"])
+        return (("Fun", arg_ty, body_ty), ("Lam", "x", arg_ty, body))
+    else:
+        # Generate application
+        func_ty, func = generate_term(rng, depth - 1, context)
+        if func_ty[0] == "Fun":
+            arg_ty = func_ty[1]
+            arg = generate_term(rng, depth - 1, context)
+            return (func_ty[2], ("App", func, arg))
+        else:
+            return generate_literal(rng)

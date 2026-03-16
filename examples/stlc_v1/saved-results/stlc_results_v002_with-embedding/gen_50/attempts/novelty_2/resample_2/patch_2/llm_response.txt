@@ -1,0 +1,28 @@
+Let me analyze the current program and the prior programs more carefully to understand what improvement to make.
+
+Looking at the current program:
+- It generates simple lambda terms
+- It has good_ratio = 1.00 (perfect correctness)
+- But it has very low used_vars_proportions_average (0.00) and applied_lambdas_proportions_average (0.00)
+- The tm_sizes_average is only 1.31
+
+The key insight from the analysis at the beginning mentions that the best programs had:
+- used_vars_proportions_average ~ 0.11
+- applied_lambdas_proportions_average ~ 0.11
+
+The current program has both at 0.00, which suggests we need to add:
+1. App term generation (to increase applied_lambdas_proportions_average)
+2. Variable usage from context (to increase used_vars_proportions_average)
+
+Looking at the analysis more carefully, the best program (Program 1, score 10.6365) had:
+- 5 options at depth > 0 (3 literals + Lam + App)
+- 3 options at depth = 0 (only literals)
+- App generates identity function `("Lam", "x", arg_ty, ("Var", "x"))` and applies it to arg
+- context tracking with context = [] initially, passed as context + ["x"] for lambda
+
+Let me modify the current program to add:
+1. Proper depth control (pass depth-1 in recursive calls)
+2. Add App term generation
+3. Add variable usage from context
+
+I'll update the generate_sample function to include these improvements.

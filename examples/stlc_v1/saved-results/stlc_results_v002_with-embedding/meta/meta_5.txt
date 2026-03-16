@@ -1,0 +1,79 @@
+# INDIVIDUAL PROGRAM SUMMARIES
+
+The following are summaries of individual programs evaluated since the last meta update:
+
+**Program Name: Recursive Random Generator for Simply-Typed Lambda Calculus Terms**
+- **Implementation**: The generator uses a recursive approach to construct typed terms, favoring literals at maximum depth and generating lambda abstractions with random type annotations and fresh variable names.
+- **Performance**: Achieved a combined score of 10.30 with a 1.00 good_ratio, but suffered from very low term/type complexity (1.35 average size) and zero variable usage.
+- **Feedback**: While the program successfully produces valid terms, the failure to pass the `depth` parameter in recursive calls and the lack of an `App` constructor or variable references results in trivial, under-optimized samples.
+**Program Identifier:** Generation 50 - Patch Name none - Correct Program: True
+
+**Program Name: Recursive Random Generation for Simply-Typed Lambda Calculus**
+- **Implementation**: The generator uses a recursive depth-limited approach to produce terms, utilizing a random integer selector to switch between literals, lambda abstractions, and applications. It maintains a context list for variable tracking, though it currently defaults to hardcoded types and names during recursion.
+- **Performance**: Achieved a combined score of 7.73 with a 75% validity ratio, but suffered from very low term/type complexity (averaging 1.26) and zero variable utilization.
+- **Feedback**: While the program successfully generates syntactically correct structures, the recursive logic produces shallow trees and fails to reference bound variables or create functional applications, leading to high redundancy and low structural diversity.
+**Program Identifier:** Generation 52 - Patch Name none - Correct Program: True
+
+**Program Name: Recursive Random Term Generator with Depth-Limited Branching**
+- **Implementation**: The generator uses a recursive approach with a depth counter, attempting to produce literals, lambdas, or applications while maintaining a list of variable names in a context.
+- **Performance**: Combined score: nan; good_ratio: 0.00; the program failed to produce valid samples, resulting in no measurable performance metrics.
+- **Feedback**: The implementation fails because it references an undefined `List` type and calls `generate_type` and `generate_literal` functions that were never defined. Additionally, the application logic frequently defaults to literals when a function type isn't randomly generated, leading to structural inconsistencies.
+**Program Identifier:** Generation 53 - Patch Name none - Correct Program: False
+
+**Program Name: Recursive Random Term Generator for Simply-Typed Lambda Calculus**
+- **Implementation**: The generator uses a recursive approach with a depth limit to produce terms, utilizing a random integer selector to choose between literals, lambda abstractions, and applications. It maintains a variable context list, though it currently defaults to hardcoded types and variable names during recursion.
+- **Performance**: Achieved a combined score of 7.78 with a 75% "good" ratio, but suffered from very low term/type complexity (averaging 1.29) and zero variable utilization.
+- **Feedback**: While the program successfully generates valid structures, the reliance on hardcoded values and the lack of logic to select variables from the context results in trivial terms and poor variety.
+**Program Identifier:** Generation 54 - Patch Name none - Correct Program: True
+
+**Program Name: Deeply Embedded Simply-Typed Lambda Calculus Term Generator**
+- **Implementation**: The program uses a recursive generation strategy with a fixed depth limit, constructing terms as nested tuples representing types (Bool, Int, String, Fun) and terms (Lit, Var, Lam, App). It utilizes a context list to track variables and attempts to generate function applications by wrapping terms in identity functions.
+- **Performance**: Combined score: 0.0; the program is incomplete and fails to execute due to syntax errors.
+- **Feedback**: The implementation is broken by a syntax error (an `elif` without a preceding `if`) and lacks a complete `generate_sample` function definition. To succeed, it needs a robust base case for recursion and a mechanism to ensure type consistency between function abstractions and their applications.
+**Program Identifier:** Generation 55 - Patch Name none - Correct Program: False
+
+# GLOBAL INSIGHTS SCRATCHPAD
+
+The following are global insights about optimization approaches and their effectiveness:
+
+## Successful Algorithmic Patterns
+
+*   **Identity Function Wrapping for Valid Applications**: The current best program (Generation 54/Best) achieved a `good_ratio` of 1.00 and improved the `applied_lambdas_proportions_average` to 0.12 by explicitly constructing an identity function `("Lam", "x", arg_ty, ("Var", "x"))` to wrap around a generated argument. This ensures that the `App` constructor always receives a function of the correct type, avoiding the type-mismatch errors that caused Generation 53 to fail.
+*   **Context-Aware Variable Injection**: While previous iterations (Generations 50, 52) had zero variable utilization, the current best program successfully increased `used_vars_proportions_average` to 0.12 by manually injecting a variable name `"x"` into the context during lambda generation and immediately referencing it in the identity function application.
+*   **Depth-Limited Base Cases**: Successful programs (Generations 50, 54, and the Best Program) all utilize a `depth` parameter to force the generation of `LitTm` (literals) when `depth == 0`. This prevents infinite recursion and ensures the program terminates with a valid, ground-level term.
+*   **Explicit Type-Term Pairing**: The most successful approach (Best Program, Score 10.65) returns a tuple of `(Ty, Tm)` where the type is explicitly constructed to match the term (e.g., returning `("Fun", ("Int",), ty)` alongside a `Lam` term). This synchronization is critical for maintaining a 1.00 `good_ratio`.
+
+## Ineffective Approaches
+
+*   **Undefined Dependencies and Type Errors**: Generation 53 failed completely (Score: nan) because it referenced undefined types like `List` and missing helper functions like `generate_type`. This highlights that even a logically sound recursive strategy fails if the Python environment's namespace is not strictly managed.
+*   **Hardcoded Recursion without Parameter Passing**: Generation 50 suffered from low complexity (1.35 average size) because it failed to pass the decremented `depth` parameter into recursive calls. This resulted in "shallow" trees where the recursion effectively reset or terminated prematurely.
+*   **Syntax Errors in Branching Logic**: Generation 55 failed (Score: 0.0) due to basic syntax errors (an `elif` without an `if`). This demonstrates that complex generation logic must be carefully structured to remain syntactically valid Python code.
+*   **Disconnected Contexts**: Generations 52 and 54 maintained a context list but failed to implement logic to actually select variables from that list. This led to a `used_vars_proportions_average` of 0.0, as the programs generated "dead" contexts that were never queried.
+
+## Implementation Insights
+
+*   **Probability-Based Constructor Selection**: The best program uses `rng.randrange(0, 5)` to balance between literals (3/5 chance), lambdas (1/5), and applications (1/5). This distribution ensures that the generator doesn't become overwhelmed by deeply nested functions, which can lead to timeouts or excessive complexity.
+*   **Type Consistency in Applications**: The current best program ensures validity by generating the argument first (`arg_ty, arg_tm = generate_sample(...)`) and then building a function specifically designed to accept that type. This "bottom-up" type construction for applications is more reliable than "top-down" guessing.
+*   **Recursive Depth Management**: The transition from Generation 50 to the Best Program shows that correctly passing `depth - 1` is the primary driver for increasing `tm_sizes_average`. Without this, the generator defaults to the simplest possible terms.
+*   **Literal Diversity**: Even in the best program, literals are restricted to a few hardcoded values (e.g., `27`, `"hello world"`). While this ensures validity, it contributes to the relatively low `unique_subterms_proportions_average` (0.26).
+
+## Performance Analysis
+
+*   **Stability vs. Complexity**: The current best program achieved the highest combined score (10.65) by prioritizing a 1.00 `good_ratio`. While its term size (1.92) and type size (1.32) are still relatively low, it outperforms Generation 50 (Score 10.30) by successfully integrating variable usage and applications.
+*   **The "Validity Gap"**: There is a significant performance gap between programs that produce valid terms (Generations 50, 52, 54, Best) and those that fail due to syntax or logic errors (53, 55). A program with a 0.75 `good_ratio` (Generation 54) scored 7.78, whereas the best program with 1.00 `good_ratio` jumped to 10.65.
+*   **Variable Usage Correlation**: The jump in score from 7.78 (Gen 54) to 10.65 (Best) is directly correlated with the increase in `used_vars_proportions_average` from 0.00 to 0.12. This indicates that even minimal variable referencing significantly boosts the evaluation metric.
+*   **Structural Redundancy**: Despite being the "best," the current program still has a low `unique_subterms_proportions_average` (0.26). This suggests that the current strategy of using hardcoded identity functions for applications, while safe for validity, limits the structural diversity of the generated samples.
+
+# META RECOMMENDATIONS
+
+The following are actionable recommendations for the next program generations:
+
+1. **Implement Dynamic Variable Selection from Context**: The current best program hardcodes the variable name `"x"` and only uses it in a synthetic identity function. To improve `used_vars_proportions_average` and `unique_subterms_proportions_average`, modify the `Var` generation logic to check if `context` is non-empty and, if so, randomly select an existing variable name from the list. This ensures that variables are not just injected but actually utilized throughout the term tree.
+
+2. **Diversify Literal Generation with RNG**: The current program uses a few hardcoded literals (e.g., `27`, `"hello world"`), which limits the `unique_subterms_proportions_average`. Replace these with dynamic generation, such as `rng.randint(-100, 100)` for integers and `rng.choice` from a list of strings or random character sequences. This will increase the structural variety of the generated terms without risking type validity.
+
+3. **Generalize Lambda Return Types**: Currently, lambdas are restricted to a fixed input type `("Int",)` or a simple identity mapping. To increase `ty_sizes_average` and complexity, the lambda generator should recursively call `generate_sample` to determine the input type and the body, allowing for nested function types like `(Int -> Bool) -> String`. This builds on the "Explicit Type-Term Pairing" pattern while increasing the depth of the type trees.
+
+4. **Expand Application Logic Beyond Identity Functions**: The current "bottom-up" application strategy always wraps an argument in a newly created identity function. To improve `applied_lambdas_proportions_average` and term size, implement a branch that attempts to generate a "true" function (via a recursive call to `generate_sample` specifically for a `FunTy`) and then generates a matching argument. This moves away from the "safe" identity wrapper toward more complex, valid application structures.
+
+5. **Introduce Weighted Constructor Selection**: The current `randrange(0, 5)` provides a flat distribution that may still favor shallow trees. Implement a weighted selection mechanism where the probability of choosing `LitTm` increases as `depth` approaches 0, while `Lam` and `App` are prioritized at higher `depth` levels. This will allow the generator to produce much larger `tm_sizes_average` while still guaranteeing termination and validity.

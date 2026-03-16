@@ -1,0 +1,41 @@
+The user is asking me to make changes to the code, but my previous edit was not successful. Let me look at the current program and the error more carefully.
+
+Looking at the current program in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END, I need to propose a change. The current program has:
+- good_ratio = 1.00 (perfect correctness)
+- But very low used_vars_proportions_average (0.00) and applied_lambdas_proportions_average (0.00)
+- Small tm_sizes_average (1.31)
+
+The key improvements from the analysis:
+1. Add depth control (pass depth to recursive calls)
+2. Add App (application) generation
+3. Add context tracking for variables
+4. Generate types and terms together for consistency
+
+Let me propose a change that adds these features while maintaining good_ratio = 1.00.
+
+I need to make sure my SEARCH block matches exactly what's in the current file. Let me look at the current code:
+
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+    if i == 0:
+        return (("Bool",), ("Bool", rng.choice([True, False])))
+    elif i == 1:
+        return (("Int",), ("Int", rng.randint(0, 100)))
+    elif i == 2:
+        return (("String",), ("String", rng.choice(["hello", "world", "test", "foo", "bar"])))
+    else:
+        ty, tm = generate_sample(rng)
+        arg_name = f"x{rng.randint(0, 100)}"
+        arg_ty = rng.choice([("Int",), ("Bool",), ("String",)])
+        return (
+            ("Fun", arg_ty, ty),
+            ("Lam", arg_name, arg_ty, tm),
+        )
+# EVOLVE-BLOCK-END
+```
+
+I'll modify the recursive generation to properly track depth and add context. I'll implement depth-limited recursion with type and term consistency, ensuring I pass the reduced depth and maintain context for variable references. This approach will help generate more complex and type-safe lambda calculus terms while preventing infinite recursion.
+
+I'll need to add a helper function for generating base types and create more sophisticated generation strategies that respect depth constraints and type boundaries. The goal is to generate well-typed lambda calculus expressions that explore a richer variety of term structures.

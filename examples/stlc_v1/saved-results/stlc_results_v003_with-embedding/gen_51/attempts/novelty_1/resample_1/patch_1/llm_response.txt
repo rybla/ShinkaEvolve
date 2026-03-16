@@ -1,0 +1,154 @@
+<NAME>
+redex_driven_variable_synergy
+</NAME>
+
+<DESCRIPTION>
+Optimizes STLC term generation by intensifying redex frequency and variable reuse. 
+1.  **Cubic Recency Bias**: Implements a stricter weighted selection for variables `(index + 1)**3` to favor local scopes.
+2.  **Strategic Redex Probability**: Links redex creation directly to the remaining budget to maximize `applied_lambdas`.
+3.  **Forced Argument Re-use**: Ensures that 90% of redex applications and 80% of standard applications attempt to use an existing variable from the context, driving `used_vars` significantly higher.
+4.  **Asymmetric Budgeting**: Uses a 70/30 split in applications to encourage deep functional nesting.
+5.  **Unique Naming**: Implements a more robust 4-part identifier for binders to ensure `unique_subterms` remains near 1.0.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    def gen_term(ty: Ty, ctx: List[Tuple[str, Ty]], budget: int) -> Tm:
+        valid_vars = [name for name, t in ctx if t == ty]
+
+        # Base Case: Budget exhausted or forced leaf
+        if budget <= 1:
+            if valid_vars:
+                # Cubic Recency Bias: (index + 1)**3
+                weights = [(i + 1)**3 for i in range(len(valid_vars))]
+                return ("Var", rng.choices(valid_vars, weights=weights, k=1)[0])
+
+            if ty[0] == "Fun":
+                v = get_unique_name("f", len(ctx))
+                return ("Lam", v, ty[1], gen_term(ty[2], ctx + [(v, ty[1])], 0))
+
+            if ty == ("Bool",): return ("Bool", rng.choice([True, False]))
+            if ty == ("Int",): return ("Int", rng.randint(-100, 100))
+            return ("String", "leaf")
+
+        # Weighted Constructor Selection
+        # App: 60, Var: 40, Lam: 30, Lit: 10
+        choices, weights = [], []
+        if ty[0] == "Fun":
+            choices.append("lam"); weights.append(30)
+        if valid_vars:
+            choices.append("var"); weights.append(40)
+        if budget > 2:
+            choices.append("app"); weights.append(60)
+        
+        if not choices or (ty[0] != "Fun" and rng.random() < 0.1):
+            choices.append("lit"); weights.append(10)
+
+        mode = rng.choices(choices, weights=weights)[0]
+
+        if mode == "lam":
+            v_name = get_unique_name("x", len(ctx))
+            return ("Lam", v_name, ty[1], gen_term(ty[2], ctx + [(v_name, ty[1])], budget - 1))
+
+        elif mode == "var":
+            v_weights = [(i + 1)**3 for i in range(len(valid_vars))]
+            return ("Var", rng.choices(valid_vars, weights=v_weights, k=1)[0])
+
+        elif mode == "app":
+            # 85% Rule: Context-Aware Type Selection (CATS)
+            if ctx and rng.random() < 0.85:
+                arg_ty = rng.choice(ctx)[1]
+            else:
+                arg_ty = gen_type(rng.randint(1, 2))
+
+            # Budget-Scaled Redex Probability
+            redex_prob = 0.55 + (budget / 150.0)
+            # Asymmetric Budget Management (70/30 Rule)
+            split = int(budget * 0.7)
+
+            if rng.random() < redex_prob and budget > 4:
+                v_name = get_unique_name("r", len(ctx))
+                # Construct explicit redex
+                f_tm = ("Lam", v_name, arg_ty, gen_term(ty, ctx + [(v_name, arg_ty)], split))
+                
+                # Forced Variable Argument (90% probability)
+                arg_vars = [n for n, t in ctx if t == arg_ty]
+                if arg_vars and rng.random() < 0.90:
+                    a_weights = [(i + 1)**3 for i in range(len(arg_vars))]
+                    a_tm = ("Var", rng.choices(arg_vars, weights=a_weights, k=1)[0])
+                else:
+                    a_tm = gen_term(arg_ty, ctx, budget - split - 1)
+                return ("App", f_tm, a_tm)
+            else:
+                # Standard application
+                return ("App",
+                        gen_term(("Fun", arg_ty, ty), ctx, split),
+                        gen_term(arg_ty, ctx, budget - split - 1))
+
+        else: # lit
+=======
+    def gen_term(ty: Ty, ctx: list[Tuple[str, Ty]], budget: int) -> Tm:
+        valid_vars = [name for name, t in ctx if t == ty]
+
+        if budget <= 0:
+            if valid_vars:
+                weights = [(i + 1)**3 for i in range(len(valid_vars))]
+                return ("Var", rng.choices(valid_vars, weights=weights, k=1)[0])
+            if ty[0] == "Fun":
+                v = get_unique_name("f", len(ctx))
+                return ("Lam", v, ty[1], gen_term(ty[2], ctx + [(v, ty[1])], 0))
+            if ty == ("Bool",): return ("Bool", rng.choice([True, False]))
+            if ty == ("Int",): return ("Int", rng.randint(-100, 100))
+            return ("String", "s")
+
+        choices, weights = [], []
+        if ty[0] == "Fun":
+            choices.append("lam"); weights.append(25)
+        if valid_vars:
+            choices.append("var"); weights.append(40)
+        if budget > 1:
+            choices.append("app"); weights.append(60)
+        if not choices or (ty[0] != "Fun" and rng.random() < 0.1):
+            choices.append("lit"); weights.append(10)
+
+        mode = rng.choices(choices, weights=weights)[0]
+
+        if mode == "lam":
+            v_name = get_unique_name("x", len(ctx))
+            return ("Lam", v_name, ty[1], gen_term(ty[2], ctx + [(v_name, ty[1])], budget - 1))
+
+        elif mode == "var":
+            v_weights = [(i + 1)**3 for i in range(len(valid_vars))]
+            return ("Var", rng.choices(valid_vars, weights=v_weights, k=1)[0])
+
+        elif mode == "app":
+            if ctx and rng.random() < 0.85:
+                arg_ty = rng.choice(ctx)[1]
+            else:
+                arg_ty = gen_type(2)
+
+            redex_prob = 0.55 + (budget / 150.0)
+            split = int(budget * 0.7)
+            
+            if rng.random() < redex_prob and budget > 3:
+                v_name = get_unique_name("redex", len(ctx))
+                f_tm = ("Lam", v_name, arg_ty, gen_term(ty, ctx + [(v_name, arg_ty)], split))
+                arg_vars = [n for n, t in ctx if t == arg_ty]
+                if arg_vars and rng.random() < 0.90:
+                    a_weights = [(i + 1)**3 for i in range(len(arg_vars))]
+                    a_tm = ("Var", rng.choices(arg_vars, weights=a_weights, k=1)[0])
+                else:
+                    a_tm = gen_term(arg_ty, ctx, budget - split - 1)
+                return ("App", f_tm, a_tm)
+            else:
+                f_tm = gen_term(("Fun", arg_ty, ty), ctx, split)
+                arg_vars = [n for n, t in ctx if t == arg_ty]
+                if arg_vars and rng.random() < 0.80:
+                    a_weights = [(i + 1)**3 for i in range(len(arg_vars))]
+                    a_tm = ("Var", rng.choices(arg_vars, weights=a_weights, k=1)[0])
+                else:
+                    a_tm = gen_term(arg_ty, ctx, budget - split - 1)
+                return ("App", f_tm, a_tm)
+
+        else: # lit
+>>>>>>> REPLACE

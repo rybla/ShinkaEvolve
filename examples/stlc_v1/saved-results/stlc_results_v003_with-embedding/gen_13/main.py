@@ -1,0 +1,148 @@
+from typing import Literal, Tuple
+import random
+import tqdm
+
+"""
+`Ty` and `Tm` define the shape of a simply-typed lambda-calculus deeply embedded in Python.
+
+Each value, be it the encoding of a type or a term, is a tuple where the first component of the tuple is the "constructor" and the rest of the components are the arguments. For example, this value encodes the `Bool` type:
+
+    ('Bool',)
+
+As another example, this value encodes the function type from `Bool` to `Bool`, which is often written `Bool -> Bool`:
+
+    ('Fun', ('Bool',), ('Bool',))
+
+As another example, this value encodes the function term, which takes a single `String` input and just returns that input (also known as the identity function):
+
+    ('Lam', 'x', ('String',), ('Var', 'x'))
+
+Note that ALL lambda terms must have a type annotation as the 1st argument, where in the above example the type annotation was the ('String',).
+
+Closely read the above below type aliases to understand the complete structure of this deep embedding of the lambda calculus in Python.
+"""
+
+type Ty = BoolTy | IntTy | StringTy | FunTy
+type BoolTy = Tuple[Literal["Bool"]]
+type IntTy = Tuple[Literal["Int"]]
+type StringTy = Tuple[Literal["String"]]
+type FunTy = Tuple[Literal["Fun"], Ty, Ty]
+
+
+type Tm = LitTm | VarTm | LamTm | AppTm
+type LitTm = (
+    Tuple[Literal["Bool"], bool]
+    | Tuple[Literal["Int"], int]
+    | Tuple[Literal["String"], str]
+)
+type VarTm = Tuple[Literal["Var"], str]
+type LamTm = Tuple[Literal["Lam"], str, Ty, Tm]
+type AppTm = Tuple[Literal["App"], Tm, Tm]
+
+
+# EVOLVE-BLOCK-START
+
+
+def generate_sample(rng: random.Random) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    def gen_type(size_limit: int) -> Ty:
+        if size_limit <= 1 or rng.random() < 0.3:
+            return rng.choice([("Bool",), ("Int",), ("String",)])
+        left_size = rng.randint(1, size_limit - 1)
+        return ("Fun", gen_type(left_size), gen_type(size_limit - left_size - 1))
+
+    def type_size(ty: Ty) -> int:
+        if ty[0] == "Fun":
+            return 1 + type_size(ty[1]) + type_size(ty[2])
+        return 1
+
+    def gen_term(ty: Ty, ctx: list[Tuple[str, Ty]], budget: int) -> Tm:
+        valid_vars = [name for name, t in ctx if t == ty]
+
+        if budget <= 1:
+            if valid_vars and rng.random() < 0.9:
+                # Power-law bias: favor the most recently added variables
+                idx = int(len(valid_vars) * (rng.random() ** 0.3))
+                return ("Var", valid_vars[::-1][idx])
+            if ty == ("Bool",): return ("Bool", rng.choice([True, False]))
+            if ty == ("Int",): return ("Int", rng.randint(-100, 100))
+            if ty == ("String",): return ("String", rng.choice(["x", "y", "z"]))
+            if ty[0] == "Fun":
+                v = f"v{len(ctx)}_{rng.randint(0, 999)}"
+                return ("Lam", v, ty[1], gen_term(ty[2], ctx + [(v, ty[1])], 0))
+            return ("Int", 42)
+
+        choices, weights = [], []
+        if ty[0] == "Fun":
+            choices.append("lam"); weights.append(30)
+        if valid_vars:
+            choices.append("var"); weights.append(40)
+        if budget > 3:
+            choices.append("app"); weights.append(50)
+        if ty[0] != "Fun" or not choices:
+            choices.append("lit"); weights.append(10)
+
+        mode = rng.choices(choices, weights=weights)[0]
+
+        if mode == "lam":
+            v = f"x{len(ctx)}_{rng.randint(0, 999)}"
+            return ("Lam", v, ty[1], gen_term(ty[2], ctx + [(v, ty[1])], budget - 1))
+
+        if mode == "var":
+            # Power-law bias: favor the most recently added variables
+            idx = int(len(valid_vars) * (rng.random() ** 0.3))
+            return ("Var", valid_vars[::-1][idx])
+
+        if mode == "app":
+            # Context-Aware Argument Selection: pick an existing type from ctx 60% of the time
+            if ctx and rng.random() < 0.6:
+                arg_ty = rng.choice(ctx)[1]
+            else:
+                arg_ty = gen_type(rng.randint(1, 3))
+
+            # Redex Injection (App (Lam ...) Arg)
+            if rng.random() < 0.45:
+                v = f"a{len(ctx)}_{rng.randint(0, 999)}"
+                f_tm = ("Lam", v, arg_ty, gen_term(ty, ctx + [(v, arg_ty)], budget // 2))
+                a_tm = gen_term(arg_ty, ctx, budget // 2)
+                return ("App", f_tm, a_tm)
+            else:
+                split = rng.randint(1, budget - 2)
+                f_tm = gen_term(("Fun", arg_ty, ty), ctx, split)
+                a_tm = gen_term(arg_ty, ctx, budget - split - 1)
+                return ("App", f_tm, a_tm)
+
+        # lit
+        if ty == ("Bool",): return ("Bool", rng.choice([True, False]))
+        if ty == ("Int",): return ("Int", rng.randint(0, 1000))
+        return ("String", f"s{rng.randint(0,1000)}")
+
+    # Generate a type with size up to 10
+    target_ty = gen_type(10)
+    # Generate a term with size up to 100
+    target_tm = gen_term(target_ty, [], 100)
+
+    return target_ty, target_tm
+
+
+# EVOLVE-BLOCK-END
+
+# This part remains fixed (not evolved)
+
+import lc
+
+
+def run() -> lc.RunOutput:
+    """Run the analysis"""
+
+    size = 1000
+    rng = random.Random()
+
+    return lc.run(
+        size=size,
+        rng=rng,
+        generate_sample=generate_sample,
+    )

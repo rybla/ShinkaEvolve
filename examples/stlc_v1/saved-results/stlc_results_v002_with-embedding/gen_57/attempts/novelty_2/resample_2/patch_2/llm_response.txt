@@ -1,0 +1,98 @@
+The user is asking me to rewrite a program that generates samples from a simply-typed lambda calculus. Let me analyze the current program and its metrics to understand what improvements can be made.
+
+Current metrics:
+- Combined score: 10.65
+- good_ratio: 1.00 (perfect correctness - this is critical)
+- tm_sizes_average: 1.92
+- ty_sizes_average: 1.32
+- used_vars_proportions_average: 0.12
+- applied_lambdas_proportions_average: 0.12
+- unique_subterms_proportions_average: 0.26
+
+The analysis provided suggests:
+1. The context is never actually used properly - lambdas add "x" to the context, but when generating the body, it never actually uses variables from the context
+2. The application logic always uses identity functions - it never generates true function applications
+3. The depth parameter is used but could be optimized
+
+Key improvements to make:
+1. Fix the context usage - when generating lambda body, actually use variables from context sometimes
+2. When generating application, generate a real function (not just identity) and apply it to an argument
+3. Maintain the good_ratio of 1.00 (this is critical for the score)
+
+Let me write the improved code:
+
+```python
+from typing import Literal, Tuple
+import random
+import tqdm
+
+type Ty = BoolTy | IntTy | StringTy | FunTy
+type BoolTy = Tuple[Literal["Bool"]]
+type IntTy = Tuple[Literal["Int"]]
+type StringTy = Tuple[Literal["String"]]
+type FunTy = Tuple[Literal["Fun"], Ty, Ty]
+
+
+type Tm = LitTm | VarTm | LamTm | AppTm
+type LitTm = (
+    Tuple[Literal["Bool"], bool]
+    | Tuple[Literal["Int"], int]
+    | Tuple[Literal["String"], str]
+)
+type VarTm = Tuple[Literal["Var"], str]
+type LamTm = Tuple[Literal["Lam"], str, Ty, Tm]
+type AppTm = Tuple[Literal["App"], Tm, Tm]
+
+
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10, context=None) -> Tuple[Ty, Tm]:
+    if context is None:
+        context = []
+    
+    # At depth 0, only generate literals
+    if depth == 0:
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", True))
+        elif i == 1:
+            return (("Int",), ("Int", 27))
+        else:
+            return (("String",), ("String", "hello world"))
+    
+    # At depth > 0, choose from literals, variables from context, lambda, and application
+    i = rng.randrange(0, 6)
+    
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    elif i == 3 and context:
+        # Use a variable from context
+        var_name = rng.choice(context)
+        return (("Int",), ("Var", var_name))
+    elif i == 4:
+        # Generate lambda
+        param_type = ("Int",)
+        _, body = generate_sample(rng, depth - 1, context + ["x"])
+        return (("Fun", param_type, ("Int",)), ("Lam", "x", param_type, body))
+    else:
+        # Generate application
+        func_type = ("Fun", ("Int",), ("Int",))
+        arg = rng.randint(0, 100)
+        return (("Int",), ("App", ("Lam", "x", ("Int",), ("Var", "x")), ("Int", arg)))
+```
+
+I'm completing the lambda and application cases. For lambda, I'm recursing with an extended context to track the new variable "x". For application, I'm creating an identity function and applying it to a random integer argument. This maintains type correctness while exploring different term structures. I need to reconsider the approach. The current implementation has issues with how it handles context and function generation. Instead of using identity functions, I should generate actual functions that perform meaningful operations. 
+
+I'll modify the strategy to create more complex function applications. This means generating functions that aren't just simple identity wrappers, but actual transformations. The goal is to increase the proportion of applied lambdas while maintaining type correctness.
+
+The key improvements will involve:
+1. Generating more sophisticated function types
+2. Creating function bodies that do more than just return the input
+3. Ensuring type-safe function application
+
+I'll need to carefully construct function generation that produces meaningful, type-consistent transformations while exploring the depth of the generated terms. I'll generate a function type and term, ensuring type consistency between the function's domain and the argument's type. The approach involves carefully matching type annotations with term generation to maintain type safety. By recursively generating both function and argument with a reduced depth, we create a more flexible application mechanism that allows for complex, nested function calls while preserving type constraints.
+
+The key is synchronizing the type generation with term generation, creating a systematic way to produce well-typed lambda calculus expressions that can represent increasingly sophisticated computational structures.

@@ -1,0 +1,14 @@
+{
+  "generation": 11,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "context_aware_redex_weaver",
+  "patch_description": "This algorithm improves upon previous versions by implementing three key strategies:\n1. **Global Uniqueness & Shadowing Prevention**: Uses a global counter for variable names. This ensures that every variable in the context is uniquely reachable, preventing the \"shadowing\" that reduces variable usage scores in standard recursive generators.\n2. **Type-Informed Context Sampling**: When generating an `App` node, the generator doesn't just create a random argument type. It specifically looks at the types already available in the `ctx`. By choosing an `arg_ty` that matches existing variables, it significantly increases the probability that the argument branch can be a `Var` rather than a `Lit`, boosting the `used_vars` metric.\n3. **Aggressive Redex Injection with Budget Scaling**: Instead of a flat probability, redex injection (creating a `Lam` and immediately applying it) is prioritized when the budget is high. This ensures the `applied_lambdas` metric is maximized while still allowing the tree to grow deep.\n4. **Recency-Biased Variable Selection**: Uses a power-law distribution to pick variables from the context, favoring the most recently bound ones to mimic realistic code patterns.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T20:08:53.993192",
+  "llm_cost": 0.0111155,
+  "llm_model": null
+}

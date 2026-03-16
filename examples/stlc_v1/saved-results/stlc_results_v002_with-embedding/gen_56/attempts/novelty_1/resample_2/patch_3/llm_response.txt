@@ -1,0 +1,45 @@
+Let me re-read the task more carefully. I need to provide a SEARCH/REPLACE block that will modify the code between the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END markers.
+
+Let me try a different approach. Maybe I need to provide a more precise match. Let me look at the exact code in the problem:
+
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10, context=None) -> Tuple[Ty, Tm]:
+    if context is None:
+        context = []
+    
+    # At depth 0, only generate literals
+    if depth == 0:
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", True))
+        elif i == 1:
+            return (("Int",), ("Int", 27))
+        else:
+            return (("String",), ("String", "hello world"))
+    
+    # At depth > 0, choose from literals, Lam, and App
+    i = rng.randrange(0, 5)  # 5 options
+    
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    elif i == 3:
+        # Generate lambda - always recurse to build more complex terms
+        ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+        return (("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm))
+    else:
+        # Generate application - apply a lambda to an argument
+        arg_ty, arg_tm = generate_sample(rng, depth - 1, context)
+        func_ty = ("Fun", arg_ty, arg_ty)
+        func_tm = ("Lam", "x", arg_ty, ("Var", "x"))
+        return (arg_ty, ("App", func_tm, arg_tm))
+# EVOLVE-BLOCK-END
+```
+
+I'll craft a precise modification to expand the term generation options. I'll add a new case for variable generation that leverages the existing context, providing more flexibility in lambda calculus term creation.
+
+The strategy involves introducing a variable selection mechanism when context is available, allowing for more nuanced term generation. This approach maintains the core generation logic while introducing a clever context-aware variable selection strategy.

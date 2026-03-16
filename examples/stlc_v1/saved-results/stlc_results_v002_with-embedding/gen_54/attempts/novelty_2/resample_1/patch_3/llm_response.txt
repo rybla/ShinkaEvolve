@@ -1,0 +1,40 @@
+Let me analyze the task more carefully. I need to provide a complete new program with improved implementation. Let me look at what changes could improve the metrics.
+
+The current program has:
+- Combined score: 10.65
+- good_ratio: 1.00
+- tm_sizes_average: 1.92
+- used_vars_proportions_average: 0.12
+- applied_lambdas_proportions_average: 0.12
+- unique_subterms_proportions_average: 0.26
+
+Key observations from prior programs:
+1. Programs with App generation have higher scores
+2. Depth-limited recursion is important
+3. Context tracking for variables helps
+
+Let me think about what could improve unique_subterms_proportions_average:
+- Using different base types (Bool, Int, String) instead of always Int
+- More diverse lambda structures
+
+The current program always uses ("Int",) for lambda parameter types. I could make this more diverse by randomly selecting from Bool, Int, and String types.
+
+Also, I notice that in the App case, the current program creates:
+- func_ty = ("Fun", arg_ty, arg_ty)
+- func_tm = ("Lam", "x", arg_ty, ("Var", "x"))
+
+This is always an identity function. I could make this more complex by:
+1. Adding more complex lambda bodies that do something with the argument
+2. Using variables from the outer context
+
+Let me design an improved version:
+
+1. Use different base types for lambda parameters (Bool, Int, String) - this should increase unique_subterms
+2. In the App case, create more complex lambda bodies that use the argument in different ways
+
+Actually, wait - I need to be careful about type correctness. If I create a lambda that does something with its argument, I need to make sure the types work out.
+
+Let me think about this more carefully. The type system is simply-typed lambda calculus with base types Bool, Int, String and function types.
+
+
+I'll explore strategies to enhance the program's diversity while maintaining type safety. Randomizing base types and creating more intricate lambda applications could potentially boost the unique subterms metric. The goal is to introduce variability without compromising the core typing constraints.

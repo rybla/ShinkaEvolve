@@ -1,0 +1,14 @@
+{
+  "generation": 19,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "asymmetric_redex_booster",
+  "patch_description": "The new algorithm optimizes the `used_vars_proportions` and `tm_sizes_average` by implementing an asymmetric budget allocation and a more aggressive variable selection strategy. \n\nKey changes:\n1. **Asymmetric Budgeting**: In `App` nodes, we now bias the budget split (70/30) towards the function side. This encourages deeper lambda nesting and more complex function transformations, which naturally increases the opportunities for redex injection.\n2. **Power-Law Variable Selection**: Replaced the simple recency bias with a squared-weight distribution `(i+1)**2` for variable selection. This significantly boosts the `used_vars_proportions` by favoring local, recently-bound variables which are more likely to be part of the current sub-computation.\n3. **Context-Driven Type Synthesis**: Increased the probability (to 75%) that an application's argument type is pulled from the existing context. This creates a \"closed-loop\" where the generator actively seeks to use what it has already defined.\n4. **Redex Scaling**: The redex injection probability is now dynamically scaled based on the remaining budget, ensuring that large terms are densely packed with applied lambdas.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T20:20:10.383337",
+  "llm_cost": 0.012221,
+  "llm_model": null
+}

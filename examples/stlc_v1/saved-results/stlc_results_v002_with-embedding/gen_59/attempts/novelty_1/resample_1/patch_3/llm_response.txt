@@ -1,0 +1,11 @@
+The user is saying my previous edit wasn't successful. But looking at the conversation, I haven't actually submitted any edit yet - I only provided analysis. Let me re-read the task.
+
+Looking at the current program, I need to make targeted improvements. The key areas to improve are:
+1. used_vars_proportions_average: 0.12 (low) - need to actually use variables from context
+2. unique_subterms_proportions_average: 0.26 (low) - need more variety in literals
+
+Let me create a proper edit now. I'll modify the generate_sample function to:
+1. Add an option to use variables from context
+2. Use random values for literals instead of fixed ones
+
+Here's my proposed change:

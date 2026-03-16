@@ -1,0 +1,116 @@
+<NAME>
+cubic_recency_and_forced_redex_synergy
+</NAME>
+
+<DESCRIPTION>
+This edit implements three key optimizations to boost `used_vars` and `applied_lambdas`:
+1.  **Cubic Recency Bias**: Upgrades the variable selection weight from quadratic `(i+1)**2` to cubic `(i+1)**3`. This more aggressively favors local variables, which are more likely to be unique and frequently available, increasing the `used_vars` metric.
+2.  **Forced Variable Arguments in Redexes**: When a redex is generated, the argument term is now forced to be a variable from the context (if one of the correct type exists) with a 90% probability. This creates a direct synergy between `applied_lambdas` and `used_vars`.
+3.  **Enhanced CATS (Context-Aware Type Selection)**: Increases the probability of selecting an argument type already present in the context from 75% to 85%, ensuring more opportunities for variable usage in application nodes.
+4.  **Unique Naming**: Incorporates depth and a random component into variable names to maintain high subterm uniqueness.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    def get_name(prefix: str) -> str:
+        nonlocal var_id
+        var_id += 1
+        return f"{prefix}_{var_id}_{rng.randint(0, 999)}"
+=======
+    def get_name(prefix: str, depth: int) -> str:
+        nonlocal var_id
+        var_id += 1
+        return f"{prefix}_{depth}_{var_id}_{rng.randint(0, 100)}"
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+        # Base Case: Budget exhausted or forced leaf
+        if budget <= 1:
+            if valid_vars and rng.random() < 0.95:
+                # Quadratic Recency Bias: Favor variables added most recently to the context
+                # This significantly boosts used_vars_proportions_average
+                weights = [(i + 1)**2 for i in range(len(valid_vars))]
+                return ("Var", rng.choices(valid_vars, weights=weights, k=1)[0])
+            
+            if target_ty[0] == "Fun":
+                v = get_name("v")
+                return ("Lam", v, target_ty[1], gen_term(target_ty[2], ctx + [(v, target_ty[1])], 0))
+=======
+        # Base Case: Budget exhausted or forced leaf
+        if budget <= 1:
+            if valid_vars:
+                # Cubic Recency Bias: Strongly favor variables added most recently
+                weights = [(i + 1)**3 for i in range(len(valid_vars))]
+                return ("Var", rng.choices(valid_vars, weights=weights, k=1)[0])
+            
+            if target_ty[0] == "Fun":
+                v = get_name("f", len(ctx))
+                return ("Lam", v, target_ty[1], gen_term(target_ty[2], ctx + [(v, target_ty[1])], 0))
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+        if mode == "lam":
+            v_name = get_name("x")
+            return ("Lam", v_name, target_ty[1], gen_term(target_ty[2], ctx + [(v_name, target_ty[1])], budget - 1))
+
+        elif mode == "var":
+            v_weights = [(i + 1)**2 for i in range(len(valid_vars))]
+            return ("Var", rng.choices(valid_vars, weights=v_weights, k=1)[0])
+
+        elif mode == "app":
+            # Context-Aware Argument Selection (75% chance)
+            # Picking a type already in ctx makes it likely the arg branch can use a Var
+            if ctx and rng.random() < 0.75:
+                arg_ty = rng.choice(ctx)[1]
+            else:
+                arg_ty = gen_type(rng.randint(1, 3))
+
+            # Scaled Redex Injection: Probability increases with budget
+            # This maximizes applied_lambdas_proportions_average
+            redex_prob = 0.45 + (budget / 180.0)
+            
+            # Asymmetric budget split to encourage deeper trees
+            split = int(budget * 0.7)
+            
+            if rng.random() < redex_prob and budget > 4:
+                v_name = get_name("r")
+                # Construct (Lam x. body) arg
+                f_tm = ("Lam", v_name, arg_ty, gen_term(target_ty, ctx + [(v_name, arg_ty)], split))
+                a_tm = gen_term(arg_ty, ctx, budget - split - 1)
+                return ("App", f_tm, a_tm)
+=======
+        if mode == "lam":
+            v_name = get_name("x", len(ctx))
+            return ("Lam", v_name, target_ty[1], gen_term(target_ty[2], ctx + [(v_name, target_ty[1])], budget - 1))
+
+        elif mode == "var":
+            v_weights = [(i + 1)**3 for i in range(len(valid_vars))]
+            return ("Var", rng.choices(valid_vars, weights=v_weights, k=1)[0])
+
+        elif mode == "app":
+            # 85% Rule: Context-Aware Type Selection (CATS)
+            if ctx and rng.random() < 0.85:
+                arg_ty = rng.choice(ctx)[1]
+            else:
+                arg_ty = gen_type(rng.randint(1, 2))
+
+            # Scaled Redex Injection: Probability increases with budget
+            redex_prob = 0.55 + (budget / 150.0)
+            
+            # Asymmetric budget split (70/30 Rule)
+            split = int(budget * 0.7)
+            
+            if rng.random() < redex_prob and budget > 4:
+                v_name = get_name("r", len(ctx))
+                # Construct (Lam r. body) arg
+                f_tm = ("Lam", v_name, arg_ty, gen_term(target_ty, ctx + [(v_name, arg_ty)], split))
+                
+                # Forced Variable Argument (90% probability) to synergize metrics
+                arg_vars = [n for n, t in ctx if t == arg_ty]
+                if arg_vars and rng.random() < 0.90:
+                    a_weights = [(i + 1)**3 for i in range(len(arg_vars))]
+                    a_tm = ("Var", rng.choices(arg_vars, weights=a_weights, k=1)[0])
+                else:
+                    a_tm = gen_term(arg_ty, ctx, budget - split - 1)
+                return ("App", f_tm, a_tm)
+>>>>>>> REPLACE
+
+</DIFF>

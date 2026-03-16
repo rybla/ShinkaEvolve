@@ -1,0 +1,48 @@
+Looking at the performance metrics, I can see that:
+
+1. The current program has good_ratio = 1.00 (perfect correctness)
+2. But it has:
+   - used_vars_proportions_average: 0.00 (no variables from context are used)
+   - applied_lambdas_proportions_average: 0.00 (no lambda applications)
+   - unique_subterms_proportions_average: 0.13 (some uniqueness)
+
+The key issue is that the current program:
+1. Doesn't track context (list of available variables)
+2. Doesn't generate App (application) terms
+3. Doesn't decrement depth, which could lead to infinite recursion (though it seems to work)
+
+Looking at the prior programs, I can see that the best performing ones (from the analysis at the top) had:
+- used_vars_proportions_average around 0.11
+- applied_lambdas_proportions_average around 0.11
+- good_ratio = 1.0
+
+The key insight from the analysis was:
+1. Use depth-limited approach with 5 options at depth > 0 (3 literals + Lam + App) and 3 options at depth = 0
+2. Track context (list of available variables) and pass context + ["x"] when generating lambda bodies
+3. Generate App by creating an identity function and applying it to an argument
+
+Let me design an improved version that:
+1. Uses depth parameter properly (decrements depth)
+2. Tracks context of available variables
+3. Generates App terms (application)
+4. Uses variables from context
+
+The current code:
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)  # Note: depth is not decremented!
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+```
+
+The problem is that depth never decreases, which risks infinite recursion, and there's no context tracking or application of lambda terms. I need to add a context parameter to track bound variables, decrement depth on each recursive call, and introduce an App case that applies a lambda to an argument.

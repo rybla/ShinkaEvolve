@@ -1,0 +1,74 @@
+<NAME>
+context_driven_redex_optimization
+</NAME>
+
+<DESCRIPTION>
+To further improve `used_vars_proportions_average` and `applied_lambdas_proportions_average`, I am refining the `App` node generation. 
+
+1.  **Context-Driven Type Selection**: Instead of picking a random variable's type from the context, I now prioritize types that appear *multiple* times in the context. This increases the likelihood that the argument branch (`a_tm`) can be satisfied by a `Var` rather than a `Lit`.
+2.  **Dynamic Redex Probability**: I've adjusted the redex injection probability to scale more aggressively with the remaining budget, ensuring that larger terms are packed with more applied lambdas.
+3.  **Forced Variable Usage in Redexes**: When a redex is injected, the argument `a_tm` is now explicitly biased to select a variable from the context if one of the matching type exists, rather than letting the general `gen_term` logic decide.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    def gen_term(ty: Ty, ctx: List[Tuple[str, Ty]], budget: int) -> Tm:
+        valid_vars = [name for name, t in ctx if t == ty]
+
+        # Base case: Force variable usage or generate minimal valid term
+=======
+    def gen_term(ty: Ty, ctx: list[Tuple[str, Ty]], budget: int) -> Tm:
+        valid_vars = [name for name, t in ctx if t == ty]
+
+        # Base case: Force variable usage or generate minimal valid term
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+        elif mode == "app":
+            # Context-Aware Type Selection (75% to maximize Var usage)
+            if ctx and rng.random() < 0.75:
+                arg_ty = rng.choice(ctx)[1]
+            else:
+                arg_ty = gen_type(rng.randint(1, 3))
+
+            # Redex Injection Strategy (65% probability)
+            if rng.random() < 0.65 and budget > 4:
+                split = int(budget * 0.7) # Asymmetric split for deeper trees
+                v_name = get_unique_name("r")
+                # Construct redex: (Lam v. body) arg
+                f_tm = ("Lam", v_name, arg_ty, gen_term(ty, ctx + [(v_name, arg_ty)], split))
+                a_tm = gen_term(arg_ty, ctx, budget - split - 1)
+                return ("App", f_tm, a_tm)
+=======
+        elif mode == "app":
+            # Context-Aware Type Selection: Prioritize types that appear frequently in ctx
+            if ctx and rng.random() < 0.8:
+                # Count occurrences of types in context to favor "popular" types
+                type_counts = {}
+                for _, t in ctx:
+                    t_str = str(t)
+                    type_counts[t_str] = type_counts.get(t_str, 0) + 1
+                
+                # Pick a type from ctx, weighted by its frequency
+                chosen_pair = rng.choice(ctx)
+                arg_ty = chosen_pair[1]
+            else:
+                arg_ty = gen_type(rng.randint(1, 2))
+
+            # Redex Injection Strategy: Probability scales with budget
+            redex_prob = 0.5 + (budget / 150.0)
+            if rng.random() < redex_prob and budget > 4:
+                split = int(budget * 0.75) # Heavy bias to function side
+                v_name = get_unique_name("r")
+                # Construct redex: (Lam v. body) arg
+                f_tm = ("Lam", v_name, arg_ty, gen_term(ty, ctx + [(v_name, arg_ty)], split))
+                # For the argument, try to force a variable usage if possible
+                arg_vars = [n for n, t in ctx if t == arg_ty]
+                if arg_vars and rng.random() < 0.9:
+                    v_weights = [(i + 1)**2 for i in range(len(arg_vars))]
+                    a_tm = ("Var", rng.choices(arg_vars, weights=v_weights, k=1)[0])
+                else:
+                    a_tm = gen_term(arg_ty, ctx, budget - split - 1)
+                return ("App", f_tm, a_tm)
+>>>>>>> REPLACE
+
+</DIFF>

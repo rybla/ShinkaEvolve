@@ -1,0 +1,14 @@
+{
+  "generation": 41,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 2,
+  "patch_name": "depth_dependent_weights_and_cubic_selection",
+  "patch_description": "This optimization introduces depth-dependent constructor weighting and reinforces cubic recency bias. By scaling the likelihood of `App` and `Lam` nodes higher when the budget is large (at the top of the tree) and transitioning to `Var` selection as the budget diminishes, we create more complex functional structures. It also ensures the \"Redex-Variable Synergy\" is applied even in standard applications when a context-matching variable is available, further boosting `used_vars`.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T20:23:15.463917",
+  "llm_cost": 0.0097165,
+  "llm_model": null
+}

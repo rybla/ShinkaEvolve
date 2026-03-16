@@ -1,0 +1,14 @@
+{
+  "generation": 40,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "context_driven_standard_app_matching",
+  "patch_description": "To improve `used_vars_proportions_average` (currently 0.48), we modify the \"Standard application\" branch. Previously, while the `arg_ty` was often selected from the context, the argument term (`a_tm`) was generated via a general call to `gen_term`. This change forces the argument of a standard application to be a variable from the context with a 90% probability if a matching type is available, mirroring the successful strategy used in the redex injection branch. This directly increases variable reuse in non-redex applications.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T20:23:07.504437",
+  "llm_cost": 0.0086825,
+  "llm_model": null
+}

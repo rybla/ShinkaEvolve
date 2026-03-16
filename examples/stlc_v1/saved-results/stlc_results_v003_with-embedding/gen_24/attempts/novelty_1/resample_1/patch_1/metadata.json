@@ -1,0 +1,14 @@
+{
+  "generation": 24,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 2,
+  "patch_name": "forced_variable_argument_and_quadratic_weight_refinement",
+  "patch_description": "To maximize `used_vars_proportions_average` and `applied_lambdas_proportions_average`, I am implementing a \"Forced Variable Argument\" strategy. When a redex is injected, the generator now actively searches the context for a variable matching the argument type. If found, it uses that variable with high probability instead of recursing into `gen_term`. This ensures that every redex injection also counts as a variable usage. Additionally, I've refined the `gen_term` budget split and type selection to favor types already present in the context more aggressively.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T20:20:52.230062",
+  "llm_cost": 0.0102565,
+  "llm_model": null
+}

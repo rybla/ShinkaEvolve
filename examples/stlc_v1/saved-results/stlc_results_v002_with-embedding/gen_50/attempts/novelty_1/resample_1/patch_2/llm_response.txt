@@ -1,0 +1,41 @@
+The user is saying the previous edit was not successful. Let me re-read the current program and make sure I'm proposing a valid change.
+
+Looking at the current program in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END:
+
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10, context=None) -> Tuple[Ty, Tm]:
+    if context is None:
+        context = []
+    
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+    
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        if context and rng.random() < 0.3 and depth > 0:
+            # Use a variable from context
+            var_name = rng.choice(context)
+            return (
+                ("Fun", ("Int",), ("Int",)),
+                ("Lam", "x", ("Int",), ("Var", var_name)),
+            )
+        else:
+            # Add parameter to context when recursing
+            new_context = context + ["x"]
+            ty, tm = generate_sample(rng, depth - 1, new_context)
+            return (
+                ("Fun", ("Int",), ty),
+                ("Lam", "x", ("Int",), tm),
+            )
+# EVOLVE-BLOCK-END
+```
+
+The issue is that there are 4 options (0, 1, 2, 3) but at depth=0, there are only 3 options (0, 1, 2). The "else" branch (i == 3) is the Lam case.
+
+
+I need to add an App option to increase the number of options to 5 when depth > 0, allowing for function application. This means expanding the range to 5 options at positive depths and keeping 3 options at depth 0. The App case will generate a function term and apply it to an argument, which requires generating both a function and its argument term.

@@ -1,0 +1,14 @@
+{
+  "generation": 17,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "RecursiveRedexAndPowerLawSelection",
+  "patch_description": "The new algorithm focuses on three key improvements to maximize the combined score:\n1. **Recursive Redex Injection**: In `App` nodes, we increase the redex probability to 65% and occasionally inject nested redexes. This directly boosts `applied_lambdas_proportions_average`.\n2. **Quadratic Power-Law Variable Selection**: Instead of a simple power-law exponent, we use a quadratic weight `(i+1)**2` for variables in the context. This significantly increases `used_vars_proportions_average` by favoring the most recently bound (local) variables.\n3. **Asymmetric Budget Allocation**: We use a `0.7` bias for the function side of applications. This leads to deeper, more complex trees which improves `tm_sizes_average` and `unique_subterms_proportions_average`.\n4. **Context-Driven Type Selection**: We increase the probability of picking an `arg_ty` from the existing context to 75%, ensuring that the argument branch of an application is highly likely to contain a variable.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T20:19:55.383059",
+  "llm_cost": 0.011863499999999999,
+  "llm_model": null
+}

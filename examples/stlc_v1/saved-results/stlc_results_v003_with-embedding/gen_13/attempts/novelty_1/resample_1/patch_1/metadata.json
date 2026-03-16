@@ -1,0 +1,14 @@
+{
+  "generation": 13,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 2,
+  "patch_name": "variable_hungry_synthesis",
+  "patch_description": "To break the ceiling on `used_vars_proportions_average`, I am implementing a \"Variable-Hungry\" strategy. \n1.  **Forced Variable Selection**: In the base case (`budget <= 1`), the probability of picking a variable over a literal is increased to 90% if a valid variable exists.\n2.  **Context-Aware Argument Types**: When generating an `App` node, the argument type is chosen from the types already present in the context 60% of the time. This ensures that the generated argument branch has a much higher probability of being able to pick a variable from the context, rather than being forced to generate a new literal or a nested term.\n3.  **Power-Law Recency Bias**: Replaced simple range-based recency bias with a power-law distribution to more aggressively favor local variables.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T20:09:11.292625",
+  "llm_cost": 0.008695999999999999,
+  "llm_model": null
+}

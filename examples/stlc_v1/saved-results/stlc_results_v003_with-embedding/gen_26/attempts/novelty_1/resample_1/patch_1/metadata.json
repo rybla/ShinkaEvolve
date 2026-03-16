@@ -1,0 +1,14 @@
+{
+  "generation": 26,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 3,
+  "patch_name": "depth_dependent_weighting_and_asymmetric_budget",
+  "patch_description": "To improve the `combined_score`, I am implementing a two-pronged strategy:\n1. **Depth-Dependent Constructor Weighting**: The constructor weights now shift dynamically as the recursion depth increases. At lower depths (higher budget), we prioritize `App` and `Lam` to build complex structure. As the budget depletes, we pivot to `Var` nodes to ensure variables are used and terms terminate correctly.\n2. **Explicit 0.7 Asymmetric Budget Rule**: Instead of `rng.randint(1, budget - 1)`, I am implementing a fixed 70% budget allocation to the function/lambda body branch. This creates deeper, more complex trees which naturally increases term size and unique subterms.\n3. **Enhanced Context-Aware Type Selection**: Increased the probability of selecting an `arg_ty` from the existing context to 80% to ensure the argument branch can be satisfied by a `Var` from the context, boosting the `used_vars` metric.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T20:21:08.287826",
+  "llm_cost": 0.0121685,
+  "llm_model": null
+}

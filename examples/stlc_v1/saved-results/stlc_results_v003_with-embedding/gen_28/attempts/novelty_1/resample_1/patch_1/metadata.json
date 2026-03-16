@@ -1,0 +1,14 @@
+{
+  "generation": 28,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "type_frequency_and_forced_var_redex_injection",
+  "patch_description": "This optimization targets the `used_vars_proportions_average` and `applied_lambdas_proportions_average` metrics. \n\n1. **Strategic Context Selection**: Instead of picking a random type from the context, we implement a \"Type Matching\" strategy that counts the frequency of types in the context. This increases the probability that the generated `arg_ty` for an `App` node can be satisfied by a `Var` rather than a `Lit`.\n2. **Forced Variable Argument in Redexes**: When injecting a redex `(Lam v. body) arg`, we check if a variable of the required `arg_ty` exists in the context. If it does, we use it 85% of the time. This directly increases variable usage within applied lambdas.\n3. **Refined Budget Splitting**: Adjusted the asymmetric budget split to exactly 0.7 for consistency and deeper function bodies.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T20:21:23.707724",
+  "llm_cost": 0.0102365,
+  "llm_model": null
+}

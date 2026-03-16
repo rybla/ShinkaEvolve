@@ -1,0 +1,58 @@
+The user is asking me to rewrite a program to improve its performance. Let me analyze the current implementation and metrics to understand what improvements can be made.
+
+Current metrics:
+- Combined score: 10.65
+- good_ratio: 1.00 (perfect correctness - most important!)
+- tm_sizes_average: 1.92
+- ty_sizes_average: 1.32
+- used_vars_proportions_average: 0.12 (low - variables from context rarely used)
+- applied_lambdas_proportions_average: 0.12 (low - lambda applications)
+- unique_subterms_proportions_average: 0.26
+
+Looking at the current implementation:
+1. It uses depth-limited generation (depth=10)
+2. At depth 0: only literals (3 options)
+3. At depth > 0: 5 options (3 literals + Lam + App)
+4. Lambda always uses "x" as the variable name
+5. App always creates an identity function and applies it
+
+The key issue is that the current implementation doesn't actually USE the context it tracks - it passes `context + ["x"]` for lambdas but never actually generates Var terms that reference variables from the context.
+
+Let me think about what improvements could be made:
+
+1. **Actually use variables from context**: When generating a Var, randomly select from the context instead of always using "x"
+2. **Increase lambda and application rates**: The current 5-option system with 2/5 for lambda/application might be too conservative
+3. **Better type diversity**: Generate more diverse types to increase unique_subterms_proportions
+
+A fundamentally different approach would be:
+- Use a probability-based system that's more context-aware
+- Actually generate Var terms that reference context variables
+- Vary the lambda body generation to use context variables more often
+
+Let me design a new algorithm:
+
+```python
+def generate_sample(rng: random.Random, depth=10, context=None) -> Tuple[Ty, Tm]:
+    if context is None:
+        context = []
+    
+    # At depth 0, only generate literals
+    if depth == 0:
+        i = rng.randrange(0, 3)
+        if i == 0:
+            return (("Bool",), ("Bool", True))
+        elif i == 1:
+            return (("Int",), ("Int", 27))
+        else:
+            return (("String",), ("String", "hello world"))
+    
+    # At depth > 0, choose from literals, Lam, App, and Var (if context not empty)
+    # Increase the probability of non-literal terms to improve tm_sizes_average
+    options = []
+```
+
+I'll continue the implementation by expanding the options to include more context-aware choices. The goal is to leverage the context more effectively and increase the diversity of generated terms. I'll use variable names from the context more frequently, create more complex lambda applications, and ensure a more nuanced generation process that maintains the good ratio while improving other metrics.
+
+The approach involves dynamically adjusting the generation strategy based on the current context, using weighted probabilities to select between literals, variables, lambda abstractions, and applications. This should help create more interesting and varied terms while preserving the core generation logic.
+
+I'll ensure type consistency and correctness remain paramount, tracking variable usage and maintaining a balanced generation of different term types. The goal is to systematically explore the term space while preventing trivial or repetitive generations.

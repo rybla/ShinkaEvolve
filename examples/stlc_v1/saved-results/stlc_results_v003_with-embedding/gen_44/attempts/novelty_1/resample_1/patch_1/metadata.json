@@ -1,0 +1,14 @@
+{
+  "generation": 44,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 2,
+  "patch_name": "quadratic_recency_and_standard_app_var_injection",
+  "patch_description": "This edit implements two key improvements to maximize variable usage and redex density:\n1.  **Quadratic Recency Bias**: Replaces the exponential `4**i` weight with a quadratic `(i + 1)**2` weight. While exponential bias is strong, quadratic bias often provides a more stable distribution that favors local variables without completely starving slightly older ones, which can help in very deep contexts.\n2.  **Standard Application Variable Injection**: Extends the \"Forced Variable Argument\" logic to standard (non-redex) `App` nodes. By attempting to use a variable for the argument of a standard application (80% probability), we significantly boost the `used_vars_proportions_average` metric.\n3.  **Budget-Scaled Redex Probability**: Refines the redex probability to strictly follow the `0.55 + (budget / 150.0)` formula for better scaling.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T20:23:49.666437",
+  "llm_cost": 0.0124585,
+  "llm_model": null
+}

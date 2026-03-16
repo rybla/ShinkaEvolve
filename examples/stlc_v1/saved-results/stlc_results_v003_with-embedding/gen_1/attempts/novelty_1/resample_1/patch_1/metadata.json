@@ -1,0 +1,14 @@
+{
+  "generation": 1,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "stlc_random_generator",
+  "patch_description": "The current generator is extremely limited: it only produces identity-like functions or constants, resulting in very small terms and zero variable usage. \n\nI am implementing a more robust generator that:\n1.  **Generates Types First**: Generates a random type within the size limit (max 10 nodes).\n2.  **Context-Aware Term Generation**: Maintains a typing context (mapping variables to types) to ensure terms are well-typed.\n3.  **Goal-Oriented Construction**: When asked to generate a term of type `T`, it can choose between introducing a lambda (if `T` is a function type), using a variable from the context, creating an application, or using a literal.\n4.  **Size Management**: Uses a `budget` parameter to ensure the term stays within the 100-node limit while encouraging larger structures.\n5.  **Variable Usage**: Prefers using variables from the context to increase the `used_vars_proportions_average`.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T20:07:45.724135",
+  "llm_cost": 0.004737,
+  "llm_model": null
+}

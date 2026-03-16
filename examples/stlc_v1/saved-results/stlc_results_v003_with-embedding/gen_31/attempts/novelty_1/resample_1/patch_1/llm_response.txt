@@ -1,0 +1,134 @@
+<NAME>
+asymmetric_budget_and_forced_redex_injection
+</NAME>
+
+<DESCRIPTION>
+This edit implements the '0.7 Rule' for asymmetric budget allocation and strengthens the redex injection strategy. By allocating 70% of the budget to the function side and increasing the redex injection probability to 65% with context-aware type selection, we drive both larger term sizes and a higher proportion of applied lambdas. Additionally, variable selection is upgraded with a strict quadratic recency bias to optimize the used variables metric.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    def gen_term(ty: Ty, ctx: list[Tuple[str, Ty]], budget: int) -> Tm:
+        valid_vars = [name for name, t in ctx if t == ty]
+
+        # If budget is exhausted, must return var or lit
+        if budget <= 1:
+            if valid_vars: return ("Var", rng.choice(valid_vars))
+            if ty == ("Bool",): return ("Bool", rng.choice([True, False]))
+            if ty == ("Int",): return ("Int", rng.randint(0, 1000))
+            if ty == ("String",): return ("String", rng.choice(["a", "b", "c"]))
+            if ty[0] == "Fun":
+                v = f"x{rng.randint(0,1000)}"
+                return ("Lam", v, ty[1], gen_term(ty[2], ctx + [(v, ty[1])], 0))
+            return ("Int", 0)
+
+        choices = []
+        weights = []
+
+        if ty[0] == "Fun":
+            choices.append("lam"); weights.append(15)
+        if valid_vars:
+            choices.append("var"); weights.append(20)
+        if budget > 2:
+            choices.append("app"); weights.append(35)
+        if ty[0] != "Fun":
+            choices.append("lit"); weights.append(5)
+
+        mode = rng.choices(choices, weights=weights)[0] if choices else "lit"
+
+        if mode == "lam" and ty[0] == "Fun":
+            var_name = f"x{len(ctx)}_{rng.randint(0, 1000)}"
+            return ("Lam", var_name, ty[1], gen_term(ty[2], ctx + [(var_name, ty[1])], budget - 1))
+
+        if mode == "var":
+            # Recency bias: use a power-law distribution to favor newer variables
+            # This significantly boosts used_vars_proportions_average
+            v_weights = [ (i + 1)**2 for i in range(len(valid_vars)) ]
+            return ("Var", rng.choices(valid_vars, weights=v_weights, k=1)[0])
+
+        if mode == "app":
+            # Context-Aware Argument Type Selection:
+            # 50% chance to pick an arg_ty from existing variables to increase usage
+            if ctx and rng.random() < 0.5:
+                arg_ty = rng.choice(ctx)[1]
+            else:
+                arg_ty = gen_type(rng.randint(1, 3))
+
+            split = rng.randint(1, budget - 1)
+            # Probability of creating a redex scales with budget to maximize applied lambda count
+            redex_prob = 0.3 + (budget / 150.0)
+            if rng.random() < redex_prob and budget > 5:
+                v_name = f"v{len(ctx)}_{rng.randint(0,1000)}"
+                f_tm = ("Lam", v_name, arg_ty, gen_term(ty, ctx + [(v_name, arg_ty)], split))
+            else:
+                f_tm = gen_term(("Fun", arg_ty, ty), ctx, split)
+            a_tm = gen_term(arg_ty, ctx, budget - split - 1)
+            return ("App", f_tm, a_tm)
+=======
+    var_counter = 0
+
+    def gen_term(ty: Ty, ctx: list[Tuple[str, Ty]], budget: int) -> Tm:
+        nonlocal var_counter
+        valid_vars = [name for name, t in ctx if t == ty]
+
+        # If budget is exhausted, must return var or lit
+        if budget <= 1:
+            if valid_vars and rng.random() < 0.95:
+                v_weights = [(i + 1)**2 for i in range(len(valid_vars))]
+                return ("Var", rng.choices(valid_vars, weights=v_weights, k=1)[0])
+            if ty[0] == "Fun":
+                var_counter += 1
+                v = f"v_{var_counter}_{rng.randint(0,1000)}"
+                return ("Lam", v, ty[1], gen_term(ty[2], ctx + [(v, ty[1])], 0))
+            if ty == ("Bool",): return ("Bool", rng.choice([True, False]))
+            if ty == ("Int",): return ("Int", rng.randint(0, 500))
+            return ("String", rng.choice(["val", "node", "leaf"]))
+
+        choices, weights = [], []
+        if ty[0] == "Fun":
+            choices.append("lam"); weights.append(30)
+        if valid_vars:
+            choices.append("var"); weights.append(40)
+        if budget > 2:
+            choices.append("app"); weights.append(60)
+        if not choices or (ty[0] != "Fun" and rng.random() < 0.1):
+            choices.append("lit"); weights.append(10)
+
+        mode = rng.choices(choices, weights=weights)[0]
+
+        if mode == "lam":
+            var_counter += 1
+            v_name = f"x_{var_counter}_{rng.randint(0, 1000)}"
+            return ("Lam", v_name, ty[1], gen_term(ty[2], ctx + [(v_name, ty[1])], budget - 1))
+
+        if mode == "var":
+            v_weights = [(i + 1)**2 for i in range(len(valid_vars))]
+            return ("Var", rng.choices(valid_vars, weights=v_weights, k=1)[0])
+
+        if mode == "app":
+            if ctx and rng.random() < 0.75:
+                arg_ty = rng.choice(ctx)[1]
+            else:
+                arg_ty = gen_type(rng.randint(1, 2))
+
+            # Asymmetric Budget Split (The 0.7 Rule)
+            split = int(budget * 0.7)
+            
+            # Explicit Redex Injection (65% base chance)
+            if rng.random() < 0.65 and budget > 4:
+                var_counter += 1
+                v_name = f"r_{var_counter}_{rng.randint(0,1000)}"
+                f_tm = ("Lam", v_name, arg_ty, gen_term(ty, ctx + [(v_name, arg_ty)], split))
+                
+                # Boost used_vars: try to use an existing var for the argument
+                arg_vars = [n for n, t in ctx if t == arg_ty]
+                if arg_vars and rng.random() < 0.85:
+                    a_weights = [(i + 1)**2 for i in range(len(arg_vars))]
+                    a_tm = ("Var", rng.choices(arg_vars, weights=a_weights, k=1)[0])
+                else:
+                    a_tm = gen_term(arg_ty, ctx, budget - split - 1)
+            else:
+                f_tm = gen_term(("Fun", arg_ty, ty), ctx, split)
+                a_tm = gen_term(arg_ty, ctx, budget - split - 1)
+            return ("App", f_tm, a_tm)
+>>>>>>> REPLACE

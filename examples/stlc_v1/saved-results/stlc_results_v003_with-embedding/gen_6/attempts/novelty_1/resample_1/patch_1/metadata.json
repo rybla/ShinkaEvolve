@@ -1,0 +1,14 @@
+{
+  "generation": 6,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "context_aware_structural_synthesis",
+  "patch_description": "This algorithm improves upon previous versions by implementing a \"context-aware structural synthesis\" approach. Instead of purely random branching, it uses a two-phase generation strategy: \n1. It generates a target type with a higher probability of being a function type to allow for more complex terms.\n2. It maintains a \"usage-tracking\" context that actively prioritizes variables that haven't been used yet, significantly boosting the `used_vars_proportions_average`.\n3. It introduces a \"forced redex\" mechanism where applications are frequently constructed by generating a lambda and its argument simultaneously, ensuring high `applied_lambdas_proportions_average`.\n4. It uses a budget-decay function that ensures terms grow closer to the 100-node limit while maintaining structural variety to maximize `unique_subterms_proportions_average`.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T20:08:14.436132",
+  "llm_cost": 0.007814,
+  "llm_model": null
+}

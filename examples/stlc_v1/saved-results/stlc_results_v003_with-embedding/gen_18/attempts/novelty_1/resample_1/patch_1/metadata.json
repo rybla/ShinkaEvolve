@@ -1,0 +1,14 @@
+{
+  "generation": 18,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "TypeDirected_Recursive_Redex_Synthesizer",
+  "patch_description": "This generator implements a sophisticated type-directed synthesis of STLC terms. Key improvements include:\n1. **Global Unique Identifiers (GUID)**: Replaces random name generation with a strict incrementing counter to ensure 100% unique sub-terms and prevent variable shadowing.\n2. **Asymmetric Budget Splitting**: For `App` nodes, it uses a non-uniform split to encourage deep, complex tree structures rather than balanced ones.\n3. **Aggressive Redex Injection**: Explicitly constructs `(Lam x. body) arg` patterns with a probability that scales with the remaining budget, maximizing the `applied_lambdas` metric.\n4. **Context-Aware Type Selection**: When generating an application, it prefers `arg_ty` values already present in the context (70% bias), which significantly increases the likelihood that the argument branch can utilize an existing variable.\n5. **Quadratic Recency Bias**: Uses a weighted selection for variables where the weight of a variable is the square of its position in the context, favoring local variables to maximize `used_vars_proportions`.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T20:19:56.567147",
+  "llm_cost": 0.011879500000000001,
+  "llm_model": null
+}

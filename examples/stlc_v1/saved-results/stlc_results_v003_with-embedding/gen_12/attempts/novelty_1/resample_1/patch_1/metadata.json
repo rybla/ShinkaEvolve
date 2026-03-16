@@ -1,0 +1,14 @@
+{
+  "generation": 12,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "context_aware_redex_synthesizer",
+  "patch_description": "The structural redesign focuses on three key areas to maximize metrics:\n1. **Global Unique Identifier Counter**: Replaces random integers with a monotonically increasing counter for variable names. This ensures absolute uniqueness of sub-terms and prevents shadowing, which allows the generator to utilize the full depth of the context.\n2. **Context-Driven Argument Selection**: Instead of generating random types for `App` nodes, the generator now inspects the current context. If a variable is available, it uses that variable's type as the argument type with high probability. This significantly boosts `used_vars_proportions` by creating opportunities to use existing variables.\n3. **Dynamic Budget Distribution**: Implements a more aggressive budget splitting strategy for applications and redexes, ensuring that the \"function\" side of an application has enough budget to form complex lambda abstractions, while the \"argument\" side remains substantial enough to be more than just a literal.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T20:19:12.089002",
+  "llm_cost": 0.0114375,
+  "llm_model": null
+}

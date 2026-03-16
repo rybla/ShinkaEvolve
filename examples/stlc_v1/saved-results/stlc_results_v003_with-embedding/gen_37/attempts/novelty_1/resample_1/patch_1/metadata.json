@@ -1,0 +1,14 @@
+{
+  "generation": 37,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 2,
+  "patch_name": "cubic_recency_and_cats_refinement",
+  "patch_description": "This update implements three key optimizations to boost the `combined_score`:\n1.  **Cubic Recency Bias**: Replaces quadratic bias `(i+1)**2` with cubic bias `(i+1)**3` to more aggressively favor local variables, which is proven to increase `used_vars_proportions_average`.\n2.  **Refined CATS (Context-Aware Type Selection)**: Improves the standard application branch by forcing the argument type to match a type already present in the context with 85% probability. This ensures that arguments are much more likely to be variables rather than literals or new complex terms.\n3.  **Strict Asymmetric Budgeting**: Replaces the random split in standard applications with a fixed 70/30 split, ensuring deeper functional nesting and more opportunities for redexes in the primary branch.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T20:22:58.667697",
+  "llm_cost": 0.0122875,
+  "llm_model": null
+}

@@ -1,0 +1,45 @@
+Looking at the current program and the analysis provided, I can see that:
+
+1. The current program has a perfect `good_ratio` of 1.00, meaning all generated terms are type-correct
+2. The `applied_lambdas_proportions_average` is 0.12 (12%)
+3. The `used_vars_proportions_average` is 0.12 (12%)
+4. The `tm_sizes_average` is 1.92 and `ty_sizes_average` is 1.32
+
+The key insight from the analysis is that the current App generation always creates an identity function:
+```python
+func_tm = ("Lam", "x", arg_ty, ("Var", "x"))
+```
+
+This is a "safe" approach that guarantees type correctness but doesn't generate truly applied lambdas (functions applied to arguments where the function does something meaningful).
+
+The recommendation suggests:
+> **Expand Application Logic Beyond Identity Functions**: The current "bottom-up" application strategy always wraps an argument in a newly created identity function. To improve `applied_lambdas_proportions_average` and term size, implement a branch that attempts to generate a "true" function (via a recursive call to `generate_sample` specifically for a `FunTy`) and then generates a matching argument.
+
+So the idea is to modify the App case to sometimes generate a more complex function rather than always using an identity function. This should increase:
+1. `applied_lambdas_proportions_average` - more applications of real functions
+2. `tm_sizes_average` - larger terms
+3. Potentially `unique_subterms_proportions_average` - more variety
+
+Let me think about how to implement this:
+
+Currently the App case is:
+```python
+else:
+    # Generate application - apply a lambda to an argument
+    arg_ty, arg_tm = generate_sample(rng, depth - 1, context)
+    func_ty = ("Fun", arg_ty, arg_ty)
+    func_tm = ("Lam", "x", arg_ty, ("Var", "x"))
+    return (arg_ty, ("App", func_tm, arg_tm))
+```
+
+I should modify this to sometimes generate a real function recursively. The challenge is ensuring type correctness - if we generate a function with type `Fun(A, B)`, we need to generate an argument of type `A` and the result will be of type `B`.
+
+A better approach would be to generate both the function and argument together, ensuring their types match. Instead of generating an argument first and then wrapping it in an identity function, I could generate a function type and its corresponding argument type, then recursively create both the function and a matching argument.
+
+The key insight is that when generating an application, I need to ensure the function's input type matches the argument's type. So I'll generate a function type `Fun(arg_ty, result_ty)` and then recursively generate both the function body and an argument of type `arg_ty`. This maintains type correctness while allowing for more complex function generation.
+
+The approach involves creating a function type where the argument type is determined first, then generating both the function and its argument with matching types. This ensures that when applying the function to the argument, the types align properly.
+
+I'll explore a recursive method that generates more sophisticated function applications by creating a function with a specific argument type and return type, then applying it to a matching argument. This strategy allows for building more intricate lambda calculus expressions beyond simple identity functions.
+
+The key is to recursively generate functions and arguments with compatible types, expanding the range of possible lambda calculus expressions while maintaining type consistency.

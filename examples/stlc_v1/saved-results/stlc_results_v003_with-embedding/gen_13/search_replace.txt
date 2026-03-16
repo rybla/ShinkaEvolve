@@ -1,0 +1,60 @@
+<NAME>
+variable_hungry_synthesis
+</NAME>
+
+<DESCRIPTION>
+To break the ceiling on `used_vars_proportions_average`, I am implementing a "Variable-Hungry" strategy.
+1.  **Forced Variable Selection**: In the base case (`budget <= 1`), the probability of picking a variable over a literal is increased to 90% if a valid variable exists.
+2.  **Context-Aware Argument Types**: When generating an `App` node, the argument type is chosen from the types already present in the context 60% of the time. This ensures that the generated argument branch has a much higher probability of being able to pick a variable from the context, rather than being forced to generate a new literal or a nested term.
+3.  **Power-Law Recency Bias**: Replaced simple range-based recency bias with a power-law distribution to more aggressively favor local variables.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    def gen_term(ty: Ty, ctx: list[Tuple[str, Ty]], budget: int) -> Tm:
+        valid_vars = [name for name, t in ctx if t == ty]
+
+        if budget <= 1:
+            if valid_vars:
+                # Still apply recency bias in terminal cases
+                idx = rng.randint(max(0, len(valid_vars) - 3), len(valid_vars) - 1)
+                return ("Var", valid_vars[idx])
+            if ty == ("Bool",): return ("Bool", rng.choice([True, False]))
+=======
+    def gen_term(ty: Ty, ctx: list[Tuple[str, Ty]], budget: int) -> Tm:
+        valid_vars = [name for name, t in ctx if t == ty]
+
+        if budget <= 1:
+            if valid_vars and rng.random() < 0.9:
+                # Power-law bias: favor the most recently added variables
+                idx = int(len(valid_vars) * (rng.random() ** 0.3))
+                return ("Var", valid_vars[::-1][idx])
+            if ty == ("Bool",): return ("Bool", rng.choice([True, False]))
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+        if mode == "var":
+            # Recency bias: much higher chance to pick from the last 3 valid variables
+            idx = rng.randint(max(0, len(valid_vars) - 3), len(valid_vars) - 1)
+            return ("Var", valid_vars[idx])
+
+        if mode == "app":
+            arg_ty = gen_type(3)
+            # Redex Injection (App (Lam ...) Arg)
+            if rng.random() < 0.45:
+=======
+        if mode == "var":
+            # Power-law bias: favor the most recently added variables
+            idx = int(len(valid_vars) * (rng.random() ** 0.3))
+            return ("Var", valid_vars[::-1][idx])
+
+        if mode == "app":
+            # Context-Aware Argument Selection: pick an existing type from ctx 60% of the time
+            if ctx and rng.random() < 0.6:
+                arg_ty = rng.choice(ctx)[1]
+            else:
+                arg_ty = gen_type(rng.randint(1, 3))
+
+            # Redex Injection (App (Lam ...) Arg)
+            if rng.random() < 0.45:
+>>>>>>> REPLACE
+</DIFF>

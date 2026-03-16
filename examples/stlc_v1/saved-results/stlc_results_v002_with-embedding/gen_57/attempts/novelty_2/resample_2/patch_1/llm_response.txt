@@ -1,0 +1,33 @@
+Let me analyze the current program and its metrics:
+
+Current metrics:
+- Combined score: 10.65
+- good_ratio: 1.00 (perfect correctness)
+- tm_sizes_average: 1.92
+- ty_sizes_average: 1.32
+- used_vars_proportions_average: 0.12
+- applied_lambdas_proportions_average: 0.12
+- unique_subterms_proportions_average: 0.26
+
+Looking at the analysis provided:
+1. The key issue is that the context is never actually used properly - lambdas add "x" to the context, but when generating the body, it never actually uses variables from the context.
+2. The application logic always uses identity functions (`("Lam", "x", arg_ty, ("Var", "x"))`), which means it's not generating true function applications.
+3. The depth parameter is used but could be optimized.
+
+The analysis suggests:
+1. Add variables from context to enable used_vars_proportions
+2. Improve application logic to generate true functions instead of just identity functions
+
+Let me rewrite the program to improve these metrics:
+
+Key changes:
+1. Fix the context usage - when generating lambda body, use variables from context sometimes
+2. When generating application, generate a real function (not just identity) and apply it to an argument
+3. Maintain the good_ratio of 1.00
+
+Here's my plan:
+- At depth > 0, have a chance to use a variable from context
+- For application, generate a proper function (recursive call) and a matching argument
+- Keep the same basic structure but fix the issues
+
+Let me write the improved code:

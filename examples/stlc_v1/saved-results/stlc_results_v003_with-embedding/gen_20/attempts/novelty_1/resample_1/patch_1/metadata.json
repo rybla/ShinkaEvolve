@@ -1,0 +1,14 @@
+{
+  "generation": 20,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "power_biased_redex_generator",
+  "patch_description": "This algorithm optimizes STLC term generation by focusing on three key metrics: variable usage, applied lambdas, and structural complexity. \n\n1.  **Quadratic Recency Bias**: Instead of simple power-law indexing, it uses a quadratic weight `(i+1)**2` for variable selection from the context, significantly boosting `used_vars_proportions`.\n2.  **Aggressive Redex Injection**: The probability of generating an applied lambda (`App(Lam, Arg)`) scales dynamically with the remaining budget, ensuring that larger terms are saturated with redexes.\n3.  **Context-Driven Type Selection**: When generating an application, the argument type is selected from the existing context with 75% probability. This creates a \"closed-loop\" where the argument branch is highly likely to be satisfied by a variable already in scope.\n4.  **Asymmetric Budgeting**: Application nodes split the budget 70/30 to favor deeper, more complex function branches, which increases the average term size and unique sub-term count.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T20:20:09.571626",
+  "llm_cost": 0.012461,
+  "llm_model": null
+}

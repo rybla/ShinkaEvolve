@@ -1,0 +1,110 @@
+<NAME>
+stlc_random_generator
+</NAME>
+
+<DESCRIPTION>
+The current generator is extremely limited: it only produces identity-like functions or constants, resulting in very small terms and zero variable usage.
+
+I am implementing a more robust generator that:
+1.  **Generates Types First**: Generates a random type within the size limit (max 10 nodes).
+2.  **Context-Aware Term Generation**: Maintains a typing context (mapping variables to types) to ensure terms are well-typed.
+3.  **Goal-Oriented Construction**: When asked to generate a term of type `T`, it can choose between introducing a lambda (if `T` is a function type), using a variable from the context, creating an application, or using a literal.
+4.  **Size Management**: Uses a `budget` parameter to ensure the term stays within the 100-node limit while encouraging larger structures.
+5.  **Variable Usage**: Prefers using variables from the context to increase the `used_vars_proportions_average`.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+=======
+def generate_sample(rng: random.Random) -> Tuple[Ty, Tm]:
+    """
+    Generate a sample type and term using a random seed.
+    """
+
+    def gen_type(size_limit: int) -> Ty:
+        if size_limit <= 1 or rng.random() < 0.3:
+            return rng.choice([("Bool",), ("Int",), ("String",)])
+        left_size = rng.randint(1, size_limit - 1)
+        return ("Fun", gen_type(left_size), gen_type(size_limit - left_size - 1))
+
+    def type_size(ty: Ty) -> int:
+        if ty[0] == "Fun":
+            return 1 + type_size(ty[1]) + type_size(ty[2])
+        return 1
+
+    def gen_term(ty: Ty, ctx: list[Tuple[str, Ty]], budget: int) -> Tm:
+        # Try to use a variable from context if types match
+        valid_vars = [name for name, t in ctx if t == ty]
+
+        # Decisions based on type and budget
+        choices = []
+        if ty[0] == "Fun":
+            choices.append("lam")
+        if valid_vars:
+            choices.append("var")
+        if budget > 3:
+            choices.append("app")
+        if ty[0] != "Fun":
+            choices.append("lit")
+
+        # Weighting: prefer variables and lambdas to increase scores
+        weights = []
+        for c in choices:
+            if c == "var": weights.append(4)
+            elif c == "lam": weights.append(4)
+            elif c == "app": weights.append(2)
+            else: weights.append(1)
+
+        mode = rng.choices(choices, weights=weights)[0] if choices else "lit"
+
+        if mode == "lam" and ty[0] == "Fun":
+            var_name = f"v{rng.randint(0, 1000000)}"
+            inner_tm = gen_term(ty[2], ctx + [(var_name, ty[1])], budget - 1)
+            return ("Lam", var_name, ty[1], inner_tm)
+
+        elif mode == "var":
+            return ("Var", rng.choice(valid_vars))
+
+        elif mode == "app":
+            # To generate (App : ty), we need f : A -> ty and arg : A
+            arg_type = gen_type(3)
+            fun_type = ("Fun", arg_type, ty)
+            f_tm = gen_term(fun_type, ctx, budget // 2)
+            a_tm = gen_term(arg_type, ctx, budget // 2)
+            return ("App", f_tm, a_tm)
+
+        else: # Literal
+            if ty == ("Bool",): return ("Bool", rng.choice([True, False]))
+            if ty == ("Int",): return ("Int", rng.randint(0, 100))
+            if ty == ("String",): return ("String", "s")
+            # Fallback for Fun types if lit is chosen (should be rare)
+            var_name = f"v{rng.randint(0, 1000000)}"
+            return ("Lam", var_name, ("Int",), gen_term(ty, ctx, 1))
+
+    # Generate a type with size up to 10
+    target_ty = gen_type(10)
+    # Generate a term with size up to 100
+    target_tm = gen_term(target_ty, [], 100)
+
+    return target_ty, target_tm
+>>>>>>> REPLACE
+</DIFF>

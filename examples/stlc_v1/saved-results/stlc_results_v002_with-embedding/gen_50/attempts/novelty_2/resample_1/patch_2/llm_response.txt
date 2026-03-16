@@ -1,0 +1,22 @@
+The user is saying my previous edit wasn't successful, but I don't see a previous edit in the conversation. Let me try again with a more careful approach.
+
+Looking at the current program:
+- It has good_ratio: 1.00 (perfect correctness)
+- But used_vars_proportions_average: 0.00 and applied_lambdas_proportions_average: 0.00
+
+The issue is that the current program only generates:
+1. Literals (Bool, Int, String)
+2. Lambda abstractions (but the body is just a recursive call, not using the lambda parameter)
+
+To improve, I need to:
+1. Add application (App) to increase applied_lambdas_proportions_average
+2. Add variable usage to increase used_vars_proportions_average
+3. Keep good_ratio at 1.00 (maintain correctness)
+
+Let me create a more sophisticated generator that:
+- Uses depth control properly
+- Tracks context for variables
+- Generates both lambda and application
+- Maintains type correctness
+
+I'll make a targeted change to add these features while maintaining correctness.

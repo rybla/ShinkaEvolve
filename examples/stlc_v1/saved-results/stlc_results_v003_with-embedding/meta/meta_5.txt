@@ -1,0 +1,78 @@
+# INDIVIDUAL PROGRAM SUMMARIES
+
+The following are summaries of individual programs evaluated since the last meta update:
+
+**Program Name: Recency-Biased Redex Injector for Simply-Typed Lambda Calculus**
+- **Implementation**: The generator uses a 4th-power recency bias for variable selection and a high-probability redex injection strategy (60%+) that explicitly wraps terms in applied lambdas. It prioritizes function types and context-based type reuse to ensure deep nesting and frequent variable references.
+- **Performance**: Achieved a combined score of 12.81 with a perfect 1.00 validity ratio and a high applied lambda proportion of 0.58.
+- **Feedback**: The aggressive redex injection and recency-weighted variable selection successfully maximized complexity metrics, though term sizes (25.28) remained significantly below the target budget of 100.
+**Program Identifier:** Generation 49 - Patch Name TypeDirectedSubtermOptimizer - Correct Program: True
+
+**Program Name: Context-Aware Redex Injection with Cubic Recency Bias**
+- **Implementation**: The generator uses a budget-based recursion with a 70/30 asymmetric split for applications and a "Cubic Recency Bias" to favor recently bound variables. It prioritizes "applied lambdas" by explicitly injecting redexes and selecting argument types from the existing context to ensure term validity.
+- **Performance**: Achieved a combined score of 12.76 with a perfect 1.00 good_ratio and a high applied_lambdas_proportions_average of 0.63.
+- **Feedback**: The strategy of selecting argument types from the context (85% probability) effectively increases variable usage and term complexity while maintaining a high unique subterm ratio (0.97).
+**Program Identifier:** Generation 50 - Patch Name cubic_recency_and_deep_redex_bias - Correct Program: True
+
+**Program Name: Context-Aware Type Selection with Cubic Recency Bias**
+- **Implementation**: The generator uses a budget-based recursive approach with "Cubic Recency Bias" to favor recently bound variables and a high "redex probability" to force the creation of applied lambdas. It employs context-aware type selection to ensure that function applications and variable lookups are frequently valid and well-typed.
+- **Performance**: Achieved a combined score of 12.63 with a 1.00 good_ratio and a high applied_lambdas_proportions_average of 0.58.
+- **Feedback**: The strategy of explicitly constructing `App(Lam(...), ...)` structures significantly boosted the redex density, while the cubic weighting for variable selection effectively increased variable utilization across deep nesting levels.
+**Program Identifier:** Generation 51 - Patch Name redex_driven_variable_synergy - Correct Program: True
+
+**Program Name: Context-Aware Type Selection (CATS) with Cubic Recency Bias**
+- **Implementation**: The generator uses an asymmetric budget split (70/30) and a cubic recency bias to favor recently bound variables, combined with a high probability (85%) of selecting argument types from the existing context. It explicitly injects synergistic redexes by wrapping terms in lambda abstractions and forcing variable arguments to maximize application density.
+- **Performance**: Achieved a combined score of 12.63, with a perfect 1.00 validity ratio and a high applied lambda proportion of 0.63.
+- **Feedback**: The strategy of biasing type generation toward the current context effectively increases variable usage (0.47) and ensures that generated applications are meaningful rather than just random structural growth.
+**Program Identifier:** Generation 52 - Patch Name synergistic_redex_factory - Correct Program: True
+
+**Program Name: Cubic Bias and Synergistic Redex Injection Generator**
+- **Implementation**: The generator utilizes a cubic recency bias for variable selection and a "Synergistic Redex Injection" strategy that forces high-probability lambda applications with asymmetric budget allocation. It prioritizes function types (85% bias) and context-aware argument selection to maximize variable usage and application depth.
+- **Performance**: Achieved a combined score of 12.65 with a 1.00 good_ratio, 0.63 applied lambda proportion, and 0.48 variable usage.
+- **Feedback**: The use of cubic weighting for variables and dynamic redex probability effectively balances structural complexity with high term density, resulting in nearly perfect subterm uniqueness.
+**Program Identifier:** Generation 53 - Patch Name cubic_redex_synergy_generator - Correct Program: True
+
+# GLOBAL INSIGHTS SCRATCHPAD
+
+The following are global insights about optimization approaches and their effectiveness:
+
+## Successful Algorithmic Patterns
+
+- **High-Power Recency Bias for Variable Selection**: The most successful programs (Generation 49 and 53) utilize a **4th-power or Cubic recency bias** when selecting variables from the context. By weighting the most recently bound variables significantly higher (e.g., `(i + 1)**4`), these programs achieve high variable usage (0.48–0.49) and deep nesting. Generation 49 achieved the peak combined score of 12.81 using this 4th-power approach.
+- **Context-Aware Type Selection (CATS)**: Explicitly selecting argument types from the existing context (85%–90% probability) rather than generating new random types ensures that function applications can actually utilize available variables. This technique, featured in **Generation 50 (score 12.76)** and the **Current Best Program**, maintains a perfect 1.00 validity ratio while maximizing the `applied_lambdas_proportions_average` (up to 0.63).
+- **Synergistic Redex Injection**: Forcing the creation of `App(Lam(...), ...)` structures—where the argument is also biased toward an existing variable—is the primary driver for complexity. The **Current Best Program (Generation 49)** uses a 60%+ redex injection strategy, while **Generation 52** uses an 85% bias for context-aware arguments, both resulting in high applied lambda proportions (0.58–0.63).
+- **Asymmetric Budget Splitting**: Allocating a larger portion of the budget (70%–75%) to the function side of an application (the "left" branch) allows for the generation of deeper lambda abstractions, which provides a richer context for the argument side to draw from. This is a core feature in **Generations 50, 52, and 53**.
+
+## Ineffective Approaches
+
+- **Uniform Variable Selection**: Programs that do not implement a recency bias tend to have lower variable usage scores because they select variables from shallow context levels as often as deep ones, failing to exploit the complexity of nested scopes.
+- **Random Argument Type Generation**: Generating random types for function arguments (instead of pulling from the context) leads to "dead-end" applications where no existing variables can be used as arguments, forcing the generator to create simple literals and lowering the `used_vars_proportions_average`.
+- **Symmetric Budget Distribution**: Splitting the budget 50/50 between the function and argument in an `App` node often results in terms that are too shallow to reach the target complexity, as evidenced by the feedback in **Generation 49** where term sizes (25.28) remained well below the budget of 100 despite high scores in other metrics.
+
+## Implementation Insights
+
+- **Dynamic Redex Probability**: The **Current Best Program** implements a budget-dependent redex probability: `redex_prob = 0.60 + (budget / 120.0)`. This ensures that as the term grows, the likelihood of injecting a complex redex increases, effectively scaling complexity with term size.
+- **Forced Variable Arguments**: To maximize the `used_vars_proportions_average`, the **TypeDirectedSubtermOptimizer (Gen 49)** and **synergistic_redex_factory (Gen 52)** do not just generate a random term for an application argument; they explicitly check for `arg_vars` in the context and use them with 85%–95% probability.
+- **Function Type Prioritization**: By biasing `gen_type` toward `Fun` types (85% bias in **Generation 53**), generators ensure that the top-level structure of the term is more likely to support `Lam` and `App` nodes, which are necessary for high complexity scores.
+- **Contextual Weighting Implementation**: The use of `rng.choices(valid_vars, weights=[(i + 1)**4 for i in range(len(valid_vars))])` is a concrete implementation detail that directly correlates with the high `unique_subterms_proportions_average` (0.97) seen in the top-performing programs.
+
+## Performance Analysis
+
+- **The 12.81 Benchmark**: **Generation 49 (TypeDirectedSubtermOptimizer)** currently holds the highest score. While it has a lower applied lambda proportion (0.58) than **Generation 50** (0.63), its superior variable usage and structural weighting resulted in a higher overall combined score.
+- **Consistency in Validity**: All top-performing programs (Generations 49–53) achieved a **1.00 good_ratio**, proving that aggressive redex injection and context-heavy variable selection do not compromise the type-safety of the generated STLC terms.
+- **Term Size vs. Complexity**: There is a notable gap between term size and score. **Generation 49** achieved the highest score (12.81) with a term size of only 25.28. This suggests that "density" (redexes and variable reuse per node) is currently weighted more heavily or is more achievable than raw "volume" (reaching the 100-node budget).
+- **Subterm Uniqueness**: High scores are strongly correlated with a `unique_subterms_proportions_average` of 0.97. This indicates that the "Cubic" and "4th-power" biases effectively prevent the generator from falling into repetitive structural patterns, even when frequently reusing the same variables.
+
+# META RECOMMENDATIONS
+
+The following are actionable recommendations for the next program generations:
+
+1. **Implement Exponential Recency Bias (5th-power or higher)**: While the 4th-power bias in the current best program achieved a high variable usage of 0.49, increasing this to a 5th-power or exponential weight (`2**i`) could further concentrate variable selection on the most local scope. This encourages deeper nesting and more frequent reuse of the most recently bound variables, which is a proven driver for the `used_vars_proportions_average` and `unique_subterms_proportions_average` metrics.
+
+2. **Dynamic Budget-Based Branching for "Volume"**: The current best program only reaches a term size of 25.28 despite a budget of 100. To increase "volume" without losing "density," implement a "Budget-Thirsty" branching strategy where the probability of selecting terminal nodes (literals/variables) is inversely proportional to the remaining budget (e.g., `lit_prob = 0.01 * (100 / budget)`). This forces the generator to continue expanding nodes until the budget is nearly exhausted.
+
+3. **Context-Driven Type Synthesis for Arguments**: Instead of occasionally generating random types for `App` arguments, implement a "Type-Harvesting" strategy that exclusively uses types already present in the context's `Fun` types or bound variables. By ensuring `arg_ty` is always a type that has a corresponding variable available, you can push the `applied_lambdas_proportions_average` closer to 1.00, as every application will have a valid variable to consume.
+
+4. **Recursive Redex Nesting (Redex-in-Redex)**: The current redex injection is effective but often flat. Modify the `redex_prob` logic to specifically favor generating an `App(Lam(...), App(...))` structure. By allocating 80% of the budget to the argument of a redex and forcing that argument to also be a redex, you create a chain of applied lambdas that significantly boosts complexity scores and structural depth.
+
+5. **Type-Specific Literal Minimization**: To maximize the `used_vars_proportions_average`, implement a "Literal-as-Last-Resort" policy. If the context contains *any* variable of the required type, the probability of choosing a literal should be reduced to near zero (e.g., <1%). Literals should only be generated with significant frequency when the context is empty or the budget is strictly 1, ensuring that the "density" of variable usage remains high even as term size increases.

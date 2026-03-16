@@ -1,0 +1,33 @@
+The user is saying my previous edit was not successful. Let me try again with a different approach.
+
+Looking at the current code block:
+
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+    if i == 0:
+        return (("Bool",), ("Bool", rng.choice([True, False])))
+    elif i == 1:
+        return (("Int",), ("Int", rng.randint(0, 100)))
+    elif i == 2:
+        return (("String",), ("String", rng.choice(["hello", "world", "test", "foo", "bar"])))
+    else:
+        ty, tm = generate_sample(rng)
+        arg_name = f"x{rng.randint(0, 100)}"
+        arg_ty = rng.choice([("Int",), ("Bool",), ("String",)])
+        return (
+            ("Fun", arg_ty, ty),
+            ("Lam", arg_name, arg_ty, tm),
+        )
+# EVOLVE-BLOCK-END
+```
+
+I need to make a targeted improvement. The key issues are:
+1. No depth control - recursive calls don't pass depth
+2. No context tracking for variables
+3. No application (App) generation
+
+Let me try a simpler approach - just add depth control and context tracking to the existing structure, without completely rewriting everything.
+
+Actually, let me just try to make a minimal change that adds depth control properly. The main issue is that `generate_sample(rng)` doesn't pass the depth parameter.

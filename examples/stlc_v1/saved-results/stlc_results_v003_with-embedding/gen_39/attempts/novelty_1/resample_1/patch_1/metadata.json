@@ -1,0 +1,14 @@
+{
+  "generation": 39,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 3,
+  "patch_name": "cubic_recency_and_forced_redex_synergy",
+  "patch_description": "This edit implements three key optimizations to boost `used_vars` and `applied_lambdas`:\n1.  **Cubic Recency Bias**: Upgrades the variable selection weight from quadratic `(i+1)**2` to cubic `(i+1)**3`. This more aggressively favors local variables, which are more likely to be unique and frequently available, increasing the `used_vars` metric.\n2.  **Forced Variable Arguments in Redexes**: When a redex is generated, the argument term is now forced to be a variable from the context (if one of the correct type exists) with a 90% probability. This creates a direct synergy between `applied_lambdas` and `used_vars`.\n3.  **Enhanced CATS (Context-Aware Type Selection)**: Increases the probability of selecting an argument type already present in the context from 75% to 85%, ensuring more opportunities for variable usage in application nodes.\n4.  **Unique Naming**: Incorporates depth and a random component into variable names to maintain high subterm uniqueness.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T20:23:10.491177",
+  "llm_cost": 0.01251,
+  "llm_model": null
+}

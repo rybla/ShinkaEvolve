@@ -1,0 +1,16 @@
+Looking at the task, I need to make a targeted improvement to the code. Let me analyze the current code and the analysis provided:
+
+Current state:
+- good_ratio: 1.00 (perfect correctness)
+- tm_sizes_average: 1.92
+- applied_lambdas_proportions_average: 0.12
+
+The analysis suggests improving the App case to generate "true" functions instead of always using identity functions.
+
+Let me implement a change that generates more complex applications. The idea is to add a branch that generates a proper function and argument pair, rather than always wrapping the argument in an identity function.
+
+I'll modify the App case to have two options:
+1. The current identity function approach (50% chance)
+2. A new approach that generates a proper function-application pair (50% chance)
+
+This should increase the applied_lambdas_proportions and potentially tm_sizes_average.

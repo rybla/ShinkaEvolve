@@ -1,0 +1,29 @@
+The user is asking me to make an edit to improve the performance of the code. Let me analyze what I need to do:
+
+1. The current program has a score of 10.65
+2. It has good_ratio: 1.00 (perfect correctness)
+3. The key metrics that could be improved are:
+   - used_vars_proportions_average: 0.12 (could be higher)
+   - applied_lambdas_proportions_average: 0.12 (could be higher)
+   - unique_subterms_proportions_average: 0.26 (could be higher)
+
+Looking at the current code, I can see:
+- It uses depth-limited recursion
+- It passes context + ["x"] when generating lambda bodies
+- But it NEVER actually uses variables from the context in the generated term!
+
+The lambda case always does:
+```python
+ty, tm = generate_sample(rng, depth - 1, context + ["x"])
+return (("Fun", ("Int",), ty), ("Lam", "x", ("Int",), tm))
+```
+
+This generates a new term recursively but never creates a ("Var", var_name) from the context.
+
+To improve, I should:
+1. Add a chance to use a variable from context when generating lambda bodies
+2. Keep the probability low enough to maintain correctness (good_ratio = 1.00)
+
+Let me try adding a 15% chance to use a variable from context in the lambda case.
+
+Also, I could potentially improve the App case to generate more diverse functions, but let's start with the variable usage first.

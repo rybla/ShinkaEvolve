@@ -1,0 +1,57 @@
+The user is asking me to improve the current program. Let me analyze the issue and provide a valid edit.
+
+Looking at the current program in the EVOLVE-BLOCK-START and EVOLVE-BLOCK-END section:
+
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+# EVOLVE-BLOCK-END
+```
+
+The issues are:
+1. No context tracking - can't use variables
+2. No App (application) generation
+3. Depth is not decremented in the recursive call
+4. used_vars_proportions_average: 0.00 - NO variables
+5. applied_lambdas_proportions_average: 0.00 - NO applications
+
+I need to provide a SEARCH/REPLACE block that modifies this code. Let me write the improved version.
+
+The SEARCH block should match exactly what's in the EVOLVE-BLOCK-START to EVOLVE-BLOCK-END section.
+
+Let me check the exact content:
+```python
+# EVOLVE-BLOCK-START
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+    if i == 0:
+        return (("Bool",), ("Bool", True))
+    elif i == 1:
+        return (("Int",), ("Int", 27))
+    elif i == 2:
+        return (("String",), ("String", "hello world"))
+    else:
+        ty, tm = generate_sample(rng)
+        return (
+            ("Fun", ("Int",), ty),
+            ("Lam", "x", ("Int",), tm),
+        )
+# EVOLVE-BLOCK-END
+```
+
+I'll modify the code to address the key limitations. The primary goal is to introduce context tracking, enable variable usage, and add application generation while maintaining type safety and controlling recursion depth.
+
+The new implementation will expand the generation strategy to include more complex term constructions, leveraging a context-aware approach that tracks available variables and their types. This will allow for more sophisticated lambda calculus term generation.

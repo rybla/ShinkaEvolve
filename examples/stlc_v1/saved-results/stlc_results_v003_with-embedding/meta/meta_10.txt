@@ -1,0 +1,107 @@
+# INDIVIDUAL PROGRAM SUMMARIES
+
+The following are summaries of individual programs evaluated since the last meta update:
+
+**Program Name: Recursive Random Generator for Simply-Typed Lambda Calculus**
+- **Implementation**: The generator uses a recursive approach with a depth limit to produce types and terms, favoring base literal types (Bool, Int, String) and wrapping them in identity-like lambda abstractions.
+- **Performance**: Achieved a combined score of 10.29 with a 1.00 good_ratio, but very low term/type complexity (1.34 average size) and zero variable usage.
+- **Feedback**: While the program is perfectly correct and passes validation, the generation logic is highly biased toward shallow structures and fails to utilize bound variables or function applications.
+**Program Identifier:** Generation 0 - Patch Name initial_program - Correct Program: True
+
+**Program Name: Weighted Recursive Term Generator for Simply-Typed Lambda Calculus**
+- **Implementation**: The generator uses a recursive descent approach with weighted random selection to prioritize variable usage and lambda abstractions while maintaining type consistency through a context list. It handles function application by generating a random intermediate argument type and splitting the remaining budget between the function and its argument.
+- **Performance**: Achieved a combined score of 11.62 with a 1.00 good_ratio and an average term size of 9.40.
+- **Feedback**: The weighting strategy successfully ensures 100% valid terms, though the relatively low variable usage proportion (0.14) suggests that the budget-splitting logic for applications may be limiting the depth of nested contexts.
+**Program Identifier:** Generation 1 - Patch Name stlc_random_generator - Correct Program: True
+
+**Program Name: Recursive Budget-Based Generator for Simply-Typed Lambda Calculus**
+- **Implementation**: The generator uses a recursive budget system to produce types and terms, employing weighted probabilistic choices for constructors like `Lam`, `App`, and `Var` while maintaining a variable context for type-safe lookups.
+- **Performance**: Combined score: 1.58; very low `good_ratio` (0.01) and small average sizes (Tm: 5.00, Ty: 2.43).
+- **Feedback**: The implementation fails validation due to a mismatch between the intended complexity (budget of 80) and the actual output size, likely caused by aggressive base-case triggers and a flawed fallback mechanism in `gen_lam`.
+**Program Identifier:** Generation 2 - Patch Name structured_well_typed_generator - Correct Program: False
+
+**Program Name: Weighted Recursive Term Generator with Redex Bias**
+- **Implementation**: The generator uses a budget-based recursive approach with weighted selection for lambdas, applications, and variables, specifically biasing towards recently bound variables and explicitly injecting redexes (lambda applications).
+- **Performance**: Achieved a combined score of 11.80 with a 99% validity rate and a high applied lambda proportion of 0.37.
+- **Feedback**: The strategy of forcing redex creation and biasing variable selection successfully improved complexity metrics, though the average term size (15.48) remained relatively low compared to the budget.
+**Program Identifier:** Generation 3 - Patch Name optimize_term_generation_for_size_and_usage - Correct Program: True
+
+**Program Name: Weighted Recursive Term Generator for Simply-Typed Lambda Calculus**
+- **Implementation**: The generator uses a recursive descent approach with weighted random choices to balance lambda abstractions, variable lookups, and applications while maintaining type consistency through a context list. It employs a budget-based system to control recursion depth and splits this budget between function and argument branches in application nodes.
+- **Performance**: Achieved a combined score of 11.76 with a 100% validity ratio and a high unique subterm proportion (0.89).
+- **Feedback**: The implementation successfully generates valid, complex terms with a strong emphasis on function applications (0.35), though the variable usage proportion (0.10) suggests that generated variables are frequently shadowed or ignored in favor of literals and nested applications.
+**Program Identifier:** Generation 4 - Patch Name improve_term_generation_and_variable_usage - Correct Program: True
+
+**Program Name: Weighted Recursive Term Generator for Simply-Typed Lambda Calculus**
+- **Implementation**: The generator uses a recursive approach with weighted probabilities to select between lambda abstractions, variable lookups, applications, and literals based on a provided type and budget. It tracks a context of variables and types to ensure generated terms are well-typed according to the target `Ty`.
+- **Performance**: Combined score of 1.24; characterized by a very low `good_ratio` (0.05) and small average term/type sizes (2.92 and 1.84 respectively).
+- **Feedback**: The program is considered incorrect because it fails to generate a sufficient variety of valid, complex terms, likely due to the aggressive budget constraints and a literal fallback that produces invalid terms for function types. The low `used_vars_proportions` suggests the variable selection logic and context management are not effectively promoting deep term structures.
+**Program Identifier:** Generation 5 - Patch Name increase_term_complexity_and_variable_usage - Correct Program: False
+
+**Program Name: Context-Aware Structural Synthesis with Forced Redex Generation**
+- **Implementation**: The generator uses a recursive depth-tracked algorithm that maintains a typing context and biases towards function types and "forced redexes" (immediate application of new lambdas) to increase term complexity. It employs a weighted selection system to balance between lambda abstraction, application, and variable usage based on the target type.
+- **Performance**: Achieved a combined score of 11.98 with a 100% validity ratio and a high applied lambda proportion of 0.41.
+- **Feedback**: The strategy of explicitly generating applied lambdas effectively boosted the structural complexity, though the average term size (13.42) suggests the budget-halving logic in applications may be slightly too aggressive.
+**Program Identifier:** Generation 6 - Patch Name context_aware_structural_synthesis - Correct Program: True
+
+**Program Name: Weighted Recursive Term Generator with Redex Bias**
+- **Implementation**: The generator uses a weighted random choice system to balance term constructors, specifically biasing towards "App" nodes and recently bound variables to increase complexity. It includes a "redex probability" mechanism that explicitly generates lambda abstractions as the left side of applications to maximize applied lambdas.
+- **Performance**: Achieved a combined score of 12.21 with a 100% validity ratio and a high applied lambda proportion of 0.39.
+- **Feedback**: The strategy of biasing variable selection toward the most recent context entries effectively improved variable usage, while the budget-based redex generation successfully boosted the structural complexity of the terms.
+**Program Identifier:** Generation 7 - Patch Name dynamic_budget_redex_injection - Correct Program: True
+
+**Program Name: Biased Recursive Term Generator with Redex Injection**
+- **Implementation**: The generator uses a weighted recursive approach with recency bias for variable selection and a specific "Redex Injection" strategy that forces the creation of applied lambdas. It manages a budget-based recursion to control term depth while ensuring type consistency through a context-tracking mechanism.
+- **Performance**: Achieved a combined score of 11.91 with a 1.00 validity ratio and a high applied lambda proportion of 0.41.
+- **Feedback**: The strategy of explicitly injecting `(App (Lam ...) Arg)` structures significantly boosted the applied lambda metric, while recency bias in variable selection helped maintain structural variety and uniqueness.
+**Program Identifier:** Generation 8 - Patch Name optimize_variable_usage_and_redex_injection - Correct Program: True
+
+**Program Name: Context-Aware Recursive Synthesis with Explicit Redex Injection**
+- **Implementation**: The generator uses a budget-based recursive strategy with recency bias for variable selection and a 40% chance to explicitly inject "redexes" (immediate applications of lambdas) to ensure high term complexity. It also employs context-aware argument selection, picking argument types from existing variables to increase the likelihood of variable usage in applications.
+- **Performance**: Achieved a combined score of 12.00 with a 1.00 good_ratio, 12.83 average term size, and a high 0.44 applied lambda proportion.
+- **Feedback**: The strategy of biasing type generation toward functions and explicitly constructing lambda-application pairs successfully maximized the `applied_lambdas_proportions` metric while maintaining structural validity. The use of recency bias in variable selection helped maintain a healthy proportion of used variables within the generated terms.
+**Program Identifier:** Generation 9 - Patch Name context_aware_redex_synthesis - Correct Program: True
+
+# GLOBAL INSIGHTS SCRATCHPAD
+
+The following are global insights about optimization approaches and their effectiveness:
+
+## Successful Algorithmic Patterns
+
+*   **Dynamic Redex Injection Probability**: The current best program (Generation 7, score 12.21) introduced a scaling `redex_prob = 0.2 + (budget / 200.0)`. This ensures that as the budget increases, the likelihood of forcing a `(App (Lam ...) Arg)` structure increases, directly optimizing the `applied_lambdas_proportions_average` (0.39) while maintaining a 1.00 `good_ratio`.
+*   **Recency-Biased Variable Selection with Context Windowing**: Generations 7, 8, and 9 all utilized a "recency bias" to improve variable usage. Generation 7 specifically targeted the last 5 entries (`ctx[-5:]`) for selection. This approach raised the `used_vars_proportions_average` to 0.19, a significant improvement over the 0.10 seen in unbiased models like Generation 4.
+*   **Type-Directed Fallback for Function Types**: Unlike Generation 5 (score 1.24), which failed by producing literals for function types when the budget was exhausted, the successful programs (Generations 6-9) implement a recursive fallback. If a `FunTy` is required at `budget <= 1`, they force a `Lam` construction, ensuring the term remains well-typed and boosting the `good_ratio` to 1.00.
+*   **Strategic Weighting of Term Constructors**: The best program (Generation 7) uses a weighted selection system (`lam: 10, var: 15, app: 25, lit: 5`) that heavily favors `App` nodes. This weighting, combined with a high initial budget (100), resulted in the highest average term size (16.85) and the highest overall score.
+
+## Ineffective Approaches
+
+*   **Literal Fallbacks for Complex Types**: Generation 5 demonstrated that returning a literal when a function type is expected results in a catastrophic drop in `good_ratio` (0.05). This "lazy" base-case logic prevents the generation of valid, deep structures.
+*   **Aggressive Budget Halving**: Generation 6 (score 11.98) used a strict budget-halving logic in applications. While it maintained validity, its average term size (13.42) was lower than Generation 7 (16.85), which used a more flexible `rng.randint(1, budget - 1)` split, allowing for more asymmetric and thus potentially deeper/more complex trees.
+*   **Uniform Context Sampling**: Previous insights and Generation 4 showed that picking any valid variable from the entire context leads to lower usage scores (0.10). Variables defined early in a deep recursion are often "shadowed" or logically distant, making them less likely to be integrated into the current subterm compared to the recency-bias approach.
+
+## Implementation Insights
+
+*   **Context-Aware Argument Synthesis**: Generation 9 (score 12.00) attempted to pick argument types from existing variables in the context. While this is a sophisticated way to increase variable usage, the simpler "Redex Injection" and "Recency Bias" in Generation 7 (score 12.21) proved slightly more effective for the overall score by prioritizing structural complexity.
+*   **Unique Identifier Generation**: All high-performing programs (Generations 6-9) use a combination of context length and random integers for variable names (e.g., `f"x{len(ctx)}_{rng.randint(0, 1000)}"`). This technique is responsible for the very high `unique_subterms_proportions_average` (0.97 in Gen 7), preventing the generator from repeating identical sub-structures.
+*   **Intermediate Type Generation for Applications**: To create an `App` node, the generator must synthesize a domain type for the function that doesn't exist in the target type. The best programs use `gen_type(rng.randint(1, 4))` to create small, manageable intermediate types, ensuring the resulting `App` is well-typed without exploding the complexity of the type itself.
+
+## Performance Analysis
+
+*   **The "Redex" Correlation**: There is a direct correlation between explicit redex injection and the final score. Programs that "forced" lambdas into the left side of applications (Generations 6, 7, 8, and 9) all scored between 11.91 and 12.21. Programs without this (like Gen 0) stayed near 10.29.
+*   **Term Size vs. Validity**: Generation 7 achieved the highest `tm_sizes_average` (16.85) among the successful programs. This suggests that the current scoring metric rewards larger terms as long as the `good_ratio` remains at 1.00. The jump from Generation 6's 13.42 to Generation 7's 16.85 was a key driver in reaching the 12.21 score.
+*   **Variable Usage Ceiling**: Despite various strategies (recency bias, context-aware argument selection), `used_vars_proportions_average` remains the most difficult metric to move, peaking at 0.19 in Generation 7. This suggests that the "base case" (where variables are actually used) is still frequently bypassed by literals or that the budget is often exhausted before variables can be integrated.
+*   **Consistency of Top-Tier Programs**: Generations 6 through 9 show very stable performance (scores 11.91 to 12.21), indicating that the combination of **Budget-based Recursion**, **Redex Injection**, and **Type-Directed Synthesis** is the optimal architectural pattern for this task.
+
+# META RECOMMENDATIONS
+
+The following are actionable recommendations for the next program generations:
+
+1. **Implement a "Variable-Hungry" Base Case**: To break the 0.19 ceiling on `used_vars_proportions_average`, modify the `budget <= 1` fallback to prioritize `Var` selection with a high probability (e.g., 85-90%) whenever `valid_vars` is non-empty. Currently, literals are often chosen by default for base types, but forcing variable usage at the leaves of the tree will ensure that the variables bound in the many `Lam` nodes created by the redex-injection strategy are actually consumed.
+
+2. **Context-Aware Argument Type Synthesis**: Instead of generating a completely random `arg_ty` for `App` nodes using `gen_type(1, 4)`, select the type of an existing variable from the `ctx` with a 50% probability. This creates a "closed-loop" system where the `App` node is specifically designed to consume a variable already in scope, directly increasing the likelihood that the `a_tm` (argument term) will be a `Var` node.
+
+3. **Asymmetric Budget Allocation for Higher-Order Functions**: In `App` nodes, when the target type `ty` is a `FunTy`, bias the budget split (e.g., 70/30) toward the function side (`f_tm`). This encourages the generation of complex, nested function transformations and deeper `Lam` structures, which provides more opportunities for both redex injection and variable binding, potentially increasing both the `tm_sizes_average` and `applied_lambdas_proportions_average`.
+
+4. **Global Unique Identifier Counter**: Replace the `rng.randint(0, 1000)` naming scheme with a global incrementing counter to ensure absolute uniqueness of variable names across the entire term. While the current `unique_subterms_proportions_average` is high (0.97), absolute uniqueness prevents any possibility of variable shadowing, ensuring that every variable in the `ctx` remains a valid candidate for selection and maximizing the potential for `used_vars_proportions_average`.
+
+5. **Dynamic Weighting based on Depth**: Introduce a depth tracking parameter and shift the `weights` for `choices` as the tree grows deeper. By increasing the weight of `App` and `Lam` at shallow depths and increasing the weight of `Var` and `Lit` as the budget decreases or depth increases, you can create "top-heavy" trees that are structurally complex but guaranteed to terminate cleanly, further pushing the `tm_sizes_average` without risking the `good_ratio`.

@@ -1,0 +1,114 @@
+<NAME>
+optimize_variable_usage_and_redex_injection
+</NAME>
+
+<DESCRIPTION>
+This update aims to significantly improve the `used_vars_proportions` and `applied_lambdas` metrics.
+1. **Recency-Biased Variable Selection**: The variable selection logic now correctly filters for the `target_ty` first, then applies a recency bias to favor the most recently added variables in the context.
+2. **Enhanced Redex Injection**: The logic for generating applications is improved to ensure that forced redexes (applied lambdas) are correctly typed and contribute to the metric.
+3. **Shadowing-Avoidance**: Variable names now use a combination of context depth and a random component to reduce accidental shadowing.
+4. **Constraint Alignment**: Ensures budget splitting and terminal cases (budget <= 1) are robust to prevent `good_ratio` drops.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    def gen_term(ty: Ty, ctx: list[Tuple[str, Ty]], budget: int) -> Tm:
+        valid_vars = [name for name, t in ctx if t == ty]
+
+        # If budget is exhausted, must return var or lit
+        if budget <= 1:
+            if valid_vars: return ("Var", rng.choice(valid_vars))
+            if ty == ("Bool",): return ("Bool", rng.choice([True, False]))
+            if ty == ("Int",): return ("Int", rng.randint(0, 1000))
+            if ty == ("String",): return ("String", rng.choice(["a", "b", "c"]))
+            if ty[0] == "Fun":
+                v = f"x{rng.randint(0,1000)}"
+                return ("Lam", v, ty[1], gen_term(ty[2], ctx + [(v, ty[1])], 0))
+            return ("Int", 0)
+
+        choices = []
+        weights = []
+
+        if ty[0] == "Fun":
+            choices.append("lam"); weights.append(10)
+        if valid_vars:
+            choices.append("var"); weights.append(15)
+        if budget > 2:
+            choices.append("app"); weights.append(25)
+        if ty[0] != "Fun":
+            choices.append("lit"); weights.append(5)
+
+        mode = rng.choices(choices, weights=weights)[0] if choices else "lit"
+
+        if mode == "lam" and ty[0] == "Fun":
+            var_name = f"x{len(ctx)}_{rng.randint(0, 1000)}"
+            return ("Lam", var_name, ty[1], gen_term(ty[2], ctx + [(var_name, ty[1])], budget - 1))
+
+        if mode == "var":
+            # Bias towards recently bound variables to increase usage score
+            return ("Var", ctx[rng.randint(max(0, len(ctx)-3), len(ctx)-1)][0] if rng.random() > 0.3 else rng.choice(valid_vars))
+
+        if mode == "app":
+            # Force applications to use higher budget portions
+            split = rng.randint(1, budget - 1)
+            arg_ty = gen_type(3)
+            # 40% chance to create a redex (Lam applied to Arg) to boost applied_lambdas score
+            if rng.random() < 0.4 and budget > 5:
+                v_name = f"v{rng.randint(0,1000)}"
+                f_tm = ("Lam", v_name, arg_ty, gen_term(ty, ctx + [(v_name, arg_ty)], split))
+            else:
+                f_tm = gen_term(("Fun", arg_ty, ty), ctx, split)
+            a_tm = gen_term(arg_ty, ctx, budget - split - 1)
+            return ("App", f_tm, a_tm)
+=======
+    def gen_term(ty: Ty, ctx: list[Tuple[str, Ty]], budget: int) -> Tm:
+        valid_vars = [name for name, t in ctx if t == ty]
+
+        if budget <= 1:
+            if valid_vars:
+                # Still apply recency bias in terminal cases
+                idx = rng.randint(max(0, len(valid_vars) - 3), len(valid_vars) - 1)
+                return ("Var", valid_vars[idx])
+            if ty == ("Bool",): return ("Bool", rng.choice([True, False]))
+            if ty == ("Int",): return ("Int", rng.randint(-100, 100))
+            if ty == ("String",): return ("String", rng.choice(["x", "y", "z"]))
+            if ty[0] == "Fun":
+                v = f"v{len(ctx)}_{rng.randint(0, 999)}"
+                return ("Lam", v, ty[1], gen_term(ty[2], ctx + [(v, ty[1])], 0))
+            return ("Int", 42)
+
+        choices, weights = [], []
+        if ty[0] == "Fun":
+            choices.append("lam"); weights.append(30)
+        if valid_vars:
+            choices.append("var"); weights.append(40)
+        if budget > 3:
+            choices.append("app"); weights.append(50)
+        if ty[0] != "Fun" or not choices:
+            choices.append("lit"); weights.append(10)
+
+        mode = rng.choices(choices, weights=weights)[0]
+
+        if mode == "lam":
+            v = f"x{len(ctx)}_{rng.randint(0, 999)}"
+            return ("Lam", v, ty[1], gen_term(ty[2], ctx + [(v, ty[1])], budget - 1))
+
+        if mode == "var":
+            # Recency bias: much higher chance to pick from the last 3 valid variables
+            idx = rng.randint(max(0, len(valid_vars) - 3), len(valid_vars) - 1)
+            return ("Var", valid_vars[idx])
+
+        if mode == "app":
+            arg_ty = gen_type(3)
+            # Redex Injection (App (Lam ...) Arg)
+            if rng.random() < 0.45:
+                v = f"a{len(ctx)}_{rng.randint(0, 999)}"
+                f_tm = ("Lam", v, arg_ty, gen_term(ty, ctx + [(v, arg_ty)], budget // 2))
+                a_tm = gen_term(arg_ty, ctx, budget // 2)
+                return ("App", f_tm, a_tm)
+            else:
+                split = rng.randint(1, budget - 2)
+                f_tm = gen_term(("Fun", arg_ty, ty), ctx, split)
+                a_tm = gen_term(arg_ty, ctx, budget - split - 1)
+                return ("App", f_tm, a_tm)
+>>>>>>> REPLACE

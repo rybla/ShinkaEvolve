@@ -1,0 +1,151 @@
+from typing import Literal, Tuple
+import random
+import tqdm
+
+"""
+`Ty` and `Tm` define the shape of a simply-typed lambda-calculus deeply embedded in Python.
+
+Each value, be it the encoding of a type or a term, is a tuple where the first component of the tuple is the "constructor" and the rest of the components are the arguments. For example, this value encodes the `Bool` type:
+
+    ('Bool',)
+
+As another example, this value encodes the function type from `Bool` to `Bool`, which is often written `Bool -> Bool`:
+
+    ('Fun', ('Bool',), ('Bool',))
+
+As another example, this value encodes the function term, which takes a single `String` input and just returns that input (also known as the identity function):
+
+    ('Lam', 'x', ('String',), ('Var', 'x'))
+
+Note that ALL lambda terms must have a type annotation as the 1st argument, where in the above example the type annotation was the ('String',).
+
+Closely read the above below type aliases to understand the complete structure of this deep embedding of the lambda calculus in Python.
+"""
+
+type Ty = BoolTy | IntTy | StringTy | FunTy
+type BoolTy = Tuple[Literal["Bool"]]
+type IntTy = Tuple[Literal["Int"]]
+type StringTy = Tuple[Literal["String"]]
+type FunTy = Tuple[Literal["Fun"], Ty, Ty]
+
+
+type Tm = LitTm | VarTm | LamTm | AppTm
+type LitTm = (
+    Tuple[Literal["Bool"], bool]
+    | Tuple[Literal["Int"], int]
+    | Tuple[Literal["String"], str]
+)
+type VarTm = Tuple[Literal["Var"], str]
+type LamTm = Tuple[Literal["Lam"], str, Ty, Tm]
+type AppTm = Tuple[Literal["App"], Tm, Tm]
+
+
+# EVOLVE-BLOCK-START
+
+def generate_sample(rng: random.Random) -> Tuple[Ty, Tm]:
+    """
+    Generates a well-typed lambda term and its type using a context-aware 
+    structural synthesis algorithm to maximize size and variable usage.
+    """
+
+    def gen_type(size_limit: int) -> Ty:
+        if size_limit <= 1 or rng.random() < 0.25:
+            return rng.choice([("Bool",), ("Int",), ("String",)])
+        # Bias towards function types to allow for more complex terms
+        return ("Fun", gen_type(size_limit // 2), gen_type(size_limit // 2))
+
+    def gen_term(ty: Ty, ctx: List[Tuple[str, Ty]], budget: int, depth: int) -> Tm:
+        # Filter variables from context that match the required type
+        valid_vars = [name for name, t in ctx if t == ty]
+        
+        # Base case: if budget is low, try to use a variable or a literal
+        if budget <= 1 or depth > 15:
+            if valid_vars and rng.random() < 0.8:
+                return ("Var", rng.choice(valid_vars))
+            if ty == ("Bool",): return ("Bool", rng.choice([True, False]))
+            if ty == ("Int",): return ("Int", rng.randint(-100, 100))
+            if ty == ("String",): return ("String", rng.choice(["x", "y", "z"]))
+            if ty[0] == "Fun":
+                v = f"f{depth}_{rng.randint(0, 99)}"
+                return ("Lam", v, ty[1], gen_term(ty[2], ctx + [(v, ty[1])], 0, depth + 1))
+            return ("Int", 0)
+
+        # Determine possible constructors
+        weights = []
+        options = []
+
+        # 1. Lambda Abstraction (if type is Fun)
+        if ty[0] == "Fun":
+            options.append("lam")
+            weights.append(40)
+        
+        # 2. Application (always possible, helps grow the tree)
+        options.append("app")
+        weights.append(50)
+
+        # 3. Variable (if available)
+        if valid_vars:
+            options.append("var")
+            weights.append(30)
+        
+        # 4. Literal (only for base types)
+        if ty[0] != "Fun":
+            options.append("lit")
+            weights.append(10)
+
+        choice = rng.choices(options, weights=weights, k=1)[0]
+
+        if choice == "lam":
+            var_name = f"v{depth}_{len(ctx)}"
+            return ("Lam", var_name, ty[1], gen_term(ty[2], ctx + [(var_name, ty[1])], budget - 1, depth + 1))
+
+        elif choice == "app":
+            # To maximize applied_lambdas, 40% of apps are forced redexes
+            if rng.random() < 0.4:
+                arg_ty = gen_type(3)
+                v_name = f"a{depth}_{len(ctx)}"
+                # Create a lambda and apply it immediately
+                lam_tm = ("Lam", v_name, arg_ty, gen_term(ty, ctx + [(v_name, arg_ty)], budget // 2, depth + 1))
+                arg_tm = gen_term(arg_ty, ctx, budget // 2, depth + 1)
+                return ("App", lam_tm, arg_tm)
+            else:
+                arg_ty = gen_type(3)
+                f_tm = gen_term(("Fun", arg_ty, ty), ctx, budget // 2, depth + 1)
+                a_tm = gen_term(arg_ty, ctx, budget // 2, depth + 1)
+                return ("App", f_tm, a_tm)
+
+        elif choice == "var":
+            return ("Var", rng.choice(valid_vars))
+
+        else: # lit
+            if ty == ("Bool",): return ("Bool", rng.choice([True, False]))
+            if ty == ("Int",): return ("Int", rng.randint(-100, 100))
+            return ("String", f"s{depth}")
+
+    # 1. Generate a reasonably complex type (size limit 10)
+    target_ty = gen_type(10)
+    
+    # 2. Generate a term (budget 100 nodes)
+    # We start with a slightly higher budget to encourage reaching the limit
+    target_tm = gen_term(target_ty, [], 95, 0)
+
+    return target_ty, target_tm
+
+# EVOLVE-BLOCK-END
+
+# This part remains fixed (not evolved)
+
+import lc
+
+
+def run() -> lc.RunOutput:
+    """Run the analysis"""
+
+    size = 1000
+    rng = random.Random()
+
+    return lc.run(
+        size=size,
+        rng=rng,
+        generate_sample=generate_sample,
+    )

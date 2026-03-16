@@ -1,0 +1,14 @@
+{
+  "generation": 42,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 3,
+  "patch_name": "depth_dependent_weighting_and_cubic_bias",
+  "patch_description": "none",
+  "error_msg": null,
+  "timestamp": "2026-03-15T20:23:38.108051",
+  "llm_cost": 0.0121795,
+  "llm_model": null
+}

@@ -1,0 +1,14 @@
+{
+  "generation": 14,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "variable_hungry_redex_injector",
+  "patch_description": "The structural redesign focuses on maximizing `used_vars_proportions` and `applied_lambdas_proportions` through three key architectural changes:\n1. **Variable-Hungry Base Case**: When the budget is exhausted (`budget <= 1`), the generator now has a 90% probability of selecting a variable if any are available, significantly reducing the \"literal-bloat\" at leaf nodes.\n2. **Context-Aware Type Selection**: When generating an `App` node, the argument type is drawn from the existing context 70% of the time. This ensures that the generated argument branch has a high probability of being able to select a variable from the context.\n3. **Aggressive Redex Injection**: The probability of injecting a redex (an `App` where the function is a `Lam`) is scaled by the remaining budget, ensuring that larger terms are densely packed with applied lambdas.\n4. **Recency-Weighted Selection**: Variable selection uses a squared-weighting system to favor the most recently bound variables, which typically results in more \"local\" and valid variable usage patterns.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T20:19:25.531132",
+  "llm_cost": 0.012084500000000001,
+  "llm_model": null
+}

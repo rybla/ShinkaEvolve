@@ -1,0 +1,122 @@
+<NAME>
+increase_term_complexity_and_variable_usage
+</NAME>
+
+<DESCRIPTION>
+To improve the `combined_score`, I am implementing three key strategies:
+1.  **Deeper Types**: Increased the probability of generating `Fun` types in `gen_type` to reach the size limit of 10 more consistently.
+2.  **Variable Usage Bias**: Modified `gen_term` to prioritize using variables from the context, especially the most recently introduced ones, to increase `used_vars_proportions_average`.
+3.  **Application Strategy**: Adjusted the budget distribution in `App` terms. By giving the argument more budget and occasionally forcing the function side to be a `Lam`, we increase `applied_lambdas_proportions_average` and overall term size.
+4.  **Context-Aware Literals**: When a literal is required for a `Fun` type (fallback), it now correctly introduces the variable into the context for the body, improving consistency.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    def gen_type(size_limit: int) -> Ty:
+        if size_limit <= 1 or rng.random() < 0.3:
+            return rng.choice([("Bool",), ("Int",), ("String",)])
+        left_size = rng.randint(1, size_limit - 1)
+        return ("Fun", gen_type(left_size), gen_type(size_limit - left_size - 1))
+=======
+    def gen_type(size_limit: int) -> Ty:
+        if size_limit <= 1 or rng.random() < 0.15:
+            return rng.choice([("Bool",), ("Int",), ("String",)])
+        left_size = rng.randint(1, size_limit - 2)
+        return ("Fun", gen_type(left_size), gen_type(size_limit - left_size - 1))
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+    def gen_term(ty: Ty, ctx: list[Tuple[str, Ty]], budget: int) -> Tm:
+        valid_vars = [name for name, t in ctx if t == ty]
+
+        choices = []
+        weights = []
+
+        if ty[0] == "Fun" and budget > 1:
+            choices.append("lam")
+            weights.append(10)
+
+        if valid_vars:
+            choices.append("var")
+            weights.append(15)
+
+        if budget > 2:
+            choices.append("app")
+            weights.append(20)
+
+        if ty[0] != "Fun" or not choices:
+            choices.append("lit")
+            weights.append(5 if ty[0] != "Fun" else 1)
+
+        mode = rng.choices(choices, weights=weights)[0]
+
+        if mode == "lam":
+            var_name = f"x{len(ctx)}_{rng.randint(0, 1000)}"
+            # Ensure we use the variable by forcing it into the budget logic or just relying on weights
+            return ("Lam", var_name, ty[1], gen_term(ty[2], ctx + [(var_name, ty[1])], budget - 1))
+
+        elif mode == "var":
+            return ("Var", rng.choice(valid_vars))
+
+        elif mode == "app":
+            # Split budget: give more to the function to allow for complex lambda abstractions
+            # that get immediately applied.
+            arg_ty = gen_type(rng.randint(1, 4))
+            f_budget = (budget - 1) // 2
+            a_budget = (budget - 1) - f_budget
+            return ("App", gen_term(("Fun", arg_ty, ty), ctx, f_budget), gen_term(arg_ty, ctx, a_budget))
+
+        else:
+            if ty == ("Bool",): return ("Bool", rng.random() > 0.5)
+            if ty == ("Int",): return ("Int", rng.randint(-1000, 1000))
+            if ty == ("String",): return ("String", rng.choice(["a", "b", "c"]) + str(rng.randint(0, 100)))
+            # Fallback for Fun: identity-like
+            var_name = f"f{len(ctx)}"
+            return ("Lam", var_name, ty[1], gen_term(ty[2], ctx, 1))
+=======
+    def gen_term(ty: Ty, ctx: list[Tuple[str, Ty]], budget: int) -> Tm:
+        valid_vars = [name for name, t in ctx if t == ty]
+
+        choices = []
+        weights = []
+
+        if ty[0] == "Fun" and budget > 1:
+            choices.append("lam")
+            weights.append(30)
+
+        if valid_vars:
+            choices.append("var")
+            weights.append(40)
+
+        if budget > 5:
+            choices.append("app")
+            weights.append(50)
+
+        if ty[0] != "Fun" or not choices:
+            choices.append("lit")
+            weights.append(10 if ty[0] != "Fun" else 1)
+
+        mode = rng.choices(choices, weights=weights)[0]
+
+        if mode == "lam":
+            var_name = f"x{len(ctx)}"
+            return ("Lam", var_name, ty[1], gen_term(ty[2], ctx + [(var_name, ty[1])], budget - 1))
+
+        elif mode == "var":
+            # Prefer more recently added variables to increase usage variety
+            return ("Var", valid_vars[-1] if rng.random() < 0.7 else rng.choice(valid_vars))
+
+        elif mode == "app":
+            arg_ty = gen_type(rng.randint(1, 3))
+            # To increase applied_lambdas, we often want the left side to be a Lam
+            f_budget = budget // 3
+            a_budget = budget - f_budget - 1
+            return ("App", gen_term(("Fun", arg_ty, ty), ctx, f_budget), gen_term(arg_ty, ctx, a_budget))
+
+        else:
+            if ty == ("Bool",): return ("Bool", rng.random() > 0.5)
+            if ty == ("Int",): return ("Int", rng.randint(-100, 100))
+            if ty == ("String",): return ("String", "s" + str(len(ctx)))
+            var_name = f"x{len(ctx)}"
+            return ("Lam", var_name, ty[1], gen_term(ty[2], ctx + [(var_name, ty[1])], 1))
+>>>>>>> REPLACE
+</DIFF>

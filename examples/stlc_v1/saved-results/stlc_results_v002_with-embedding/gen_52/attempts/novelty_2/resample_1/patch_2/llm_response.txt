@@ -1,0 +1,38 @@
+The user wants me to propose a new algorithm approach to improve the performance metrics. Let me analyze the current state and design a different algorithm.
+
+Current metrics:
+- Combined score: 10.65
+- good_ratio: 1.00
+- tm_sizes_average: 1.92
+- ty_sizes_average: 1.32
+- used_vars_proportions_average: 0.12
+- applied_lambdas_proportions_average: 0.12
+- unique_subterms_proportions_average: 0.26
+
+Looking at the patterns in the prior programs, I can see that:
+1. The best programs use depth-limited generation
+2. They have 5 options at depth > 0 (3 literals + Lam + App)
+3. They use context tracking for variables
+4. They generate App with identity functions
+
+To improve, I should try a fundamentally different approach. Let me think about what could boost the metrics:
+
+1. **used_vars_proportions_average**: Currently 0.12 - this measures how often variables from context are used. The current algorithm adds "x" to context but rarely uses it.
+
+2. **applied_lambdas_proportions_average**: Currently 0.12 - this measures how often lambdas are applied. The current algorithm has an App case that does this.
+
+3. **unique_subterms_proportions_average**: Currently 0.26 - this measures diversity of subterms.
+
+A different approach could be:
+1. Use a probability-based generation instead of fixed options
+2. Generate more complex lambda bodies that use variables
+3. Create more diverse types (not just Int for all lambdas)
+4. Generate more complex applications
+
+Let me try an approach that:
+1. Uses type-aware generation - randomly pick Bool, Int, or String for lambda parameters
+2. Increases the probability of using variables from context in lambda bodies
+3. Creates more complex applications by generating non-trivial lambdas
+4. Uses a more sophisticated probability distribution for generation
+
+Here's my new algorithm:

@@ -1,0 +1,38 @@
+Looking at the performance metrics, I can see that the current program has:
+- good_ratio: 1.00 (perfect correctness)
+- used_vars_proportions_average: 0.01 (very low)
+- applied_lambdas_proportions_average: 0.00 (no applications!)
+- unique_subterms_proportions_average: 0.13
+
+The key insight from the analysis at the top is that the top-performing programs (score ~10.6) had:
+1. Depth-limited approach with 5 options at depth > 0 (3 literals + Lam + App) and 3 options at depth = 0
+2. App generation that creates applied_lambdas_proportions around 0.11
+3. Context tracking that enables used_vars_proportions around 0.11
+
+The current program only has 4 options (3 literals + Lam), but it's missing the App (application) constructor! That's why applied_lambdas_proportions_average is 0.00.
+
+Looking at the type definitions:
+- AppTm = Tuple[Literal["App"], Tm, Tm]
+
+This means an application takes two terms (function and argument).
+
+The fix should be:
+1. Add App as an option (making it 5 options at depth > 0)
+2. When generating App, we need to generate a function term and an argument term
+3. The function should be a lambda that takes an argument and returns something
+
+Let me design the App generation:
+- Generate a lambda: ("Lam", "x", arg_ty, body)
+- Apply it to an argument: ("App", ("Lam", "x", arg_ty, body), arg)
+
+Actually, looking at the top programs, they did something like:
+- App generates identity function `("Lam", "x", arg_ty, ("Var", "x"))` and applies it to arg
+
+So the App case should:
+1. Generate an argument type and term
+
+
+2. Create an identity lambda using that argument type
+3. Apply the lambda to the argument
+
+This approach will generate applied_lambdas and properly exercise the App constructor while maintaining type consistency.

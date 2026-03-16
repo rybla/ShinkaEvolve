@@ -1,0 +1,16 @@
+I need to provide a complete new program code without using a patch format. Let me rewrite the program with structural improvements.
+
+Looking at the analysis:
+- Current score: 10.65
+- good_ratio: 1.00 (perfect - we should maintain this)
+- The program uses depth-limited recursion with 5 options at depth > 0 and 3 at depth = 0
+- It generates Int types for all lambdas
+- It doesn't use context variables in lambda bodies
+
+Key improvements I can make:
+1. Add type diversity - use Bool, Int, String as parameter types
+2. Use context variables with some probability in lambda bodies
+3. Use more varied variable names
+4. Potentially create more complex applications
+
+Let me write the complete new program:

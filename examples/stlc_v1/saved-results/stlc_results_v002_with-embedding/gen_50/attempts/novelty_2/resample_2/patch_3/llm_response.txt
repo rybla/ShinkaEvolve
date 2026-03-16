@@ -1,0 +1,34 @@
+Let me re-read the instructions more carefully. I need to make sure I'm using the correct format for the SEARCH/REPLACE block.
+
+Looking at the instructions:
+- I need to use the exact SEARCH/REPLACE diff format
+- The SEARCH section must be copied **verbatim** from the current file
+- I can only modify text that lies below "EVOLVE-BLOCK-START" and above "EVOLVE-BLOCK-END"
+
+Let me try again with a proper edit. The current code in the EVOLVE-BLOCK-START section is:
+
+```python
+def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
+    i = rng.randrange(0, 4 if depth > 0 else 3)
+    if i == 0:
+        return (("Bool",), ("Bool", rng.choice([True, False])))
+    elif i == 1:
+        return (("Int",), ("Int", rng.randint(0, 100)))
+    elif i == 2:
+        return (("String",), ("String", rng.choice(["hello", "world", "test", "foo", "bar"])))
+    else:
+        ty, tm = generate_sample(rng)
+        arg_name = f"x{rng.randint(0, 100)}"
+        arg_ty = rng.choice([("Int",), ("Bool",), ("String",)])
+        return (
+            ("Fun", arg_ty, ty),
+            ("Lam", arg_name, arg_ty, tm),
+        )
+```
+
+I need to replace this with a more sophisticated version that:
+1. Passes depth-1 in recursive calls
+2. Adds App term generation
+3. Adds variable usage from context
+
+Let me try again.

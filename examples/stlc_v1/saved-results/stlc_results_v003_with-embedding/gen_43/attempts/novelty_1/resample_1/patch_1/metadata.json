@@ -1,0 +1,14 @@
+{
+  "generation": 43,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "recursive_redex_synergy_generator",
+  "patch_description": "The new algorithm optimizes `used_vars` and `applied_lambdas` by introducing three key refinements:\n1. **Recursive Redexes**: Instead of a single-layer redex, the `app` branch now has a 35% chance to generate a 'nested redex' where the body of the lambda is itself another application, increasing the density of `applied_lambdas`.\n2. **Context-Driven Type Selection (CDTS)**: In standard applications, the argument type is now selected from the context with 90% probability (up from 85%), and specifically favors types of variables that haven't been used yet to push the `used_vars` metric.\n3. **Dynamic Budget Scaling**: The asymmetric split is adjusted to 75/25 to force deeper functional nesting on the left-hand side of applications, which provides more opportunities for variable binding and subsequent usage.\n4. **Cubic Recency with Jitter**: Variable selection weights are slightly perturbed to ensure that while recency is favored, the entire context is explored, maintaining high `unique_subterms`.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T20:23:40.555534",
+  "llm_cost": 0.0131845,
+  "llm_model": null
+}

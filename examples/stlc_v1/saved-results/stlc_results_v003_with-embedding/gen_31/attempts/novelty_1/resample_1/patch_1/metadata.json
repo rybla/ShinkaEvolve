@@ -1,0 +1,14 @@
+{
+  "generation": 31,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "asymmetric_budget_and_forced_redex_injection",
+  "patch_description": "This edit implements the '0.7 Rule' for asymmetric budget allocation and strengthens the redex injection strategy. By allocating 70% of the budget to the function side and increasing the redex injection probability to 65% with context-aware type selection, we drive both larger term sizes and a higher proportion of applied lambdas. Additionally, variable selection is upgraded with a strict quadratic recency bias to optimize the used variables metric.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T20:21:52.221793",
+  "llm_cost": 0.013316,
+  "llm_model": null
+}

@@ -1,0 +1,14 @@
+{
+  "generation": 35,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 2,
+  "patch_name": "cubic_recency_and_redex_synergy",
+  "patch_description": "This update implements three key optimizations to boost the combined score:\n1.  **Cubic Recency Bias**: Replaces quadratic weighting `(i+1)**2` with cubic weighting `(i+1)**3` for variable selection. This more aggressively favors local variables, which are more likely to be used in complex terms, boosting `used_vars`.\n2.  **Budget-Scaled Redex Probability**: Instead of a fixed 65% chance, the redex probability now scales with the remaining budget (`0.55 + budget/150.0`), ensuring deeper trees have a higher density of applied lambdas.\n3.  **Enhanced CATS (Context-Aware Type Selection)**: Increases the probability of selecting argument types from the context to 85% and the probability of forcing a variable argument in redexes to 90%, directly synergizing the `applied_lambdas` and `used_vars` metrics.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T20:22:25.504593",
+  "llm_cost": 0.012124,
+  "llm_model": null
+}

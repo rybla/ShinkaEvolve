@@ -1,0 +1,113 @@
+<NAME>
+cubic_recency_and_redex_synergy
+</NAME>
+
+<DESCRIPTION>
+Optimizes the generator to reach the 12.7+ score bracket by:
+1.  **Upgrading to Cubic Recency Bias**: Replacing quadratic `(i+1)**2` with cubic `(i+1)**3` weights for variable selection. This creates a much stronger pressure to reuse local variables, directly boosting `used_vars_proportions_average`.
+2.  **Budget-Scaled Redex Probability**: Scaling the redex chance dynamically based on remaining budget (`0.55 + budget/150`) to ensure higher redex density in large terms.
+3.  **Strengthening CATS and Forced Argument selection**: Increasing the probability of selecting argument types from context to 85% and the "forced variable argument" within redexes to 90%.
+4.  **Unique Naming**: Enhancing `get_unique_name` with depth and counter metadata to maintain high subterm uniqueness.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    def get_unique_name(prefix: str) -> str:
+        nonlocal var_counter
+        var_counter += 1
+        return f"{prefix}_{var_counter}_{rng.randint(0, 100)}"
+=======
+    def get_unique_name(prefix: str, depth: int) -> str:
+        nonlocal var_counter
+        var_counter += 1
+        return f"{prefix}_{depth}_{var_counter}_{rng.randint(0, 100)}"
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+        # Base case: Force variable usage or generate minimal valid term
+        if budget <= 1:
+            if valid_vars and rng.random() < 0.95:
+                # Quadratic bias for most recent variables
+                weights = [(i + 1)**2 for i in range(len(valid_vars))]
+                return ("Var", rng.choices(valid_vars, weights=weights, k=1)[0])
+
+            if ty[0] == "Fun":
+                v = get_unique_name("v")
+                return ("Lam", v, ty[1], gen_term(ty[2], ctx + [(v, ty[1])], 0))
+=======
+        # Base case: Force variable usage or generate minimal valid term
+        if budget <= 1:
+            if valid_vars and rng.random() < 0.95:
+                # Cubic bias for most recent variables
+                weights = [(i + 1)**3 for i in range(len(valid_vars))]
+                return ("Var", rng.choices(valid_vars, weights=weights, k=1)[0])
+
+            if ty[0] == "Fun":
+                v = get_unique_name("v", len(ctx))
+                return ("Lam", v, ty[1], gen_term(ty[2], ctx + [(v, ty[1])], 0))
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+        if mode == "lam":
+            v_name = get_unique_name("x")
+            return ("Lam", v_name, ty[1], gen_term(ty[2], ctx + [(v_name, ty[1])], budget - 1))
+
+        elif mode == "var":
+            v_weights = [(i + 1)**2 for i in range(len(valid_vars))]
+            return ("Var", rng.choices(valid_vars, weights=v_weights, k=1)[0])
+
+        elif mode == "app":
+            # Context-Aware Type Selection: Prioritize types already in the context
+            if ctx and rng.random() < 0.80:
+                # Weights are used to naturally select types that appear more often
+                arg_ty = rng.choice(ctx)[1]
+            else:
+                arg_ty = gen_type(rng.randint(1, 2))
+
+            # Redex Injection Strategy (65% probability)
+            if rng.random() < 0.65 and budget > 4:
+                split = int(budget * 0.7) # 0.7 Rule for asymmetric depth
+                v_name = get_unique_name("r")
+                # Construct redex: (Lam v. body) arg
+                f_tm = ("Lam", v_name, arg_ty, gen_term(ty, ctx + [(v_name, arg_ty)], split))
+
+                # Targeted Variable Usage for the argument branch
+                arg_vars = [n for n, t in ctx if t == arg_ty]
+                if arg_vars and rng.random() < 0.85:
+                    v_weights = [(i + 1)**2 for i in range(len(arg_vars))]
+                    a_tm = ("Var", rng.choices(arg_vars, weights=v_weights, k=1)[0])
+                else:
+                    a_tm = gen_term(arg_ty, ctx, budget - split - 1)
+=======
+        if mode == "lam":
+            v_name = get_unique_name("x", len(ctx))
+            return ("Lam", v_name, ty[1], gen_term(ty[2], ctx + [(v_name, ty[1])], budget - 1))
+
+        elif mode == "var":
+            v_weights = [(i + 1)**3 for i in range(len(valid_vars))]
+            return ("Var", rng.choices(valid_vars, weights=v_weights, k=1)[0])
+
+        elif mode == "app":
+            # Context-Aware Type Selection: 85% Rule
+            if ctx and rng.random() < 0.85:
+                arg_ty = rng.choice(ctx)[1]
+            else:
+                arg_ty = gen_type(rng.randint(1, 2))
+
+            # Budget-Scaled Redex Probability
+            redex_prob = 0.55 + (budget / 150.0)
+            split = int(budget * 0.7) # Asymmetric Budgeting
+
+            if rng.random() < redex_prob and budget > 4:
+                v_name = get_unique_name("r", len(ctx))
+                # Construct redex: (Lam v. body) arg
+                f_tm = ("Lam", v_name, arg_ty, gen_term(ty, ctx + [(v_name, arg_ty)], split))
+
+                # Targeted Variable Usage for the argument (90% Forced)
+                arg_vars = [n for n, t in ctx if t == arg_ty]
+                if arg_vars and rng.random() < 0.90:
+                    v_weights = [(i + 1)**3 for i in range(len(arg_vars))]
+                    a_tm = ("Var", rng.choices(arg_vars, weights=v_weights, k=1)[0])
+                else:
+                    a_tm = gen_term(arg_ty, ctx, budget - split - 1)
+>>>>>>> REPLACE
+
+</DIFF>

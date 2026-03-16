@@ -1,0 +1,37 @@
+Let me analyze the current performance metrics and the prior programs to understand what improvements need to be made.
+
+Current metrics:
+- Combined score: 10.28
+- good_ratio: 1.00 (all terms are well-typed)
+- tm_sizes_average: 1.33 (term sizes are small)
+- ty_sizes_average: 1.33 (type sizes are small)
+- used_vars_proportions_average: 0.00 (no variables are being used!)
+- applied_lambdas_proportions_average: 0.00 (no lambda applications!)
+- unique_subterms_proportions_average: 0.14 (low uniqueness)
+
+The key issues are:
+1. **used_vars_proportions_average: 0.00** - The terms don't use any variables introduced by lambdas
+2. **applied_lambdas_proportions_average: 0.00** - No lambda applications at all
+3. Small term and type sizes
+
+Looking at prior programs that tried to address this:
+- The ones with context tracking achieved used_vars_proportions_average of 0.01, but still 0.00 for applied_lambdas_proportions_average
+- The best score was 10.31 from a version with context but without recursion
+
+The key insight is that:
+1. We need to track bound variables in context to use them (as Var terms)
+2. We need to generate App terms (applications) to increase applied_lambdas_proportions_average
+3. We need to generate bigger types (up to 10 nodes) and terms (up to 100 nodes)
+
+Let me design an improved generator:
+
+1. Track context of bound variables
+2. When generating a term inside a lambda, occasionally use a variable from context
+3. Most importantly: Add APPLICATION cases that apply lambdas to arguments
+4. Use deeper recursion to build bigger terms
+5. Generate more complex types (not just Int -> ty, but Bool -> String, etc.)
+
+
+6. I'll expand the type generation to create more sophisticated type structures by randomly selecting from multiple base types and function type combinations. This will help increase the type complexity and size, making the type system more interesting and challenging.
+
+The application generation strategy will focus on creating meaningful lambda applications that demonstrate variable usage and functional composition. I'll ensure the generator can produce a variety of application patterns that showcase the lambda calculus's expressive power.

@@ -1,0 +1,14 @@
+{
+  "generation": 9,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "context_aware_redex_synthesis",
+  "patch_description": "The core innovation in this implementation is \"Context-Aware Argument Selection\" for applications. Previous versions generated random `arg_ty` for `App` nodes, often resulting in terms where variables in the context (lambdas) were never used because their types didn't match the functions being generated. This version observes the types of variables already available in the context (`ctx`) and, with a 50% probability, selects one of those types as the argument type for an application. This significantly boosts the `used_vars_proportions` metric. \n\nAdditionally, I've implemented:\n1.  **Tailored Redex Logic**: Explicitly constructing `App(Lam(...), ...)` structures with a dynamic probability that scales with the budget, ensuring the `applied_lambdas` metric remains high while maintaining term diversity.\n2.  **Weighted Variable Selection**: A recency bias that favors the most recently bound variables, simulating real-world code where local scopes are active.\n3.  **Recursive Budget Splitting**: Using a randomized split (instead of a static 50/50) to create deeper and more interesting AST structures.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T20:08:40.560362",
+  "llm_cost": 0.010133,
+  "llm_model": null
+}

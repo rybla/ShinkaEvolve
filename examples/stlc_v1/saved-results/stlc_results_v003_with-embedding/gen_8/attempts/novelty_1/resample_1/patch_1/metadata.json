@@ -1,0 +1,14 @@
+{
+  "generation": 8,
+  "novelty_attempt": 1,
+  "resample_attempt": 1,
+  "patch_attempt": 1,
+  "success": true,
+  "num_applied": 1,
+  "patch_name": "optimize_variable_usage_and_redex_injection",
+  "patch_description": "This update aims to significantly improve the `used_vars_proportions` and `applied_lambdas` metrics. \n1. **Recency-Biased Variable Selection**: The variable selection logic now correctly filters for the `target_ty` first, then applies a recency bias to favor the most recently added variables in the context.\n2. **Enhanced Redex Injection**: The logic for generating applications is improved to ensure that forced redexes (applied lambdas) are correctly typed and contribute to the metric. \n3. **Shadowing-Avoidance**: Variable names now use a combination of context depth and a random component to reduce accidental shadowing.\n4. **Constraint Alignment**: Ensures budget splitting and terminal cases (budget <= 1) are robust to prevent `good_ratio` drops.",
+  "error_msg": null,
+  "timestamp": "2026-03-15T20:08:32.622638",
+  "llm_cost": 0.009257999999999999,
+  "llm_model": null
+}

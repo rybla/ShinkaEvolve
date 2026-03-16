@@ -1,0 +1,3 @@
+The user is saying my edit wasn't applied. Let me check what happened. Looking at my previous response, I provided analysis but I don't think I actually submitted a proper SEARCH/REPLACE block. Let me now provide the actual edit.
+
+I need to modify the generate_sample function to add a Var case that uses the context. Let me write the proper diff format.

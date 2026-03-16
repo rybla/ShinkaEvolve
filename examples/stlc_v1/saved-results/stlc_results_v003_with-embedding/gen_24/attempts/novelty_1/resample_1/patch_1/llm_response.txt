@@ -1,0 +1,75 @@
+<NAME>
+forced_variable_argument_and_quadratic_weight_refinement
+</NAME>
+
+<DESCRIPTION>
+To maximize `used_vars_proportions_average` and `applied_lambdas_proportions_average`, I am implementing a "Forced Variable Argument" strategy. When a redex is injected, the generator now actively searches the context for a variable matching the argument type. If found, it uses that variable with high probability instead of recursing into `gen_term`. This ensures that every redex injection also counts as a variable usage. Additionally, I've refined the `gen_term` budget split and type selection to favor types already present in the context more aggressively.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    def gen_term(target_ty: Ty, ctx: List[Tuple[str, Ty]], budget: int) -> Tm:
+        # Identify variables in the context that match the target type
+        valid_vars = [name for name, t in ctx if t == target_ty]
+
+        # Base Case: Minimal budget or forced termination
+=======
+    def gen_term(target_ty: Ty, ctx: list[Tuple[str, Ty]], budget: int) -> Tm:
+        # Identify variables in the context that match the target type
+        valid_vars = [name for name, t in ctx if t == target_ty]
+
+        # Base Case: Minimal budget or forced termination
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+        elif mode == "app":
+            # Context-Aware Type Selection: 75% chance to use a type already in context
+            # This ensures the argument branch is likely to be a variable
+            if ctx and rng.random() < 0.75:
+                arg_ty = rng.choice(ctx)[1]
+            else:
+                arg_ty = gen_type(rng.randint(1, 3))
+
+            # Scaled Redex Injection Strategy
+            # Probability increases with budget to maximize applied lambdas
+            redex_prob = 0.4 + (budget / 160.0)
+            
+            # Asymmetric budget split: give more to the function part (75%)
+            # This encourages deeper nested lambdas and redexes
+            split = int(budget * 0.75)
+            
+            if rng.random() < redex_prob and budget > 4:
+                v_name = get_unique_name("r", len(ctx))
+                # Explicit Redex: (Lam v. body) arg
+                f_tm = ("Lam", v_name, arg_ty, gen_term(target_ty, ctx + [(v_name, arg_ty)], split))
+                a_tm = gen_term(arg_ty, ctx, budget - split - 1)
+                return ("App", f_tm, a_tm)
+=======
+        elif mode == "app":
+            # Context-Aware Type Selection: 85% chance to use a type already in context
+            if ctx and rng.random() < 0.85:
+                arg_ty = rng.choice(ctx)[1]
+            else:
+                arg_ty = gen_type(rng.randint(1, 2))
+
+            # Scaled Redex Injection Strategy
+            redex_prob = 0.55 + (budget / 150.0)
+            
+            # Asymmetric budget split: 70% Rule
+            split = int(budget * 0.7)
+            
+            if rng.random() < redex_prob and budget > 4:
+                v_name = get_unique_name("r", len(ctx))
+                # Explicit Redex: (Lam v. body) arg
+                f_tm = ("Lam", v_name, arg_ty, gen_term(target_ty, ctx + [(v_name, arg_ty)], split))
+                
+                # Forced Variable Argument: If a variable of arg_ty exists, use it 90% of the time
+                arg_vars = [n for n, t in ctx if t == arg_ty]
+                if arg_vars and rng.random() < 0.9:
+                    v_weights = [(i + 1)**2 for i in range(len(arg_vars))]
+                    a_tm = ("Var", rng.choices(arg_vars, weights=v_weights, k=1)[0])
+                else:
+                    a_tm = gen_term(arg_ty, ctx, budget - split - 1)
+                return ("App", f_tm, a_tm)
+>>>>>>> REPLACE
+
+</DIFF>

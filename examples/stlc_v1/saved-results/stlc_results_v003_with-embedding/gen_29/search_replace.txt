@@ -1,0 +1,127 @@
+<NAME>
+optimized_redex_and_variable_usage
+</NAME>
+
+<DESCRIPTION>
+This update implements the "Budget-Scaled Probability" for redexes and the "Forced Variable Argument" rule (90% probability) to significantly boost `applied_lambdas` and `used_vars` metrics. It also refines the "Context-Aware Type Selection" to 85% and ensures the "Quadratic Recency Bias" is applied consistently across all variable selection points. The naming convention is updated to include depth for better uniqueness.
+</DESCRIPTION>
+
+<DIFF>
+<<<<<<< SEARCH
+    def get_unique_name(prefix: str) -> str:
+        nonlocal var_counter
+        var_counter += 1
+        return f"{prefix}_{var_counter}_{rng.randint(0, 100)}"
+
+    def gen_type(size_limit: int) -> Ty:
+=======
+    def get_unique_name(prefix: str, depth: int) -> str:
+        nonlocal var_counter
+        var_counter += 1
+        return f"{prefix}_{depth}_{var_counter}_{rng.randint(0, 100)}"
+
+    def gen_type(size_limit: int) -> Ty:
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+    def gen_term(target_ty: Ty, ctx: List[Tuple[str, Ty]], budget: int) -> Tm:
+        valid_vars = [name for name, t in ctx if t == target_ty]
+
+        # Base Case: Force variable usage or literals
+        if budget <= 1:
+            if valid_vars and rng.random() < 0.85:
+                # Power-law selection: favor the most recently bound variables
+                weights = [(i + 1)**2 for i in range(len(valid_vars))]
+                return ("Var", rng.choices(valid_vars, weights=weights, k=1)[0])
+
+            if target_ty == ("Bool",): return ("Bool", rng.choice([True, False]))
+            if target_ty == ("Int",): return ("Int", rng.randint(-100, 100))
+            if target_ty == ("String",): return ("String", rng.choice(["x", "y", "z"]))
+
+            if target_ty[0] == "Fun":
+                v = get_unique_name("v")
+                return ("Lam", v, target_ty[1], gen_term(target_ty[2], ctx + [(v, target_ty[1])], 0))
+            return ("Int", 0)
+=======
+    def gen_term(target_ty: Ty, ctx: list[Tuple[str, Ty]], budget: int) -> Tm:
+        valid_vars = [name for name, t in ctx if t == target_ty]
+
+        # Base Case: Force variable usage or literals
+        if budget <= 1:
+            if valid_vars and rng.random() < 0.95:
+                # Quadratic Recency Bias: favor the most recently bound variables
+                weights = [(i + 1)**2 for i in range(len(valid_vars))]
+                return ("Var", rng.choices(valid_vars, weights=weights, k=1)[0])
+
+            if target_ty[0] == "Fun":
+                v = get_unique_name("v", len(ctx))
+                return ("Lam", v, target_ty[1], gen_term(target_ty[2], ctx + [(v, target_ty[1])], 0))
+
+            if target_ty == ("Bool",): return ("Bool", rng.choice([True, False]))
+            if target_ty == ("Int",): return ("Int", rng.randint(-100, 100))
+            return ("String", rng.choice(["val", "node", "leaf"]))
+>>>>>>> REPLACE
+<<<<<<< SEARCH
+        if mode == "lam":
+            v_name = get_unique_name("x")
+            return ("Lam", v_name, target_ty[1], gen_term(target_ty[2], ctx + [(v_name, target_ty[1])], budget - 1))
+
+        elif mode == "var":
+            weights = [(i + 1)**2 for i in range(len(valid_vars))]
+            return ("Var", rng.choices(valid_vars, weights=weights, k=1)[0])
+
+        elif mode == "app":
+            # Context-Aware Type Selection (75% bias)
+            if ctx and rng.random() < 0.75:
+                arg_ty = rng.choice(ctx)[1]
+            else:
+                arg_ty = gen_type(rng.randint(1, 2))
+
+            # Asymmetric Budget Allocation: 70% to the function side
+            # This encourages deeper trees and more complex higher-order logic
+            split = int(budget * 0.7)
+            split = max(1, min(budget - 1, split))
+
+            # Scaled Redex Injection
+            redex_prob = 0.4 + (budget / 180.0)
+            if rng.random() < redex_prob and budget > 4:
+                v_name = get_unique_name("r")
+                # Force an applied lambda
+                f_tm = ("Lam", v_name, arg_ty, gen_term(target_ty, ctx + [(v_name, arg_ty)], split))
+                a_tm = gen_term(arg_ty, ctx, budget - split - 1)
+                return ("App", f_tm, a_tm)
+=======
+        if mode == "lam":
+            v_name = get_unique_name("x", len(ctx))
+            return ("Lam", v_name, target_ty[1], gen_term(target_ty[2], ctx + [(v_name, target_ty[1])], budget - 1))
+
+        elif mode == "var":
+            v_weights = [(i + 1)**2 for i in range(len(valid_vars))]
+            return ("Var", rng.choices(valid_vars, weights=v_weights, k=1)[0])
+
+        elif mode == "app":
+            # Context-Aware Type Selection (85% bias)
+            if ctx and rng.random() < 0.85:
+                arg_ty = rng.choice(ctx)[1]
+            else:
+                arg_ty = gen_type(rng.randint(1, 2))
+
+            # Asymmetric Budget Allocation: 70% to the function side
+            split = int(budget * 0.7)
+
+            # Budget-Scaled Redex Probability
+            redex_prob = 0.55 + (budget / 150.0)
+            if rng.random() < redex_prob and budget > 4:
+                v_name = get_unique_name("r", len(ctx))
+                # Explicit Redex Injection
+                f_tm = ("Lam", v_name, arg_ty, gen_term(target_ty, ctx + [(v_name, arg_ty)], split))
+
+                # Forced Variable Argument (90% probability)
+                arg_vars = [n for n, t in ctx if t == arg_ty]
+                if arg_vars and rng.random() < 0.90:
+                    a_weights = [(i + 1)**2 for i in range(len(arg_vars))]
+                    a_tm = ("Var", rng.choices(arg_vars, weights=a_weights, k=1)[0])
+                else:
+                    a_tm = gen_term(arg_ty, ctx, budget - split - 1)
+                return ("App", f_tm, a_tm)
+>>>>>>> REPLACE
+</DIFF>

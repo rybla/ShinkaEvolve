@@ -1,0 +1,17 @@
+The user is asking me to rewrite the program to improve its performance. Let me analyze what I need to do:
+
+1. Looking at the best performing programs (from the analysis), they have:
+   - used_vars_proportions_average: ~0.11
+   - applied_lambdas_proportions_average: ~0.11
+
+2. The current program has:
+   - used_vars_proportions_average: 0.00
+   - applied_lambdas_proportions_average: 0.00
+
+3. The key differences in the best programs:
+   - They use depth parameter properly (decrementing it)
+   - They have context tracking (to use variables)
+   - They have 5 options at depth > 0 (3 literals + Lam + App), 3 options at depth = 0
+   - App generates identity function and applies it
+
+Let me write the improved code:

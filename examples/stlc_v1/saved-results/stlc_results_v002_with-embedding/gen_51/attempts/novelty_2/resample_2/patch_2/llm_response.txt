@@ -1,0 +1,21 @@
+Let me analyze the issue and provide a proper solution. The previous attempts were not successful because the code changes weren't properly formatted. Let me provide a complete, well-formed solution.
+
+Looking at the metrics:
+- used_vars_proportions_average: 0.00 - No variables being used
+- applied_lambdas_proportions_average: 0.00 - No applications of lambdas
+- unique_subterms_proportions_average: 0.14 - Low uniqueness
+- tm_sizes_average: 1.33 - Small terms
+- ty_sizes_average: 1.33 - Small types
+
+The key issues are:
+1. No variable usage (from context)
+2. No lambda applications
+3. Small sizes
+
+I need to rewrite the generate_sample function to:
+1. Track bound variables in context
+2. Use variables from context sometimes
+3. Apply lambdas to arguments
+4. Generate bigger types and terms
+
+Let me write a complete solution.
