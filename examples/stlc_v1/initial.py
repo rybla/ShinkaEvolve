@@ -57,7 +57,7 @@ def generate_sample(rng: random.Random, depth=10) -> Tuple[Ty, Tm]:
     elif i == 2:
         return (("String",), ("String", "hello world"))
     else:
-        ty, tm = generate_sample(rng)
+        ty, tm = generate_sample(rng, depth=depth - 1)
         return (
             ("Fun", ("Int",), ty),
             ("Lam", "x", ("Int",), tm),
