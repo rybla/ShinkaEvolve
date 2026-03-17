@@ -3,9 +3,14 @@
 
 def sequence_element(i: int) -> int:
     """
-    Calculates the ith element of the sequence.
+    Calculates the ith element of the sequence using bitwise parity logic.
     """
-    return i & 1
+    # Use population count parity to determine the transformation
+    # Keeps values small to minimize large_numbers_penalty
+    if bin(i).count('1') % 2 == 0:
+        return (i ^ 7) - 4
+    else:
+        return ~(i & 3)
 
 
 # EVOLVE-BLOCK-END

@@ -142,13 +142,7 @@ def aggregate_metrics(results: List[RunOutput], results_dir: str) -> Dict[str, A
     return metrics
 
 
-def main(program_path: str, results_dir: str):
-    """Runs the evaluation using shinka.eval."""
-
-    print(f"Evaluating program: {program_path}")
-    print(f"Saving results to: {results_dir}")
-    os.makedirs(results_dir, exist_ok=True)
-
+def evaluate(program_path: str, results_dir: str):
     num_experiment_runs = 1
 
     # Define a nested function to pass results_dir to the aggregator
@@ -165,6 +159,21 @@ def main(program_path: str, results_dir: str):
         get_experiment_kwargs=get_run_kwargs,
         validate_fn=validate,
         aggregate_metrics_fn=_aggregator_with_context,
+    )
+
+    return metrics, correct, error_msg
+
+
+def main(program_path: str, results_dir: str):
+    """Runs the evaluation using shinka.eval."""
+
+    print(f"Evaluating program: {program_path}")
+    print(f"Saving results to: {results_dir}")
+    os.makedirs(results_dir, exist_ok=True)
+
+    metrics, correct, error_msg = evaluate(
+        program_path=program_path,
+        results_dir=results_dir,
     )
 
     if correct:

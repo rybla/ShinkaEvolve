@@ -4,9 +4,14 @@ import subprocess
 from typing import Any
 import yaml
 import json
+import sqlite3
 import os
 import os.path as path
 from pathlib import Path
+
+import generator.evaluate
+import critic.evaluate
+from shinka.database.dbase import DatabaseConfig, ProgramDatabase
 
 
 # ------------------------------------------------------------------------------
@@ -15,9 +20,9 @@ from pathlib import Path
 
 suffix = f"v001"
 
-manager_generations_count = 8
-generator_generations_per_attempt = 4
-critic_generations_per_attempt = 4
+manager_generations_count = 1
+generator_generations_per_manager_generation = 2
+critic_generations_per_manager_generation = 4
 
 
 # ------------------------------------------------------------------------------
@@ -53,6 +58,9 @@ critic_best_result_metrics_filepath = Path(
 
 generator_best_filepath = Path(generator_results_dirpath, "best", "main.py")
 critic_best_filepath = Path(critic_results_dirpath, "best", "main.py")
+
+generator_db_filepath = Path(generator_results_dirpath, "programs.sqlite")
+critic_db_filepath = Path(critic_results_dirpath, "programs.sqlite")
 
 generator_view_of_critic_best_filepath = Path(generator_dirpath, "critic_best.py")
 critic_view_of_generator_best_filepath = Path(critic_dirpath, "generator_best.py")
@@ -113,10 +121,12 @@ class Manager:
             # generator turn
 
             self.run_generator()
+            self.update_critic_metrics()
 
             # critic turn
 
             self.run_critic()
+            self.update_generator_metrics()
 
             # upkeep
 
@@ -130,11 +140,11 @@ class Manager:
             critic_best_filepath.copy(generator_view_of_critic_best_filepath)
 
         # read original config
-        config = read_yaml(generator_config_filepath)
+        config = yaml.safe_load(generator_config_filepath.read_text(encoding="utf-8"))
 
         # adjust config
         target_generator_generation = (
-            self.generator_generation + generator_generations_per_attempt
+            self.generator_generation + generator_generations_per_manager_generation
         )
         self.log(f"target_generator_generation = {target_generator_generation}")
         config["evo_config"]["num_generations"] = target_generator_generation
@@ -143,7 +153,9 @@ class Manager:
         ).as_posix()
 
         # write tmp config
-        write_yaml(generator_config_tmp_filepath, config)
+        generator_config_tmp_filepath.write_text(
+            yaml.safe_dump(config), encoding="utf-8"
+        )
 
         subprocess.run(
             cwd=generator_dirpath,
@@ -160,18 +172,24 @@ class Manager:
 
         self.generator_generation = target_generator_generation
 
+        # cleanup
+        generator_config_tmp_filepath.unlink()
+
     def run_critic(self):
-        self.log("run critic")
+        self.log(
+            f"run critic for {critic_generations_per_manager_generation} generations"
+        )
 
         # update the critic with new stuff from generator
         generator_best_filepath.copy(critic_view_of_generator_best_filepath)
 
         # read original config
-        config = read_yaml(critic_config_filepath)
+        # config = read_yaml(critic_config_filepath)
+        config = yaml.safe_load(critic_config_filepath.read_text(encoding="utf-8"))
 
         # adjust config
         target_critic_generation = (
-            self.critic_generation + critic_generations_per_attempt
+            self.critic_generation + critic_generations_per_manager_generation
         )
         self.log(f"target_critic_generation = {target_critic_generation}")
         config["evo_config"]["num_generations"] = target_critic_generation
@@ -180,7 +198,7 @@ class Manager:
         ).as_posix()
 
         # write tmp config
-        write_yaml(critic_config_tmp_filepath, config)
+        critic_config_tmp_filepath.write_text(yaml.safe_dump(config), encoding="utf-8")
 
         subprocess.run(
             cwd=critic_dirpath,
@@ -197,18 +215,197 @@ class Manager:
 
         self.critic_generation = target_critic_generation
 
+        # cleanup
+        critic_config_tmp_filepath.unlink()
+
+    def update_generator_metrics(self):
+        if not generator_db_filepath.exists():
+            return
+
+        def update_local_metrics():
+            """
+            update metrics per-program
+            """
+
+            conn = sqlite3.connect(generator_db_filepath)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute("SELECT program_id, code FROM programs")
+            program_rows = cursor.fetchall()
+
+            self.log(f"updating generator metrics for {len(program_rows)} programs")
+            for row in program_rows:
+                program_id = row["program_id"]
+                code = row["code"]
+
+                # write program code to temporary program file to evaluate
+                tmp_program_path = Path(generator_dirpath, "tmp_main.py")
+                tmp_program_path.write_text(code, encoding="utf-8")
+
+                # evaluate program file
+                subprocess.run(
+                    cwd=generator_dirpath,
+                    args=[
+                        "/Users/henry/Documents/ShinkaEvolve/.venv/bin/python",
+                        "evaluate.py",
+                        "--program_path",
+                        tmp_program_path.as_posix(),
+                        "--results_dir",
+                        generator_results_dirpath.as_posix(),
+                    ],
+                    check=True,
+                )
+
+                try:
+                    metrics, correct, error_msg = generator.evaluate.evaluate(
+                        program_path=tmp_program_path.as_posix(),
+                        results_dir=generator_results_dirpath.as_posix(),
+                    )
+                    new_score = metrics.get("combined_score", 0.0) if correct else None
+                    public_json = json.dumps(metrics.get("public", {}))
+                    private_json = json.dumps(metrics.get("private", {}))
+                    cursor.execute(
+                        """
+                        UPDATE programs 
+                        SET
+                            combined_score = ?,
+                            public_metrics = ?,
+                            private_metrics = ?,
+                            correct = ?
+                        WHERE id = ?
+                    """,
+                        (new_score, public_json, private_json, correct, program_id),
+                    )
+                    conn.commit()
+
+                except Exception as e:
+                    self.log(f"exception when updating generator program metrics: {e}")
+
+                # cleanup
+                tmp_program_path.unlink()
+
+            # cleanup
+            conn.close()
+
+        def update_global_metrics():
+            """
+            update database-wide metrics
+            """
+
+            db_config = DatabaseConfig(db_path=generator_db_filepath.as_posix())
+            db = ProgramDatabase(config=db_config)
+
+            all_programs = db.get_all_programs()
+            for program in all_programs:
+                if program.correct:
+                    db._update_best_program(program)
+                    db._update_archive(program)
+
+        update_local_metrics()
+        update_global_metrics()
+
+    def update_critic_metrics(self):
+        if not critic_db_filepath.exists():
+            return
+
+        def update_local_metrics():
+            """
+            update metrics per-program
+            """
+
+            conn = sqlite3.connect(critic_db_filepath)
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute("SELECT program_id, code FROM programs")
+            program_rows = cursor.fetchall()
+
+            self.log(f"updating critic metrics for {len(program_rows)} programs")
+            for row in program_rows:
+                program_id = row["program_id"]
+                code = row["code"]
+
+                # write program code to temporary program file to evaluate
+                tmp_program_path = Path(critic_dirpath, "tmp_main.py")
+                tmp_program_path.write_text(code, encoding="utf-8")
+
+                # evaluate program file
+                subprocess.run(
+                    cwd=critic_dirpath,
+                    args=[
+                        "/Users/henry/Documents/ShinkaEvolve/.venv/bin/python",
+                        "evaluate.py",
+                        "--program_path",
+                        tmp_program_path.as_posix(),
+                        "--results_dir",
+                        critic_results_dirpath.as_posix(),
+                    ],
+                    check=True,
+                )
+
+                try:
+                    metrics, correct, error_msg = critic.evaluate.evaluate(
+                        program_path=tmp_program_path.as_posix(),
+                        results_dir=critic_results_dirpath.as_posix(),
+                    )
+                    new_score = metrics.get("combined_score", 0.0) if correct else None
+                    public_json = json.dumps(metrics.get("public", {}))
+                    private_json = json.dumps(metrics.get("private", {}))
+                    cursor.execute(
+                        """
+                        UPDATE programs 
+                        SET
+                            combined_score = ?,
+                            public_metrics = ?,
+                            private_metrics = ?,
+                            correct = ?
+                        WHERE id = ?
+                    """,
+                        (new_score, public_json, private_json, correct, program_id),
+                    )
+                    conn.commit()
+
+                except Exception as e:
+                    self.log(f"exception when updating critic program metrics: {e}")
+
+                # cleanup
+                tmp_program_path.unlink()
+
+            # cleanup
+            conn.close()
+
+        def update_global_metrics():
+            """
+            update database-wide metrics
+            """
+
+            db_config = DatabaseConfig(db_path=critic_db_filepath.as_posix())
+            db = ProgramDatabase(config=db_config)
+
+            all_programs = db.get_all_programs()
+            for program in all_programs:
+                if program.correct:
+                    db._update_best_program(program)
+                    db._update_archive(program)
+
+        update_local_metrics()
+        update_global_metrics()
+
     def update_generator_best_score(self):
         if not generator_best_result_metrics_filepath.exists():
             return
 
-        metrics = read_json(generator_best_result_metrics_filepath)
+        metrics = json.loads(
+            generator_best_result_metrics_filepath.read_text(encoding="utf-8")
+        )
         self.generator_best_score = metrics["combined_score"]
 
     def update_critic_best_score(self):
         if not critic_best_result_metrics_filepath.exists():
             return
 
-        metrics = read_json(critic_best_result_metrics_filepath)
+        metrics = yaml.safe_load(
+            critic_best_result_metrics_filepath.read_text(encoding="utf-8")
+        )
         self.critic_best_score = metrics["combined_score"]
 
 
@@ -223,23 +420,6 @@ def main():
 
 # ------------------------------------------------------------------------------
 # utilities
-
-
-def read_yaml(filepath: Path) -> Any:
-    with open(filepath, "r", encoding="utf-8") as file:
-        data = yaml.safe_load(file)
-    return data
-
-
-def write_yaml(filepath: Path, data: Any):
-    with open(filepath, "w", encoding="utf-8") as file:
-        yaml.safe_dump(data, file)
-
-
-def read_json(filepath: Path) -> Any:
-    with open(filepath, "r", encoding="utf-8") as file:
-        data = json.load(file)
-    return data
 
 
 # ------------------------------------------------------------------------------
