@@ -75,7 +75,7 @@ def aggregate_metrics(results: List[RunOutput], results_dir: str) -> Dict[str, A
 
     predicted_test_and_train_sequence = run_experiment(
         sequence=correct_train_and_test_sequence,
-        n=test_sequence_length,
+        n=train_sequence_length + test_sequence_length,
     )
 
     predicted_train_sequence = predicted_test_and_train_sequence[:train_sequence_length]

@@ -78,7 +78,7 @@ evo_config:
   - full
   prompt_percentile_recompute_interval: 1
   prompt_ucb_exploration_constant: 2.0
-  results_dir: results/results_generator_v001_2026-03-16-23-27-22
+  results_dir: results/results_generator_v001_2026-03-16-23-33-59
 max_db_workers: 2
 max_evaluation_jobs: 2
 max_proposal_jobs: 2
