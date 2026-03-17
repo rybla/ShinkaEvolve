@@ -112,7 +112,7 @@ evo_config:
     max_tokens: 16384
 
   # Embedding model used for code similarity filtering.
-  embedding_model: "openrouter/google/gemini-embedding-001"
+  embedding_model: null
   # Similarity threshold above which code is treated as near-duplicate.
   code_embed_sim_threshold: 0.99
 
@@ -126,7 +126,7 @@ evo_config:
     temperatures:
       - 0
   # Path to the initial baseline program.
-  init_program_path: initial.py
+  init_program_path: generator_initial.py
 
   # Adaptive policy for choosing among available LLMs.
   llm_dynamic_selection: ucb1

@@ -18,9 +18,9 @@ from shinka.database.dbase import DatabaseConfig, ProgramDatabase
 
 suffix = f"v001"
 
-manager_generations_count = 1
+manager_generations_count = 4
 generator_generations_per_manager_generation = 2
-critic_generations_per_manager_generation = 4
+critic_generations_per_manager_generation = 2
 
 
 # ------------------------------------------------------------------------------
@@ -241,12 +241,12 @@ class Manager:
             conn = sqlite3.connect(generator_db_filepath)
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
-            cursor.execute("SELECT program_id, code, generation FROM programs")
+            cursor.execute("SELECT id, code, generation FROM programs")
             program_rows = cursor.fetchall()
 
             self.log(f"updating generator metrics for {len(program_rows)} programs")
             for row in program_rows:
-                program_id = row["program_id"]
+                program_id = row["id"]
                 program_code = row["code"]
                 program_generation: int = row["generation"]
 
@@ -282,11 +282,8 @@ class Manager:
                             tmp_program_evaluation_results_dirpath, "correct.json"
                         ).read_text(encoding="utf-8")
                     )
-                    new_score = (
-                        metrics.get("combined_score", 0.0)
-                        if correctness["correct"]
-                        else None
-                    )
+                    correct = correctness["correct"]
+                    new_score = metrics.get("combined_score", 0.0) if correct else None
                     public_json = json.dumps(metrics.get("public", {}))
                     private_json = json.dumps(metrics.get("private", {}))
 
@@ -300,7 +297,13 @@ class Manager:
                             correct = ?
                         WHERE id = ?
                     """,
-                        (new_score, public_json, private_json, correctness, program_id),
+                        (
+                            new_score,
+                            public_json,
+                            private_json,
+                            correct,
+                            program_id,
+                        ),
                     )
                     conn.commit()
 
@@ -342,12 +345,12 @@ class Manager:
             conn = sqlite3.connect(critic_db_filepath)
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
-            cursor.execute("SELECT program_id, code, generation FROM programs")
+            cursor.execute("SELECT id, code, generation FROM programs")
             program_rows = cursor.fetchall()
 
             self.log(f"updating critic metrics for {len(program_rows)} programs")
             for row in program_rows:
-                program_id = row["program_id"]
+                program_id = row["id"]
                 program_code = row["code"]
                 program_generation: int = row["generation"]
 
@@ -383,11 +386,8 @@ class Manager:
                             tmp_program_evaluation_results_dirpath, "correct.json"
                         ).read_text(encoding="utf-8")
                     )
-                    new_score = (
-                        metrics.get("combined_score", 0.0)
-                        if correctness["correct"]
-                        else None
-                    )
+                    correct = correctness["correct"]
+                    new_score = metrics.get("combined_score", 0.0) if correct else None
                     public_json = json.dumps(metrics.get("public", {}))
                     private_json = json.dumps(metrics.get("private", {}))
 
@@ -401,7 +401,13 @@ class Manager:
                             correct = ?
                         WHERE id = ?
                     """,
-                        (new_score, public_json, private_json, correctness, program_id),
+                        (
+                            new_score,
+                            public_json,
+                            private_json,
+                            correct,
+                            program_id,
+                        ),
                     )
                     conn.commit()
 

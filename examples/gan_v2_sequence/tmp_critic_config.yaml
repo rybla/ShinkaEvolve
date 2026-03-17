@@ -21,9 +21,9 @@ db_config:
   stagnation_threshold: 10
 evo_config:
   code_embed_sim_threshold: 0.99
-  embedding_model: openrouter/google/gemini-embedding-001
+  embedding_model: null
   evolve_prompts: true
-  init_program_path: generator_initial.py
+  init_program_path: critic_initial.py
   job_type: local
   language: python
   llm_dynamic_selection: ucb1
@@ -33,15 +33,15 @@ evo_config:
   llm_kwargs:
     max_tokens: 32768
     reasoning_efforts:
-      - low
-      - medium
-      - high
+    - low
+    - medium
+    - high
     temperatures:
-      - 0
-      - 0.5
-      - 1.0
+    - 0
+    - 0.5
+    - 1.0
   llm_models:
-    - openrouter/google/gemini-3-flash-preview
+  - openrouter/google/gemini-3-flash-preview
   max_api_costs: 10.0
   max_novelty_attempts: 3
   max_patch_attempts: 3
@@ -49,36 +49,36 @@ evo_config:
   meta_llm_kwargs:
     max_tokens: 16384
     temperatures:
-      - 0
+    - 0
   meta_llm_models:
-    - openrouter/google/gemini-3-flash-preview
+  - openrouter/google/gemini-3-flash-preview
   meta_rec_interval: 5
   novelty_llm_kwargs:
     temperatures:
-      - 0
+    - 0
   novelty_llm_models:
-    - openrouter/google/gemini-3-flash-preview
-  num_generations: 2
+  - openrouter/google/gemini-3-flash-preview
+  num_generations: 8
   patch_type_probs:
-    - 0.6
-    - 0.3
-    - 0.1
+  - 0.6
+  - 0.3
+  - 0.1
   patch_types:
-    - diff
-    - full
-    - cross
+  - diff
+  - full
+  - cross
   prompt_archive_size: 10
   prompt_epsilon: 0.25
   prompt_evolution_interval: 5
   prompt_patch_type_probs:
-    - 0.5
-    - 0.5
+  - 0.5
+  - 0.5
   prompt_patch_types:
-    - diff
-    - full
+  - diff
+  - full
   prompt_percentile_recompute_interval: 1
   prompt_ucb_exploration_constant: 2.0
-  results_dir: generator_results/results_v001_2026-03-17-15-51-52
+  results_dir: critic_results/results_v001_2026-03-17-16-44-05
 max_db_workers: 2
 max_evaluation_jobs: 2
 max_proposal_jobs: 2

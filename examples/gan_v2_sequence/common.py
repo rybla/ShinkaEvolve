@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 
 
 # ------------------------------------------------------------------------------
@@ -7,8 +7,9 @@ from typing import List
 
 train_sequence_length = 10
 test_sequence_length = 10
-target_average_element = 6
-target_complexity = 10
+target_complexity = 20
+element_min = 0
+element_max = 9
 
 
 # ------------------------------------------------------------------------------
@@ -53,3 +54,25 @@ def levenshtein_distance(list1: List[int], list2: List[int]) -> int:
 
     # The bottom-right cell contains the final Levenshtein distance
     return dp[len1][len2]
+
+
+def validate_sequence(xs: List[int]) -> Tuple[bool, str]:
+    out_of_range_elements = list(
+        filter(lambda x: not (element_min <= x <= element_max), xs)
+    )
+
+    if not (len(out_of_range_elements) == 0):
+        return (
+            False,
+            f"Some of the first elements of the generated sequence are not in the range {element_min}-{element_max}. The elements of the sequence are: {xs}. The particular elements that are not in the range {element_min}-{element_max} are: {out_of_range_elements}.",
+        )
+
+    nonintegral_elements = list(filter(lambda x: not (isinstance(x, int)), xs))
+
+    if not (len(nonintegral_elements) == 0):
+        return (
+            False,
+            f"Some of the elements of the generated sequence are not integers. The elements of the sequence are: {xs}. The particular elements that are not integers are: {nonintegral_elements}.",
+        )
+
+    return True, "The generated sequence is valid."

@@ -9,10 +9,14 @@ from shinka.launch import LocalJobConfig
 
 from dotenv import load_dotenv
 
+from common import train_sequence_length, test_sequence_length, element_min, element_max
+
 load_dotenv()
 
-search_task_sys_msg = """
-Our task is to infer the pattern of a numeric sequence and predict the next 3 numbers.
+search_task_sys_msg = f"""
+Your task is to infer the pattern of a numeric sequence from the first {train_sequence_length} in order to predict the next {test_sequence_length} numbers. Assume that each number in the sequence must be in the range {element_min}-{element_max}.
+
+To do this task, you must implement a function that takes as input the initial sequence of {train_sequence_length} elements to analyze, and outputs a function that predicts each element of the full {train_sequence_length+test_sequence_length} sequence by taking as input that elements index and returning the element at that index. Your implementation will be evaluated on both correctly predicting elements in the given {train_sequence_length}-element sequence as well as the next {test_sequence_length} elements of the sequence.
 """.strip()
 
 
@@ -23,7 +27,7 @@ def main(config_path: str):
     config["evo_config"]["task_sys_msg"] = search_task_sys_msg
     evo_config = EvolutionConfig(**config["evo_config"])
     job_config = LocalJobConfig(
-        eval_program_path="evaluate.py",
+        eval_program_path="critic_evaluate.py",
         time="00:05:00",
     )
     db_config = DatabaseConfig(**config["db_config"])

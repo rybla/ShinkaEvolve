@@ -14,9 +14,8 @@ from generator_best import run_experiment
 from common import (
     levenshtein_distance,
     train_sequence_length,
-    target_average_element,
-    target_complexity,
     test_sequence_length,
+    validate_sequence,
 )
 
 
@@ -37,7 +36,13 @@ def validate(
         (is_valid: bool, error_message: Optional[str])
     """
 
-    return True, f"The program is valid."
+    sequence = run_output
+
+    valid_sequence, invalid_sequence_msg = validate_sequence(sequence)
+    if not valid_sequence:
+        return False, invalid_sequence_msg
+
+    return True, f"The program inferred a valid sequence."
 
 
 def get_run_kwargs(run_index: int) -> Dict[str, Any]:
@@ -194,7 +199,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--program_path",
         type=str,
-        default="initial.py",
+        default="critic_initial.py",
         help="Path to program to evaluate (must contain 'run_experiment')",
     )
     parser.add_argument(

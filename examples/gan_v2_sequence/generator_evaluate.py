@@ -15,13 +15,21 @@ from critic_best import run_experiment
 from common import (
     levenshtein_distance,
     train_sequence_length,
-    target_average_element,
     target_complexity,
     test_sequence_length,
+    element_min,
+    element_max,
+    validate_sequence,
 )
 
 
 # ------------------------------------------------------------------------------
+
+
+def split_output_sequence(sequence: List[int]) -> Tuple[List[int], List[int]]:
+    train_sequence = sequence[:train_sequence_length]
+    test_sequence = sequence[train_sequence_length:]
+    return train_sequence, test_sequence
 
 
 def validate(
@@ -47,14 +55,18 @@ def validate(
             f"The program is invalid because it uses random number generation.",
         )
 
-    return True, f"The program is valid."
+    valid_sequence, invalid_sequence_msg = validate_sequence(sequence)
+    if not valid_sequence:
+        return False, invalid_sequence_msg
+
+    return True, f"The program generated a valid sequence."
 
 
 def get_run_kwargs(run_index: int) -> Dict[str, Any]:
     """Provides keyword arguments for run."""
 
     return {
-        "n": train_sequence_length,
+        "n": test_sequence_length + train_sequence_length,
     }
 
 
@@ -113,14 +125,7 @@ def aggregate_metrics(results: List[RunOutput], results_dir: str) -> Dict[str, A
         "test_average_square_difference": test_average_square_difference,
         # penalties
         "complexity_penalty": (
-            -0.01 * ((sum(1 for _ in ast.walk(mod)) ** 2) / target_complexity**2)
-        ),
-        "large_numbers_penalty": (
-            -0.01
-            * (
-                sum(x**2 for x in correct_train_and_test_sequence)
-                / ((target_average_element**2) * train_sequence_length)
-            )
+            -1.0 * ((sum(1 for _ in ast.walk(mod)) ** 2) / target_complexity**2)
         ),
     }
 
@@ -133,7 +138,6 @@ def aggregate_metrics(results: List[RunOutput], results_dir: str) -> Dict[str, A
         return sum(
             [
                 public_metrics["complexity_penalty"],
-                public_metrics["large_numbers_penalty"],
                 1.0 * (train_distance / train_sequence_length),
                 2.0 * (test_distance / train_sequence_length),
                 1.0 * train_average_square_difference,
@@ -213,7 +217,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--program_path",
         type=str,
-        default="initial.py",
+        default="generator_initial.py",
         help="Path to program to evaluate (must contain 'run_experiment')",
     )
     parser.add_argument(
