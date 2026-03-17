@@ -1,7 +1,7 @@
 from datetime import datetime
 from math import inf
 import subprocess
-from typing import Any
+from typing import Any, Dict
 import yaml
 import json
 import sqlite3
@@ -9,8 +9,6 @@ import os
 import os.path as path
 from pathlib import Path
 
-import generator.evaluate
-import critic.evaluate
 from shinka.database.dbase import DatabaseConfig, ProgramDatabase
 
 
@@ -28,25 +26,21 @@ critic_generations_per_manager_generation = 4
 # ------------------------------------------------------------------------------
 # constants
 
+now = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
 
-generator_dirpath = Path("generator")
-critic_dirpath = Path("critic")
+generator_config_filepath = Path(f"generator_config_{suffix}.yaml")
+critic_config_filepath = Path(f"critic_config_{suffix}.yaml")
 
-generator_config_filepath = Path(generator_dirpath, f"config_{suffix}.yaml")
-critic_config_filepath = Path(critic_dirpath, f"config_{suffix}.yaml")
-
-generator_config_tmp_filepath = Path(generator_dirpath, "config_tmp.yaml")
-critic_config_tmp_filepath = Path(critic_dirpath, "config_tmp.yaml")
+generator_config_tmp_filepath = Path(f"tmp_generator_config.yaml")
+critic_config_tmp_filepath = Path(f"tmp_critic_config.yaml")
 
 generator_results_dirpath = Path(
-    generator_dirpath,
-    "results",
-    f"results_generator_{suffix}_{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}",
+    "generator_results",
+    f"results_{suffix}_{now}",
 )
 critic_results_dirpath = Path(
-    critic_dirpath,
-    "results",
-    f"results_critic_{suffix}_{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}",
+    "critic_results",
+    f"results_{suffix}_{now}",
 )
 
 generator_best_result_metrics_filepath = Path(
@@ -62,11 +56,27 @@ critic_best_filepath = Path(critic_results_dirpath, "best", "main.py")
 generator_db_filepath = Path(generator_results_dirpath, "programs.sqlite")
 critic_db_filepath = Path(critic_results_dirpath, "programs.sqlite")
 
-generator_view_of_critic_best_filepath = Path(generator_dirpath, "critic_best.py")
-critic_view_of_generator_best_filepath = Path(critic_dirpath, "generator_best.py")
+generator_view_of_critic_best_filepath = Path(f"critic_best.py")
+critic_view_of_generator_best_filepath = Path(f"generator_best.py")
 
-generator_initial_filepath = Path(generator_dirpath, "initial.py")
-critic_initial_filepath = Path(critic_dirpath, "initial.py")
+generator_initial_filepath = Path(f"generator_initial.py")
+critic_initial_filepath = Path(f"critic_initial.py")
+
+
+def generator_evaluation_results_dirpath(program_generation: int):
+    return Path(
+        generator_results_dirpath,
+        f"gen_{program_generation}",
+        "results",
+    )
+
+
+def critic_evaluation_results(program_generation: int):
+    return Path(
+        critic_results_dirpath,
+        f"gen_{program_generation}",
+        "results",
+    )
 
 
 # ------------------------------------------------------------------------------
@@ -111,8 +121,6 @@ class Manager:
 
     def run(self):
         self.log("initialization")
-        generator_initial_filepath.copy(critic_view_of_generator_best_filepath)
-        critic_initial_filepath.copy(generator_view_of_critic_best_filepath)
 
         self.log("begin loop")
         while self.generation < manager_generations_count:
@@ -135,9 +143,12 @@ class Manager:
     def run_generator(self):
         self.log("run generator")
 
-        if self.generation > 0:
-            # update generator with new stuff from critic
-            critic_best_filepath.copy(generator_view_of_critic_best_filepath)
+        # update generator with new stuff from critic
+        (
+            critic_best_filepath
+            if critic_best_filepath.exists()
+            else critic_initial_filepath
+        ).copy(generator_view_of_critic_best_filepath)
 
         # read original config
         config = yaml.safe_load(generator_config_filepath.read_text(encoding="utf-8"))
@@ -148,9 +159,7 @@ class Manager:
         )
         self.log(f"target_generator_generation = {target_generator_generation}")
         config["evo_config"]["num_generations"] = target_generator_generation
-        config["evo_config"]["results_dir"] = generator_results_dirpath.relative_to(
-            generator_dirpath
-        ).as_posix()
+        config["evo_config"]["results_dir"] = generator_results_dirpath.as_posix()
 
         # write tmp config
         generator_config_tmp_filepath.write_text(
@@ -158,10 +167,9 @@ class Manager:
         )
 
         subprocess.run(
-            cwd=generator_dirpath,
             args=[
                 "/Users/henry/Documents/ShinkaEvolve/.venv/bin/python",
-                "run_evo.py",
+                "generator_run_evo.py",
                 "--config_path",
                 generator_config_tmp_filepath.name,
             ],
@@ -174,6 +182,7 @@ class Manager:
 
         # cleanup
         generator_config_tmp_filepath.unlink()
+        # NOTE: we don't remove generator_view_of_critic_best_filepath so that the generator_evaluate module can pretend to import it for the sake of type-checking
 
     def run_critic(self):
         self.log(
@@ -181,7 +190,11 @@ class Manager:
         )
 
         # update the critic with new stuff from generator
-        generator_best_filepath.copy(critic_view_of_generator_best_filepath)
+        (
+            generator_best_filepath
+            if generator_best_filepath.exists()
+            else generator_initial_filepath
+        ).copy(critic_view_of_generator_best_filepath)
 
         # read original config
         # config = read_yaml(critic_config_filepath)
@@ -193,18 +206,15 @@ class Manager:
         )
         self.log(f"target_critic_generation = {target_critic_generation}")
         config["evo_config"]["num_generations"] = target_critic_generation
-        config["evo_config"]["results_dir"] = critic_results_dirpath.relative_to(
-            critic_dirpath
-        ).as_posix()
+        config["evo_config"]["results_dir"] = critic_results_dirpath.as_posix()
 
         # write tmp config
         critic_config_tmp_filepath.write_text(yaml.safe_dump(config), encoding="utf-8")
 
         subprocess.run(
-            cwd=critic_dirpath,
             args=[
                 "/Users/henry/Documents/ShinkaEvolve/.venv/bin/python",
-                "run_evo.py",
+                "critic_run_evo.py",
                 "--config_path",
                 critic_config_tmp_filepath.name,
             ],
@@ -217,6 +227,7 @@ class Manager:
 
         # cleanup
         critic_config_tmp_filepath.unlink()
+        # NOTE: we don't remove critic_view_of_generator_best_filepath so that the critic_evaluate module can pretend to import it for the sake of type-checking
 
     def update_generator_metrics(self):
         if not generator_db_filepath.exists():
@@ -230,40 +241,55 @@ class Manager:
             conn = sqlite3.connect(generator_db_filepath)
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
-            cursor.execute("SELECT program_id, code FROM programs")
+            cursor.execute("SELECT program_id, code, generation FROM programs")
             program_rows = cursor.fetchall()
 
             self.log(f"updating generator metrics for {len(program_rows)} programs")
             for row in program_rows:
                 program_id = row["program_id"]
-                code = row["code"]
+                program_code = row["code"]
+                program_generation: int = row["generation"]
 
                 # write program code to temporary program file to evaluate
-                tmp_program_path = Path(generator_dirpath, "tmp_main.py")
-                tmp_program_path.write_text(code, encoding="utf-8")
+                tmp_program_filepath = Path(f"generator_tmp_main.py")
+                tmp_program_filepath.write_text(program_code, encoding="utf-8")
+
+                tmp_program_evaluation_results_dirpath = (
+                    generator_evaluation_results_dirpath(program_generation)
+                )
 
                 # evaluate program file
                 subprocess.run(
-                    cwd=generator_dirpath,
                     args=[
                         "/Users/henry/Documents/ShinkaEvolve/.venv/bin/python",
-                        "evaluate.py",
+                        "generator_evaluate.py",
                         "--program_path",
-                        tmp_program_path.as_posix(),
+                        tmp_program_filepath.as_posix(),
                         "--results_dir",
-                        generator_results_dirpath.as_posix(),  # TODO: this actually has to reflect the program gen as well i.e. "gen_{i}"
+                        tmp_program_evaluation_results_dirpath.as_posix(),
                     ],
                     check=True,
                 )
 
                 try:
-                    metrics, correct, error_msg = generator.evaluate.evaluate(
-                        program_path=tmp_program_path.as_posix(),
-                        results_dir=generator_results_dirpath.as_posix(),
+                    metrics: Dict = json.loads(
+                        Path(
+                            tmp_program_evaluation_results_dirpath, "metrics.json"
+                        ).read_text(encoding="utf-8")
                     )
-                    new_score = metrics.get("combined_score", 0.0) if correct else None
+                    correctness: Dict = json.loads(
+                        Path(
+                            tmp_program_evaluation_results_dirpath, "correct.json"
+                        ).read_text(encoding="utf-8")
+                    )
+                    new_score = (
+                        metrics.get("combined_score", 0.0)
+                        if correctness["correct"]
+                        else None
+                    )
                     public_json = json.dumps(metrics.get("public", {}))
                     private_json = json.dumps(metrics.get("private", {}))
+
                     cursor.execute(
                         """
                         UPDATE programs 
@@ -274,7 +300,7 @@ class Manager:
                             correct = ?
                         WHERE id = ?
                     """,
-                        (new_score, public_json, private_json, correct, program_id),
+                        (new_score, public_json, private_json, correctness, program_id),
                     )
                     conn.commit()
 
@@ -282,7 +308,7 @@ class Manager:
                     self.log(f"exception when updating generator program metrics: {e}")
 
                 # cleanup
-                tmp_program_path.unlink()
+                tmp_program_filepath.unlink()
 
             # cleanup
             conn.close()
@@ -316,40 +342,55 @@ class Manager:
             conn = sqlite3.connect(critic_db_filepath)
             conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
-            cursor.execute("SELECT program_id, code FROM programs")
+            cursor.execute("SELECT program_id, code, generation FROM programs")
             program_rows = cursor.fetchall()
 
             self.log(f"updating critic metrics for {len(program_rows)} programs")
             for row in program_rows:
                 program_id = row["program_id"]
-                code = row["code"]
+                program_code = row["code"]
+                program_generation: int = row["generation"]
 
                 # write program code to temporary program file to evaluate
-                tmp_program_path = Path(critic_dirpath, "tmp_main.py")
-                tmp_program_path.write_text(code, encoding="utf-8")
+                tmp_program_path = Path(f"critic_tmp_main.py")
+                tmp_program_path.write_text(program_code, encoding="utf-8")
+
+                tmp_program_evaluation_results_dirpath = (
+                    generator_evaluation_results_dirpath(program_generation)
+                )
 
                 # evaluate program file
                 subprocess.run(
-                    cwd=critic_dirpath,
                     args=[
                         "/Users/henry/Documents/ShinkaEvolve/.venv/bin/python",
-                        "evaluate.py",
+                        "critic_evaluate.py",
                         "--program_path",
                         tmp_program_path.as_posix(),
                         "--results_dir",
-                        critic_results_dirpath.as_posix(),
+                        tmp_program_evaluation_results_dirpath.as_posix(),
                     ],
                     check=True,
                 )
 
                 try:
-                    metrics, correct, error_msg = critic.evaluate.evaluate(
-                        program_path=tmp_program_path.as_posix(),
-                        results_dir=critic_results_dirpath.as_posix(),
+                    metrics: Dict = json.loads(
+                        Path(
+                            tmp_program_evaluation_results_dirpath, "metrics.json"
+                        ).read_text(encoding="utf-8")
                     )
-                    new_score = metrics.get("combined_score", 0.0) if correct else None
+                    correctness: Dict = json.loads(
+                        Path(
+                            tmp_program_evaluation_results_dirpath, "correct.json"
+                        ).read_text(encoding="utf-8")
+                    )
+                    new_score = (
+                        metrics.get("combined_score", 0.0)
+                        if correctness["correct"]
+                        else None
+                    )
                     public_json = json.dumps(metrics.get("public", {}))
                     private_json = json.dumps(metrics.get("private", {}))
+
                     cursor.execute(
                         """
                         UPDATE programs 
@@ -360,7 +401,7 @@ class Manager:
                             correct = ?
                         WHERE id = ?
                     """,
-                        (new_score, public_json, private_json, correct, program_id),
+                        (new_score, public_json, private_json, correctness, program_id),
                     )
                     conn.commit()
 
