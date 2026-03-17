@@ -79,6 +79,24 @@ def aggregate_metrics(results: List[RunOutput], results_dir: str) -> Dict[str, A
     )
     test_distance = levenshtein_distance(correct_test_sequence, predicted_test_sequence)
 
+    train_average_square_difference = (
+        sum(
+            [
+                (x - y) ** 2
+                for x, y in zip(correct_train_sequence, predicted_train_sequence)
+            ]
+        )
+    ) / train_sequence_length
+    test_average_square_difference = (
+        sum(
+            [
+                (x - y) ** 2
+                for x, y in zip(correct_test_sequence, predicted_test_sequence)
+            ]
+        )
+        / test_sequence_length
+    )
+
     public_metrics = {
         "predicted_sequence": predicted_test_and_train_sequence,
         "correct_sequence": correct_train_sequence
@@ -88,10 +106,13 @@ def aggregate_metrics(results: List[RunOutput], results_dir: str) -> Dict[str, A
         ],
         "train_levenshtein_distance": train_distance,
         "test_levenshtein_distance": test_distance,
+        "train_average_square_difference": train_average_square_difference,
+        "test_average_square_difference": test_average_square_difference,
     }
 
     private_metrics = {
-        "correct_sequence": correct_train_and_test_sequence,
+        "predicted_test_and_train_sequence": predicted_test_and_train_sequence,
+        "correct_train_and_test_sequence": correct_train_and_test_sequence,
     }
 
     def combined_score() -> float:
@@ -99,6 +120,8 @@ def aggregate_metrics(results: List[RunOutput], results_dir: str) -> Dict[str, A
             [
                 -1.0 * (train_distance / train_sequence_length),
                 -2.0 * (test_distance / train_sequence_length),
+                -1.0 * train_average_square_difference,
+                -2.0 * test_average_square_difference,
             ]
         )
 

@@ -15,9 +15,9 @@ from pathlib import Path
 
 suffix = f"v001"
 
-manager_generations_count = 2
-generator_generations_per_attempt = 2
-critic_generations_per_attempt = 2
+manager_generations_count = 8
+generator_generations_per_attempt = 4
+critic_generations_per_attempt = 4
 
 
 # ------------------------------------------------------------------------------
@@ -112,34 +112,10 @@ class Manager:
 
             # generator turn
 
-            # beat best score
-            checkpoint_generator_best_score = self.generator_best_score
-            generator_i = 1
-            while not (self.generator_best_score > checkpoint_generator_best_score):
-                self.log(
-                    f"generator attempt #{generator_i} to beat best score of {checkpoint_generator_best_score}"
-                )
-                self.run_generator()
-                generator_i += 1
-            self.log(f"generator beat best score after {generator_i} attempts")
-
-            # run one more time
             self.run_generator()
 
             # critic turn
 
-            # beat best score
-            checkpoint_critic_best_score = self.critic_best_score
-            critic_i = 1
-            while not (self.critic_best_score > checkpoint_critic_best_score):
-                self.log(
-                    f"critic attempt #{critic_i} to beat best score of {checkpoint_critic_best_score}"
-                )
-                self.run_critic()
-                critic_i += 1
-            self.log(f"critic beat best score after {critic_i} attempts")
-
-            # run one more time
             self.run_critic()
 
             # upkeep

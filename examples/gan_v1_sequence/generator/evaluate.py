@@ -86,22 +86,60 @@ def aggregate_metrics(results: List[RunOutput], results_dir: str) -> Dict[str, A
     )
     test_distance = levenshtein_distance(correct_test_sequence, predicted_test_sequence)
 
+    train_average_square_difference = (
+        sum(
+            [
+                (x - y) ** 2
+                for x, y in zip(correct_train_sequence, predicted_train_sequence)
+            ]
+        )
+    ) / train_sequence_length
+    test_average_square_difference = (
+        sum(
+            [
+                (x - y) ** 2
+                for x, y in zip(correct_test_sequence, predicted_test_sequence)
+            ]
+        )
+        / test_sequence_length
+    )
+
     public_metrics = {
-        "complexity_penalty": -1.0
-        * ((sum(1 for _ in ast.walk(mod)) ** 2) / target_complexity**2),
-        "large_numbers_penalty": -1.0
-        * (
-            sum(x**2 for x in correct_train_and_test_sequence)
-            / ((target_average_element**2) * train_sequence_length)
+        # metrics
+        "ast_size": sum(1 for _ in ast.walk(mod)),
+        "average_element_value": sum(correct_train_and_test_sequence)
+        / (train_sequence_length + test_sequence_length),
+        "train_average_square_difference": train_average_square_difference,
+        "test_average_square_difference": test_average_square_difference,
+        # penalties
+        "complexity_penalty": (
+            -1.0 * ((sum(1 for _ in ast.walk(mod)) ** 2) / target_complexity**2)
         ),
-        "train_predictability_penalty": -2.0 * (train_distance / train_sequence_length),
-        "test_predictability_penalty": -4.0 * (test_distance / train_sequence_length),
+        "large_numbers_penalty": (
+            -1.0
+            * (
+                sum(x**2 for x in correct_train_and_test_sequence)
+                / ((target_average_element**2) * train_sequence_length)
+            )
+        ),
     }
 
-    private_metrics = {}
+    private_metrics = {
+        "predicted_test_and_train_sequence": predicted_test_and_train_sequence,
+        "correct_train_and_test_sequence": correct_train_and_test_sequence,
+    }
 
     def combined_score() -> float:
-        return sum([v for _, v in public_metrics.items()])
+        return sum(
+            [
+                public_metrics["complexity_penalty"],
+                public_metrics["large_numbers_penalty"],
+                1.0 * (train_distance / train_sequence_length),
+                2.0 * (test_distance / train_sequence_length),
+                1.0 * train_average_square_difference,
+                2.0 * test_average_square_difference,
+            ]
+        )
 
     metrics = {
         "combined_score": combined_score(),
