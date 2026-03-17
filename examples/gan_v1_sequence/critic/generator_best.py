@@ -5,8 +5,7 @@ def sequence_element(i: int) -> int:
     """
     Calculates the ith element of the sequence.
     """
-
-    return i**2 + -20
+    return i & 1
 
 
 # EVOLVE-BLOCK-END

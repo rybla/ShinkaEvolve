@@ -58,7 +58,7 @@ evo_config:
     - 0
   novelty_llm_models:
   - openrouter/google/gemini-3-flash-preview
-  num_generations: 24
+  num_generations: 32
   patch_type_probs:
   - 0.6
   - 0.3
@@ -78,7 +78,7 @@ evo_config:
   - full
   prompt_percentile_recompute_interval: 1
   prompt_ucb_exploration_constant: 2.0
-  results_dir: results/results_critic_v001_2026-03-16-22-42-25
+  results_dir: results/results_critic_v001_2026-03-16-23-54-15
 max_db_workers: 2
 max_evaluation_jobs: 2
 max_proposal_jobs: 2

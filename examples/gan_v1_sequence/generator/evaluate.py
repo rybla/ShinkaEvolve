@@ -113,10 +113,10 @@ def aggregate_metrics(results: List[RunOutput], results_dir: str) -> Dict[str, A
         "test_average_square_difference": test_average_square_difference,
         # penalties
         "complexity_penalty": (
-            -1.0 * ((sum(1 for _ in ast.walk(mod)) ** 2) / target_complexity**2)
+            -0.01 * ((sum(1 for _ in ast.walk(mod)) ** 2) / target_complexity**2)
         ),
         "large_numbers_penalty": (
-            -1.0
+            -0.01
             * (
                 sum(x**2 for x in correct_train_and_test_sequence)
                 / ((target_average_element**2) * train_sequence_length)
