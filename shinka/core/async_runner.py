@@ -1556,6 +1556,51 @@ class ShinkaEvolveRunner:
         logger.info("🔄 Job monitor task started")
 
         while not self.should_stop.is_set():
+            # Check if we've exceeded the API cost limit
+            if self.evo_config.max_api_costs is not None:
+                committed_cost = self._get_committed_cost()
+                if committed_cost >= self.evo_config.max_api_costs:
+                    if not self.cost_limit_reached:
+                        self.cost_limit_reached = True
+                        in_flight_cost = committed_cost - self.total_api_cost
+                        logger.info(
+                            f"API cost budget reached: actual=${self.total_api_cost:.4f} + "
+                            f"in-flight=${in_flight_cost:.4f} = ${committed_cost:.4f} >= "
+                            f"${self.evo_config.max_api_costs:.2f}. Stopping evolution..."
+                        )
+                    if len(self.running_jobs) == 0 and len(self.active_proposal_tasks) == 0:
+                        if self.failed_jobs_for_retry:
+                            # Final retry logic here
+                            try:
+                                await self._retry_failed_db_jobs()
+                            except Exception as e:
+                                logger.error(f"Error in final retry attempt: {e}")
+                        self.should_stop.set()
+                        self.slot_available.set()
+                        self.finalization_complete.set()
+                        break
+
+            # Check if we should stop due to target generations reached
+            if (
+                self.completed_generations >= self.evo_config.num_generations
+                and len(self.running_jobs) == 0
+                and len(self.active_proposal_tasks) == 0
+            ):
+                if self.failed_jobs_for_retry:
+                    # Final retry logic here
+                    try:
+                        await self._retry_failed_db_jobs()
+                    except Exception as e:
+                        logger.error(f"Error in final retry attempt: {e}")
+                
+                logger.info("🛑 Job monitor setting should_stop signal")
+                self.should_stop.set()
+                self.slot_available.set()
+                logger.info("🏁 Job monitor setting finalization_complete signal")
+                self.finalization_complete.set()
+                break
+
+
             if not self.running_jobs:
                 # Debug: Log when waiting with no jobs
                 logger.debug(
