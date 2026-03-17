@@ -10,15 +10,18 @@ from typing import Tuple, Optional, List, Dict, Any
 
 from shinka.core import run_shinka_eval
 
-from .initial import RunOutput
-from .critic_best import run_experiment
-from ..common import (
+from initial import RunOutput
+from critic_best import run_experiment
+from common import (
     levenshtein_distance,
     train_sequence_length,
     target_average_element,
     target_complexity,
     test_sequence_length,
 )
+
+
+# ------------------------------------------------------------------------------
 
 
 def validate(
@@ -138,7 +141,7 @@ def main(program_path: str, results_dir: str):
     metrics, correct, error_msg = run_shinka_eval(
         program_path=program_path,
         results_dir=results_dir,
-        experiment_fn_name="run",
+        experiment_fn_name="run_experiment",
         num_runs=num_experiment_runs,
         get_experiment_kwargs=get_run_kwargs,
         validate_fn=validate,
@@ -164,7 +167,7 @@ if __name__ == "__main__":
         "--program_path",
         type=str,
         default="initial.py",
-        help="Path to program to evaluate (must contain 'run')",
+        help="Path to program to evaluate (must contain 'run_experiment')",
     )
     parser.add_argument(
         "--results_dir",

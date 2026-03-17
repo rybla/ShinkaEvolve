@@ -1,3 +1,5 @@
+from datetime import datetime
+from math import inf
 import subprocess
 from typing import Any
 import yaml
@@ -11,11 +13,11 @@ from pathlib import Path
 # config
 
 
-suffix = "v001"
+suffix = f"v001"
 
 manager_generations_count = 2
-generator_generations_per_manager_generation = 4
-critic_generations_per_manager_generation = 4
+generator_generations_per_attempt = 2
+critic_generations_per_attempt = 2
 
 
 # ------------------------------------------------------------------------------
@@ -32,9 +34,15 @@ generator_config_tmp_filepath = Path(generator_dirpath, "config_tmp.yaml")
 critic_config_tmp_filepath = Path(critic_dirpath, "config_tmp.yaml")
 
 generator_results_dirpath = Path(
-    generator_dirpath, "results", f"results_generator_{suffix}"
+    generator_dirpath,
+    "results",
+    f"results_generator_{suffix}_{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}",
 )
-critic_results_dirpath = Path(critic_dirpath, "results", f"results_critic_{suffix}")
+critic_results_dirpath = Path(
+    critic_dirpath,
+    "results",
+    f"results_critic_{suffix}_{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}",
+)
 
 generator_best_result_metrics_filepath = Path(
     generator_results_dirpath, "best", "results", "metrics.json"
@@ -85,8 +93,10 @@ os.makedirs(critic_results_dirpath, exist_ok=False)
 class Manager:
     def __init__(self):
         self.generation = 0
-        self.generator_best_score = 0.0
-        self.critic_best_score = 0.0
+        self.generator_generation = 0
+        self.critic_generation = 0
+        self.generator_best_score = -inf
+        self.critic_best_score = -inf
 
     def log(self, *msgs: str):
         print(f"[ gan.manager #{self.generation} ] ", *msgs)
@@ -106,7 +116,9 @@ class Manager:
             checkpoint_generator_best_score = self.generator_best_score
             generator_i = 1
             while not (self.generator_best_score > checkpoint_generator_best_score):
-                self.log(f"generator attempt #{generator_i} to beat best score")
+                self.log(
+                    f"generator attempt #{generator_i} to beat best score of {checkpoint_generator_best_score}"
+                )
                 self.run_generator()
                 generator_i += 1
             self.log(f"generator beat best score after {generator_i} attempts")
@@ -120,7 +132,9 @@ class Manager:
             checkpoint_critic_best_score = self.critic_best_score
             critic_i = 1
             while not (self.critic_best_score > checkpoint_critic_best_score):
-                self.log(f"critic attempt #{critic_i} to beat best score")
+                self.log(
+                    f"critic attempt #{critic_i} to beat best score of {checkpoint_critic_best_score}"
+                )
                 self.run_critic()
                 critic_i += 1
             self.log(f"critic beat best score after {critic_i} attempts")
@@ -143,9 +157,11 @@ class Manager:
         config = read_yaml(generator_config_filepath)
 
         # adjust config
-        config["db_config"]["num_generations"] = (
-            generator_generations_per_manager_generation * (self.generation + 1) + 1
+        target_generator_generation = (
+            self.generator_generation + generator_generations_per_attempt
         )
+        self.log(f"target_generator_generation = {target_generator_generation}")
+        config["evo_config"]["num_generations"] = target_generator_generation
         config["evo_config"]["results_dir"] = generator_results_dirpath.relative_to(
             generator_dirpath
         ).as_posix()
@@ -159,12 +175,14 @@ class Manager:
                 "/Users/henry/Documents/ShinkaEvolve/.venv/bin/python",
                 "run_evo.py",
                 "--config_path",
-                generator_config_filepath.name,
+                generator_config_tmp_filepath.name,
             ],
             check=True,
         )
 
         self.update_generator_best_score()
+
+        self.generator_generation = target_generator_generation
 
     def run_critic(self):
         self.log("run critic")
@@ -176,9 +194,11 @@ class Manager:
         config = read_yaml(critic_config_filepath)
 
         # adjust config
-        config["db_config"]["num_generations"] = (
-            critic_generations_per_manager_generation * (self.generation + 1) + 1
+        target_critic_generation = (
+            self.critic_generation + critic_generations_per_attempt
         )
+        self.log(f"target_critic_generation = {target_critic_generation}")
+        config["evo_config"]["num_generations"] = target_critic_generation
         config["evo_config"]["results_dir"] = critic_results_dirpath.relative_to(
             critic_dirpath
         ).as_posix()
@@ -192,12 +212,14 @@ class Manager:
                 "/Users/henry/Documents/ShinkaEvolve/.venv/bin/python",
                 "run_evo.py",
                 "--config_path",
-                critic_config_filepath.name,
+                critic_config_tmp_filepath.name,
             ],
             check=True,
         )
 
         self.update_critic_best_score()
+
+        self.critic_generation = target_critic_generation
 
     def update_generator_best_score(self):
         if not generator_best_result_metrics_filepath.exists():

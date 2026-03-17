@@ -9,15 +9,18 @@ from typing import Tuple, Optional, List, Dict, Any
 
 from shinka.core import run_shinka_eval
 
-from .initial import RunOutput
-from .generator_best import run_experiment
-from ..common import (
+from initial import RunOutput
+from generator_best import run_experiment
+from common import (
     levenshtein_distance,
     train_sequence_length,
     target_average_element,
     target_complexity,
     test_sequence_length,
 )
+
+
+# ------------------------------------------------------------------------------
 
 
 def validate(
@@ -40,8 +43,10 @@ def validate(
 def get_run_kwargs(run_index: int) -> Dict[str, Any]:
     """Provides keyword arguments for run."""
 
+    _, sequence = run_experiment(train_sequence_length)
+
     return {
-        "sequence": run_experiment(train_sequence_length),
+        "sequence": sequence,
         "n": train_sequence_length + test_sequence_length,
     }
 
@@ -119,7 +124,7 @@ def main(program_path: str, results_dir: str):
     metrics, correct, error_msg = run_shinka_eval(
         program_path=program_path,
         results_dir=results_dir,
-        experiment_fn_name="run",
+        experiment_fn_name="run_experiment",
         num_runs=num_experiment_runs,
         get_experiment_kwargs=get_run_kwargs,
         validate_fn=validate,
@@ -145,12 +150,12 @@ if __name__ == "__main__":
         "--program_path",
         type=str,
         default="initial.py",
-        help="Path to program to evaluate (must contain 'run')",
+        help="Path to program to evaluate (must contain 'run_experiment')",
     )
     parser.add_argument(
         "--results_dir",
         type=str,
-        default="results",
+        default="results-tmp",
         help="Dir to save results (metrics.json, correct.json, extra.npz)",
     )
     parsed_args = parser.parse_args()
