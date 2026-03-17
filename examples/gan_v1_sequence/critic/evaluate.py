@@ -80,14 +80,27 @@ def aggregate_metrics(results: List[RunOutput], results_dir: str) -> Dict[str, A
     test_distance = levenshtein_distance(correct_test_sequence, predicted_test_sequence)
 
     public_metrics = {
-        "train_predictability_penalty": -1.0 * (train_distance / train_sequence_length),
-        "test_predictability_penalty": -2.0 * (test_distance / train_sequence_length),
+        "predicted_sequence": predicted_test_and_train_sequence,
+        "correct_sequence": correct_train_sequence
+        + [
+            x if x == y else "?"
+            for x, y in zip(predicted_test_sequence, correct_test_sequence)
+        ],
+        "train_levenshtein_distance": train_distance,
+        "test_levenshtein_distance": test_distance,
     }
 
-    private_metrics = {}
+    private_metrics = {
+        "correct_sequence": correct_train_and_test_sequence,
+    }
 
     def combined_score() -> float:
-        return sum([v for _, v in public_metrics.items()])
+        return sum(
+            [
+                -1.0 * (train_distance / train_sequence_length),
+                -2.0 * (test_distance / train_sequence_length),
+            ]
+        )
 
     metrics = {
         "combined_score": combined_score(),
