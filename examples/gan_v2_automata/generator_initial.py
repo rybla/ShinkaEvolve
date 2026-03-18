@@ -7,8 +7,7 @@ Design the ruleset for a new cellular automata.
 import math
 
 
-cx = 1.61803398875  # Golden ratio
-cy = math.sqrt(2.0)
+c = 1.61803398875  # Golden ratio
 r = math.e - 2.0
 u = math.pi - 2.0
 l = math.sqrt(3.0) / 2.0
@@ -18,8 +17,7 @@ d = math.sqrt(5.0) - 1.0
 # EVOLVE-BLOCK-END
 
 params = {
-    "cx": cx,
-    "cy": cy,
+    "c": c,
     "r": r,
     "u": u,
     "l": l,

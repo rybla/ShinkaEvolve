@@ -13,7 +13,8 @@ from critic_initial import RunOutput
 import generator_best
 
 from common import (
-    calculate_period,
+    analyze_simulation,
+    critic_score,
     generator_score,
     validate_cell,
     validate_grid,
@@ -70,18 +71,19 @@ def aggregate_metrics(results: List[RunOutput], results_dir: str) -> Dict[str, A
 
     params = generator_best.run_experiment()
 
-    calculate_period_result = calculate_period(params, grid)
+    analysis = analyze_simulation(params, grid)
 
     public_metrics = {
-        "stop_reason": calculate_period_result["stop_reason"],
-        "period_detected": calculate_period_result["period_detected"],
-        "period_length": calculate_period_result["period_length"],
+        "stop_reason": analysis["stop_reason"],
+        "period_detected": analysis["period_detected"],
+        "steps": analysis["steps"],
+        "velocity": analysis["velocity"],
     }
 
     private_metrics = {}
 
     def combined_score() -> float:
-        return -generator_score(calculate_period_result)
+        return critic_score(analysis)
 
     metrics = {
         "combined_score": combined_score(),

@@ -9,8 +9,7 @@ from shinka.launch import LocalJobConfig
 
 from dotenv import load_dotenv
 
-from common import grid_size, update_cell_doc, params_names
-import generator_initial
+from common import grid_size, update_cell_doc, grid_std_min
 import critic_best
 
 load_dotenv()
@@ -20,11 +19,18 @@ Your task is to find an interesting set of parameters for a novel cellular autom
 
 {update_cell_doc}
 
-Your task is to find a set of parameters for the cellular automaton that yields interesting behaviors. The interestingness of the cellular automaton is measured by the longest period, that is, the number of steps required for a state to repeat. So you should search for parameters that make this period as long as possible.
+Your task is to find a set of parameters for the cellular automaton that yields interesting behaviors. The interestingness of the cellular automaton is measured by the longest period (the number of steps required for a state to repeat) and the minimum standard deviation of the cell values over the simulation. Note that the grid must always have a cell value standard deviation above {grid_std_min}
 
-Your cellular automaton configuration will be evaluated on this initial grid:
+Your cellular automaton configuration will be evaluated on an initial grid where these are the first two rows:
 
-    {critic_best.generate_initial_grid(grid_size=grid_size)}
+    {critic_best.generate_initial_grid(grid_size=grid_size)[0:2]}
+
+Important notes:
+- maximize steps
+- bonus points for avoiding period detection
+- minimize grid cell values standard deviation
+- minimize grid cell value change velocity
+- design a configuration that leads to interesting life-like behavior
 """.strip()
 
 

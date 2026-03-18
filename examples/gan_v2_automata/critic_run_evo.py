@@ -10,7 +10,7 @@ from shinka.launch import LocalJobConfig
 from dotenv import load_dotenv
 
 import generator_best
-from common import update_cell_doc
+from common import update_cell_doc, initial_grid_min_std
 
 load_dotenv()
 
@@ -23,7 +23,14 @@ The parameters have been set to these specific values that yield interesting beh
 
 {"\n".join([ f"    {k} = {v}" for k,v in generator_best.params.items() ])}
 
-Your task is to find an initial configuration for the grid that the cellular automaton works over that has the shortest possible period.
+Your task is to find an initial grid for the grid that the cellular automaton works over that leads to the shortest possible period and smallest minimum standard deviation over the simulation. Note that the initial grid must have a cell value standard deviation of at least {initial_grid_min_std}.
+
+Important notes:
+- minimize steps
+- penalty for missing period detection
+- minimize grid cell values standard deviation
+- minimize grid cell value change velocity
+- design an initial that leads to life-like behavior with a very short period
 """.strip()
 
 

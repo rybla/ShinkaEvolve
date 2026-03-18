@@ -3,19 +3,27 @@ import math
 from typing import Any, Dict, List, Literal, Tuple
 import PIL.Image as Image
 import os
+import numpy as np
 
 
 # ------------------------------------------------------------------------------
 # constants
 
 
-grid_size = 32
-max_steps = 1000
-min_diff = 0.05
+grid_size = 64
+max_steps = 256
+grid_diff_min = 0.2
+grid_std_min = 0.2
+initial_grid_min_std = 0.4
 
 
 # ------------------------------------------------------------------------------
 # utilities
+
+
+def max_velocity(steps: int):
+    return ((1 - (-1)) ** 2) * (grid_size**2) * (steps + 1)
+
 
 type Cell = float
 type Grid = List[List[Cell]]
@@ -40,6 +48,25 @@ def validate_grid(grid: Grid) -> RRR:
 
     if len(msgs) != 0:
         return False, f"Invalid grid:\n{"\n".join([ f"- {msg}" for msg in msgs  ])}"
+
+    return True, None
+
+
+def validate_initial_grid(grid: Grid) -> RRR:
+    validate_grid_result = validate_grid(grid)
+    if validate_grid_result[0] == False:
+        return validate_grid_result
+
+    grid_np = np.array(grid)
+    std = np.std(grid_np.flatten())
+
+    print(f"std = {std}")
+
+    if not (initial_grid_min_std <= std):
+        return (
+            False,
+            f"The standard deviation of values in the grid, which is {std}, is too small. The minimum acceptable value is {initial_grid_min_std}.",
+        )
 
     return True, None
 
@@ -97,31 +124,40 @@ def update_grid(params: Dict, grid: Grid) -> Grid:
 
     for i in range(i_max):
         for j in range(j_max):
-            new_grid[i][j] = update_cell(
+            new_cell = update_cell(
                 params,
-                x=j / j_max,
-                y=i / i_max,
                 cell=get_cell(i, j),
                 right_neighborhood=get_neighborhood(i, j, right_di_dj),
                 up_neighborhood=get_neighborhood(i, j, up_di_dj),
                 left_neighborhood=get_neighborhood(i, j, left_di_dj),
                 down_neighborhood=get_neighborhood(i, j, down_di_dj),
             )
+            new_grid[i][j] = new_cell
 
     return new_grid
 
 
-def calculate_period(params: Dict, grid: Grid):
+def analyze_simulation(params: Dict, grid: Grid):
     grids = [grid]
 
     diff = math.inf
+    std = math.inf
+    velocity = 0.0
 
     for step in range(max_steps):
         grids.append(update_grid(params=params, grid=grids[-1]))
-        diff = min(mean_squared_differences_of_grids(grids[0], grids[-1]), diff)
+
+        grid0_np = np.array(grids[0]).flatten()
+        grid1_np = np.array(grids[-1]).flatten()
+
+        diff = min(np.mean((grid0_np - grid1_np) ** 2), diff)
+
+        velocity += np.sum((grid0_np - grid1_np) ** 2)
+
+        std = min(np.std(grid1_np), std)
 
         # terminate if repetition is detected
-        if diff <= min_diff:
+        if diff <= grid_diff_min:
             render_gif(
                 params=params,
                 grids=grids,
@@ -130,8 +166,25 @@ def calculate_period(params: Dict, grid: Grid):
             return {
                 "stop_reason": "The simulation was stopped early because a repeated state was detected.",
                 "period_detected": True,
-                "period_length": step,
+                "steps": step,
                 "period_diff": diff,
+                "grid_std": std,
+                "velocity": velocity / max_velocity(step),
+            }
+
+        if std < grid_std_min:
+            render_gif(
+                params=params,
+                grids=grids,
+            )
+
+            return {
+                "stop_reason": "The simulation was stopped early because a grid's cell values had too small of a standard deviation.",
+                "period_detected": True,
+                "steps": step,
+                "period_diff": diff,
+                "grid_std": std,
+                "velocity": velocity / max_velocity(step),
             }
 
     render_gif(
@@ -142,21 +195,33 @@ def calculate_period(params: Dict, grid: Grid):
     return {
         "stop_reason": "The simulation ran for its maximum duration without detecting a repeated state.",
         "period_detected": False,
-        "period_length": max_steps,
-        "period_diff": None,
+        "steps": max_steps,
+        "period_diff": diff,
+        "grid_std": std,
+        "velocity": velocity / max_velocity(max_steps),
     }
 
 
-def generator_score(calculate_period_result: Dict) -> float:
+def generator_score(analysis: Dict) -> float:
     return sum(
         [
-            calculate_period_result["period_length"],
-            (
-                # Bonus if period was not detected
-                0.0
-                if calculate_period_result["period_detected"]
-                else (5.0 / 100.0) * max_steps
-            ),
+            2.0 * (analysis["steps"] / max_steps),
+            # Bonus if period was not detected
+            0.5 * (0.0 if analysis["period_detected"] else 1.0),
+            -1.0 * analysis["grid_std"],
+            -1.0 * analysis["velocity"],
+        ]
+    )
+
+
+def critic_score(analysis: Dict) -> float:
+    return sum(
+        [
+            -2.0 * (analysis["steps"] / max_steps),
+            # Penalty if period was not detected
+            -0.5 * (0.0 if analysis["period_detected"] else 1.0),
+            -1.0 * analysis["grid_std"],
+            -1.0 * analysis["velocity"],
         ]
     )
 
@@ -164,16 +229,13 @@ def generator_score(calculate_period_result: Dict) -> float:
 def update_cell(
     params: Dict,
     cell: Cell,
-    x: float,
-    y: float,
     right_neighborhood: Cell,
     up_neighborhood: Cell,
     left_neighborhood: Cell,
     down_neighborhood: Cell,
 ) -> float:
     vals = [
-        math.sin(params["cx"] * cell * 2.0 * math.pi + x),
-        math.cos(params["cy"] * cell * 2.0 * math.pi + y),
+        math.sin(params["c"] * cell * 2.0 * math.pi),
         math.sin(params["r"] * right_neighborhood * 2.0 * math.pi),
         math.sin(params["u"] * up_neighborhood * 2.0 * math.pi),
         math.sin(params["l"] * left_neighborhood * 2.0 * math.pi),
@@ -183,25 +245,23 @@ def update_cell(
     return sum(vals) / len(vals)
 
 
-params_names = ["cx", "cy", "r", "u", "l", "d"]
+params_names = ["c", "r", "u", "l", "d"]
 
 update_cell_doc: str = (
     f"""
 This cellular automata operates on a grid of cells (with torus wrapping), where each cell always has a value in the range -1 to 1. Each cell in the grid is updated every step according to this formula:
 
-    new_cell = sin(cx * cell * 2 * pi + x) + sin(cy * cell * pi + y) + sin(r * right_neighborhood * 2 * pi) + sin(u * up_neighborhood * 2 * pi) + sin(l * left_neighborhood * 2 * pi) + sin(c * down_neighborhood * 2 * pi)
+    new_cell = sin(x * cell * 2 * pi) + sin(r * right_neighborhood * 2 * pi) + sin(u * up_neighborhood * 2 * pi) + sin(l * left_neighborhood * 2 * pi) + sin(c * down_neighborhood * 2 * pi)
 
 where:
 
 - `cell` is the current value of the cell
-- `x` is the normalized x-coordinate of the cell
-- `y` is the normalized y-coordinate of the cell
 - `right_neighborhood` is the average value of the 3 closest cells to the right of the cell
 - `up_neighborhood` is the average value of the 3 closest cells above this cell
 - `left_neighborhood` is the average value of the 3 closest cells to the left of this cell
 - `down_neighborhood` is the average value of the 3 closest cells below this cell
 
-The parameters of this cellular automaton are: cx, cy, r, u, l, d.
+The parameters of this cellular automaton are: {", ".join(params_names)}.
     """.strip()
 )
 

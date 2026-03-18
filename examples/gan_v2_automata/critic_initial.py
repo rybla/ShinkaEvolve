@@ -2,6 +2,7 @@
 Generate an initial grid for a cellular automata.
 """
 
+import math
 from typing import List
 
 
@@ -13,7 +14,9 @@ type Grid = List[List[Cell]]
 
 
 def generate_initial_grid(grid_size: int) -> Grid:
-    return [[0.1 for j in range(grid_size)] for i in range(grid_size)]
+    return [
+        [math.sin((i + j) / 32.0) for j in range(grid_size)] for i in range(grid_size)
+    ]
 
 
 # EVOLVE-BLOCK-END

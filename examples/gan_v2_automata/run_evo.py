@@ -16,7 +16,7 @@ from shinka.database.dbase import DatabaseConfig, ProgramDatabase
 # config
 
 
-suffix = f"v001"
+suffix = f"v002"
 
 manager_generations_count = 20
 generator_generations_per_manager_generation = 4
