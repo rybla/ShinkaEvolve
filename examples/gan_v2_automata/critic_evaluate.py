@@ -15,8 +15,6 @@ import generator_best
 from common import (
     analyze_simulation,
     critic_score,
-    generator_score,
-    validate_cell,
     validate_grid,
     grid_size,
 )

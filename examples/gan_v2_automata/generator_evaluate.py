@@ -16,11 +16,8 @@ import critic_best
 from common import (
     analyze_simulation,
     generator_score,
-    validate_grid,
     validate_params,
     grid_size,
-    max_steps,
-    grid_diff_min,
 )
 
 
